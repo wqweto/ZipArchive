@@ -1,0 +1,14 @@
+EXPORTS
+vbzlib_extract_thunk=_vbzlib_extract_thunk@8
+; vbzlib_compress_init=_vbzlib_compress_init@16
+; vbzlib_compress_cleanup=_vbzlib_compress_cleanup@16
+; vbzlib_compress_block=_vbzlib_compress_block@16
+; vbzlib_decompress_init=_vbzlib_decompress_init@16
+; vbzlib_decompress_cleanup=_vbzlib_decompress_cleanup@16
+; vbzlib_decompress_block=_vbzlib_decompress_block@16
+; zlib_compress_init=_zlib_compress_init@4
+; zlib_compress_cleanup=_zlib_compress_cleanup@4
+; zlib_compress_block=_zlib_compress_block@20
+; zlib_decompress_init=_zlib_decompress_init@4
+; zlib_decompress_cleanup=_zlib_decompress_cleanup@4
+; zlib_decompress_block=_zlib_decompress_block@20
