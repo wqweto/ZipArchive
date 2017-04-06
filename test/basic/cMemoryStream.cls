@@ -13,6 +13,10 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
+'=========================================================================
+' API
+'=========================================================================
+
 '--- for SetFilePointer
 Private Const FILE_BEGIN                As Long = 0
 Private Const FILE_CURRENT              As Long = 1
@@ -21,9 +25,17 @@ Private Const FILE_END                  As Long = 2
 Private Declare Function ApiEmptyByteArray Lib "oleaut32" Alias "SafeArrayCreateVector" (Optional ByVal VarType As VbVarType = vbByte, Optional ByVal Low As Long = 0, Optional ByVal Count As Long = 0) As Byte()
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 
+'=========================================================================
+' COnstants and member variables
+'=========================================================================
+
 Private m_baBuffer()            As Byte
 Private m_lPosition             As Long
 Private m_lSize                 As Long
+
+'=========================================================================
+' Properties
+'=========================================================================
 
 Property Get Contents() As Byte()
     If m_lSize > 0 Then
@@ -41,7 +53,11 @@ Property Let Contents(baValue() As Byte)
     m_lSize = UBound(m_baBuffer) + 1
 End Property
 
-Public Function SetFilePointer(lPosition As Long, ByVal lMoveMethod As Long) As Boolean
+'=========================================================================
+' VFS interface
+'=========================================================================
+
+Public Function VfsSetFilePointer(lPosition As Long, ByVal lMoveMethod As Long) As Long
     Select Case lMoveMethod
     Case FILE_BEGIN
         m_lPosition = lPosition
@@ -50,12 +66,10 @@ Public Function SetFilePointer(lPosition As Long, ByVal lMoveMethod As Long) As 
     Case FILE_END
         m_lPosition = m_lSize + lPosition
     End Select
-    lPosition = m_lPosition
-    '--- success
-    SetFilePointer = True
+    VfsSetFilePointer = m_lPosition
 End Function
 
-Public Function ReadFile(ByVal lPtr As Long, ByVal lSize As Long) As Long
+Public Function VfsReadFile(ByVal lPtr As Long, ByVal lSize As Long) As Long
     If m_lPosition + lSize > m_lSize Then
         lSize = m_lSize - m_lPosition
     End If
@@ -63,10 +77,10 @@ Public Function ReadFile(ByVal lPtr As Long, ByVal lSize As Long) As Long
         Call CopyMemory(ByVal lPtr, m_baBuffer(m_lPosition), lSize)
         m_lPosition = m_lPosition + lSize
     End If
-    ReadFile = lSize
+    VfsReadFile = lSize
 End Function
 
-Public Function WriteFile(ByVal lPtr As Long, ByVal lSize As Long) As Long
+Public Function VfsWriteFile(ByVal lPtr As Long, ByVal lSize As Long) As Long
     Dim lNewSize            As Long
     
     If m_lPosition + lSize > UBound(m_baBuffer) + 1 Then
@@ -83,14 +97,16 @@ Public Function WriteFile(ByVal lPtr As Long, ByVal lSize As Long) As Long
             m_lSize = m_lPosition
         End If
     End If
-    WriteFile = lSize
+    VfsWriteFile = lSize
 End Function
 
-Public Function SetEndOfFile(sMetaData As String) As Boolean
+Public Sub VfsSetEndOfFile(sMetaData As String)
     m_lSize = m_lPosition
-    '--- success
-    SetEndOfFile = True
-End Function
+End Sub
+
+'=========================================================================
+' Base class events
+'=========================================================================
 
 Private Sub Class_Initialize()
     m_baBuffer = ApiEmptyByteArray()

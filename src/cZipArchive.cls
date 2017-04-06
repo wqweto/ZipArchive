@@ -159,7 +159,7 @@ Private Const LNG_SIG_END           As Long = &H6054B50
 Private Const LNG_LEN_LOCAL         As Long = 30
 Private Const LNG_LEN_CENTRAL       As Long = 46
 Private Const LNG_LEN_END           As Long = 22
-Private Const LNG_VERMADE           As Long = 22
+Private Const LNG_VERMADE           As Long = 20
 Private Const LNG_VEREXT            As Long = 20
 Private Const LNG_METHOD_DEFLATE    As Long = 8
 Private Const LNG_METHOD_STORE      As Long = 0
@@ -354,8 +354,8 @@ Public Function AddFile( _
         Else
             .FileName = Mid$(uFile.FileName, InStrRev(uFile.FileName, "\") + 1)
         End If
-        .Size = uFile.Data.nFileSizeLow
-        .Attributes = uFile.Data.dwFileAttributes
+        .Size = IIf(Right(.FileName, 1) = "\", 0, uFile.Data.nFileSizeLow)
+        .Attributes = IIf(Right(.FileName, 1) = "\", vbDirectory, uFile.Data.dwFileAttributes)
         .Comment = Comment
         .LastModified = pvFromFileTime(uFile.Data.ftLastWriteTime)
         AssignVariant .SourceFile, File
@@ -408,7 +408,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.CSize = 0
             pvOutputLocalHeader uArchiveFile, uLocal, .FileName
             lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
-            If (uFile.Data.dwFileAttributes And vbDirectory) = 0 Then
+            If (.Attributes And vbDirectory) = 0 Then
                 hCtx = CallWindowProc(m_uRtbl.CompressInit, VarPtr(m_uRtbl))
                 If hCtx = 0 Then
                     Err.Raise vbObjectError, , ERR_INIT_COMPRESSOR
@@ -825,6 +825,7 @@ Public Function Extract( _
     Dim lIdx            As Long
     Dim uLocal          As UcsLocalHeaderType
     Dim baFName()       As Byte
+    Dim baExt()         As Byte
     Dim lRead           As Long
     Dim lSize           As Long
     Dim lResult         As Long
@@ -834,6 +835,7 @@ Public Function Extract( _
     Dim uFile           As UcsVfsFileType
     Dim lCrc32          As Long
     Dim bSkip           As Boolean
+    Dim sFilter         As String
     
     On Error GoTo EH
     m_sLastError = vbNullString
@@ -843,6 +845,9 @@ Public Function Extract( _
     End If
     ReDim baBuffer(0 To LNG_IOBUF_SIZE - 1) As Byte
     uArchiveFile = pvVfsOpen(m_vArchiveFile)
+    If Not IsMissing(Filter) And Not IsArray(Filter) Then
+        sFilter = IIf(Filter = "*.*", "*", Replace(Filter, "[", "[[]"))
+    End If
     '--- touch to open for read
     pvVfsRead uArchiveFile, 0, 0
     For lIdx = 0 To m_lFileCount - 1
@@ -854,9 +859,9 @@ Public Function Extract( _
                     If Not At(Filter, lIdx) Then
                         GoTo SkipFile
                     End If
-                Else
-                    If Not .FileName Like IIf(Filter = "*.*", "*", Filter) Then
-                        If Not Mid$(.FileName, InStrRev(.FileName, "\") + 1) Like IIf(Filter = "*.*", "*", Filter) Then
+                ElseIf LenB(sFilter) <> 0 Then
+                    If Not .FileName Like sFilter Then
+                        If Not Mid$(.FileName, InStrRev(.FileName, "\") + 1) Like sFilter Then
                             GoTo SkipFile
                         End If
                     End If
@@ -873,6 +878,11 @@ Public Function Extract( _
                 ReDim baFName(0 To uLocal.LenFname - 1) As Byte
                 pvVfsRead uArchiveFile, VarPtr(baFName(0)), uLocal.LenFname
             End If
+            If uLocal.LenExt > 0 Then
+                ReDim baExt(0 To uLocal.LenExt - 1) As Byte
+                pvVfsRead uArchiveFile, VarPtr(baExt(0)), uLocal.LenExt
+            End If
+            '--- sanity checks
             If uLocal.Signature <> LNG_SIG_LOCAL Then
                 Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & " (Signature)"
             End If
@@ -970,6 +980,8 @@ Public Function Extract( _
                     GoTo QH
                 End If
             End If
+            '--- success (entries extracted)
+            Extract = True
 SkipFile:
             On Error GoTo EH
             pvVfsClose uFile
@@ -979,8 +991,6 @@ SkipFile:
             End If
         End With
     Next
-    '--- success
-    Extract = True
 QH:
     On Error Resume Next
     If uBuf.OutBlock <> 0 Then
@@ -1035,7 +1045,9 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
     If IsObject(File) Then
         pvVfsOpen.FileName = "[stream]"
         Set pvVfsOpen.Proxy = File
-        pvVfsOpen.Proxy.SetFilePointer pvVfsOpen.Data.nFileSizeLow, FILE_END
+        If Not pvVfsOpen.Proxy Is Nothing Then
+            pvVfsOpen.Data.nFileSizeLow = pvVfsOpen.Proxy.VfsSetFilePointer(0, FILE_END)
+        End If
         pvVfsOpen.Data.dwFileAttributes = vbArchive
         pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
     Else
@@ -1067,7 +1079,7 @@ Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
             End If
         End If
         If Right$(File, 1) <> "\" Then
-            pvVfsCreate.Handle = CreateFile(File, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0)
+            pvVfsCreate.Handle = CreateFile(File, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
             If pvVfsCreate.Handle = INVALID_HANDLE_VALUE Then
                 Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & File & ")"
             End If
@@ -1087,9 +1099,9 @@ Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lS
     If Not uFile.Proxy Is Nothing Then
         If uFile.Handle = 0 Then
             uFile.Handle = INVALID_HANDLE_VALUE
-            uFile.Proxy.SetFilePointer 0, FILE_BEGIN
+            uFile.Proxy.VfsSetFilePointer 0, FILE_BEGIN
         End If
-        pvVfsRead = uFile.Proxy.ReadFile(lPtr, lSize)
+        pvVfsRead = uFile.Proxy.VfsReadFile(lPtr, lSize)
     Else
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
             uFile.Handle = CreateFile(uFile.FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)
@@ -1107,9 +1119,9 @@ Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal l
     If Not uFile.Proxy Is Nothing Then
         If uFile.Handle = 0 Then
             uFile.Handle = INVALID_HANDLE_VALUE
-            uFile.Proxy.SetFilePointer 0, FILE_BEGIN
+            uFile.Proxy.VfsSetFilePointer 0, FILE_BEGIN
         End If
-        pvVfsWrite = uFile.Proxy.WriteFile(lPtr, lSize)
+        pvVfsWrite = uFile.Proxy.VfsWriteFile(lPtr, lSize)
     Else
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
             uFile.Handle = CreateFile(uFile.FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
@@ -1125,8 +1137,7 @@ End Function
 
 Private Function pvVfsSeek(uFile As UcsVfsFileType, ByVal lPosition As Long, ByVal lMoveMethod As Long) As Long
     If Not uFile.Proxy Is Nothing Then
-        pvVfsSeek = lPosition
-        uFile.Proxy.SetFilePointer pvVfsSeek, lMoveMethod
+        pvVfsSeek = uFile.Proxy.VfsSetFilePointer(lPosition, lMoveMethod)
     Else
         pvVfsSeek = SetFilePointer(uFile.Handle, lPosition, 0, lMoveMethod)
         If pvVfsSeek = INVALID_SET_FILE_POINTER Then
@@ -1137,7 +1148,7 @@ End Function
 
 Private Sub pvVfsSetEof(uFile As UcsVfsFileType, sMetaData As String)
     If Not uFile.Proxy Is Nothing Then
-        uFile.Proxy.SetEndOfFile sMetaData
+        uFile.Proxy.VfsSetEndOfFile sMetaData
     Else
         If SetEndOfFile(uFile.Handle) = 0 Then
             Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
