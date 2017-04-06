@@ -747,7 +747,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
     pvStreamRead uArchiveFile, 0, 0
     For lIdx = 0 To MAX_END_SEEK
         If pvStreamSeek(uArchiveFile, -LNG_LEN_END - lIdx, FILE_END) <= 0 Then
-            lIdx = MAX_END_SEEK
+            lIdx = MAX_END_SEEK + 1
             Exit For
         End If
         Debug.Assert VarPtr(uEndHdr.LenCom) + 2 - VarPtr(uEndHdr.Signature) = LNG_LEN_END
@@ -756,8 +756,9 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
             Exit For
         End If
     Next
-    If lIdx = MAX_END_SEEK Then
-        Err.Raise vbObjectError, , ERR_INVALID_ARCHIVE & " (ECDR)"
+    If lIdx > MAX_END_SEEK Then
+        Err.Raise vbObjectError, , ERR_INVALID_ARCHIVE & " (missing ECDR)"
+        GoTo QH
     End If
     If uEndHdr.LenCom > 0 Then
         ReDim baComment(0 To uEndHdr.LenCom - 1) As Byte
@@ -786,6 +787,11 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                 ReDim baFName(0 To uCentral.LenFname - 1) As Byte
                 pvStreamRead uArchiveFile, VarPtr(baFName(0)), uCentral.LenFname
                 .FileName = Replace(pvFromOemString(baFName), "/", "\")
+            Else
+                If pvSetError(MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". Entry " & lIdx + 1 & " has no filename") Then
+                    GoTo QH
+                End If
+                .FileName = "[entry " & lIdx + 1 & "]"
             End If
             If uCentral.LenCom > 0 Then
                 ReDim baComment(0 To uCentral.LenCom - 1) As Byte
