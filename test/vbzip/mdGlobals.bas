@@ -16,6 +16,7 @@ Private Declare Function LocalFree Lib "kernel32" (ByVal hMem As Long) As Long
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 Private Declare Function ApiSysAllocString Lib "oleaut32" Alias "SysAllocString" (ByVal Ptr As Long) As Long
 Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
+Private Declare Sub ExitProcess Lib "kernel32" (ByVal uExitCode As Long)
 
 '=========================================================================
 ' Functions
@@ -23,7 +24,11 @@ Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttribut
 
 Public Sub Main()
     With New cVbZip
-        .Init SplitArgs(Command$)
+        If Not .Init(SplitArgs(Command$)) Then
+            If Not InIde Then
+                Call ExitProcess(1)
+            End If
+        End If
     End With
 End Sub
 
@@ -97,5 +102,14 @@ End Function
 
 Public Function PathCombine(sPath As String, sFile As String) As String
     PathCombine = sPath & IIf(LenB(sPath) <> 0 And Right$(sPath, 1) <> "\" And LenB(sFile) <> 0, "\", vbNullString) & sFile
+End Function
+
+Public Property Get InIde() As Boolean
+    Debug.Assert pvSetTrue(InIde)
+End Property
+
+Private Function pvSetTrue(bValue As Boolean) As Boolean
+    bValue = True
+    pvSetTrue = True
 End Function
 
