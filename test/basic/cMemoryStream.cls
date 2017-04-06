@@ -86,7 +86,7 @@ Public Function WriteFile(ByVal lPtr As Long, ByVal lSize As Long) As Long
     WriteFile = lSize
 End Function
 
-Public Function SetEndOfFile() As Boolean
+Public Function SetEndOfFile(sMetaData As String) As Boolean
     m_lSize = m_lPosition
     '--- success
     SetEndOfFile = True
