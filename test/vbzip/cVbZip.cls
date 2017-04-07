@@ -25,6 +25,8 @@ Private Const STR_LIST_SEP          As String = "------------------- ----- -----
 
 Private WithEvents m_oArchive   As cZipArchive
 Attribute m_oArchive.VB_VarHelpID = -1
+Private WithEvents m_oTestArchive As cZipArchive
+Attribute m_oTestArchive.VB_VarHelpID = -1
 Private m_sAction               As String
 Private m_sLastRow              As String
 Private m_oOpt                  As Object
@@ -128,6 +130,17 @@ Public Function Init(vArgs As Variant) As Boolean
             Else
                 ConsolePrint "No matches found" & vbCrLf
             End If
+        Case "t"
+            If LenB(.Item("zip")) = 0 Then
+                ConsolePrint ERR_MISSING_ARCHIVE & vbCrLf
+                GoTo QH
+            End If
+            If Not m_oArchive.OpenArchive(.Item("zip")) Then
+                GoTo QH
+            End If
+            m_sAction = "Testing "
+            Set m_oTestArchive = m_oArchive
+            m_oArchive.Extract vbNullString
         Case "x"
             If LenB(.Item("zip")) = 0 Then
                 ConsolePrint ERR_MISSING_ARCHIVE & vbCrLf
@@ -152,6 +165,7 @@ Public Function Init(vArgs As Variant) As Boolean
                     " commands:" & vbCrLf & _
                     "    a     add files to archive" & vbCrLf & _
                     "    l     list archive contents" & vbCrLf & _
+                    "    t     test archive integrity" & vbCrLf & _
                     "    x     extract files from archive" & vbCrLf & vbCrLf & _
                     " options:" & vbCrLf & _
                     "    -r    recurse subdirectories" & vbCrLf & _
@@ -248,4 +262,8 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, By
         End If
         ConsolePrint vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent & vbCrLf
     End If
+End Sub
+
+Private Sub m_oTestArchive_BeforeExtract(ByVal FileIdx As Long, File As Variant, SkipFile As Boolean, Cancel As Boolean)
+    Set File = New cDummyStream
 End Sub

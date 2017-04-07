@@ -26,7 +26,7 @@ Private Declare Function ApiEmptyByteArray Lib "oleaut32" Alias "SafeArrayCreate
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 
 '=========================================================================
-' COnstants and member variables
+' Constants and member variables
 '=========================================================================
 
 Private m_baBuffer()            As Byte
