@@ -25,8 +25,6 @@ Private Const STR_LIST_SEP          As String = "------------------- ----- -----
 
 Private WithEvents m_oArchive   As cZipArchive
 Attribute m_oArchive.VB_VarHelpID = -1
-Private WithEvents m_oTestArchive As cZipArchive
-Attribute m_oTestArchive.VB_VarHelpID = -1
 Private m_sAction               As String
 Private m_sLastRow              As String
 Private m_oOpt                  As Object
@@ -61,7 +59,7 @@ Public Function Init(vArgs As Variant) As Boolean
     Set m_oOpt = ParseOpt(vArgs)
     With m_oOpt
         If Not .Item("nologo") Then
-            ConsolePrint "VbZip (c) 2017 by wqweto@gmail.com" & vbCrLf & vbCrLf
+            ConsolePrint "VbZip 1.0 (c) 2017 by wqweto@gmail.com" & vbCrLf & vbCrLf
         End If
         If LenB(.Item("zip")) <> 0 Then
             ConsolePrint "Archive: " & .Item("zip") & vbCrLf
@@ -80,9 +78,18 @@ Public Function Init(vArgs As Variant) As Boolean
             For lIdx = 1 To .Item("numfiles")
                 sFile = .Item("file" & lIdx)
                 If InStr(sFile, "*") > 0 Or InStr(sFile, "?") > 0 Then
-                    m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r")
+                    '--- for *.* default to include empty folders
+                    sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
+                    If sMask = "*" Or sMask = "*.*" Then
+                        .Item("-e") = True
+                    End If
+                    m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r"), IncludeEmptyFolders:=.Item("-e")
                 ElseIf (FileAttr(sFile) And vbDirectory) <> 0 Then
-                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r")
+                    If .Item("-r") Then
+                        sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
+                        .Item("-e") = True
+                    End If
+                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), IncludeEmptyFolders:=.Item("-e"), TargetFolder:=sMask
                 Else
                     m_oArchive.AddFile sFile
                 End If
@@ -139,8 +146,7 @@ Public Function Init(vArgs As Variant) As Boolean
                 GoTo QH
             End If
             m_sAction = "Testing "
-            Set m_oTestArchive = m_oArchive
-            m_oArchive.Extract vbNullString
+            m_oArchive.Extract vbNullString, OutputFile:=New cDummyStream
         Case "x"
             If LenB(.Item("zip")) = 0 Then
                 ConsolePrint ERR_MISSING_ARCHIVE & vbCrLf
@@ -170,7 +176,8 @@ Public Function Init(vArgs As Variant) As Boolean
                     " options:" & vbCrLf & _
                     "    -r    recurse subdirectories" & vbCrLf & _
                     "    -m    compression level (ToDo: impl)" & vbCrLf & _
-                    "    -bd   no percentage indicator" & vbCrLf
+                    "    -bd   no percentage indicator" & vbCrLf & _
+                    "    -e    include empty folders" & vbCrLf
             Else
                 ConsolePrint "Invalid command: " & .Item("command") & vbCrLf
             End If
@@ -262,8 +269,4 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, By
         End If
         ConsolePrint vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent & vbCrLf
     End If
-End Sub
-
-Private Sub m_oTestArchive_BeforeExtract(ByVal FileIdx As Long, File As Variant, SkipFile As Boolean, Cancel As Boolean)
-    Set File = New cDummyStream
 End Sub
