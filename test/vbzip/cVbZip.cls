@@ -56,15 +56,15 @@ Public Function Init(vArgs As Variant) As Boolean
     Dim lCount          As Long
 
     On Error GoTo EH
+    Set m_oArchive = New cZipArchive
     Set m_oOpt = ParseOpt(vArgs)
     With m_oOpt
         If Not .Item("nologo") Then
-            ConsolePrint "VbZip 1.0 (c) 2017 by wqweto@gmail.com" & vbCrLf & vbCrLf
+            ConsolePrint "VbZip " & m_oArchive.SemVersion & " (c) 2017 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
         End If
         If LenB(.Item("zip")) <> 0 Then
             ConsolePrint "Archive: " & .Item("zip") & vbCrLf
         End If
-        Set m_oArchive = New cZipArchive
         Select Case LCase$(.Item("command"))
         Case "a"
             If LenB(.Item("zip")) = 0 Then
