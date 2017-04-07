@@ -108,6 +108,7 @@ Public Sub CodegenThunk()
         sText = sText & "|" & lOffset
     Next
     cOutput.Add "Private Const STR_THUNK_OFFSETS As String = """ & Mid$(sText, 2) & """"
+    cOutput.Add "Private Const STR_THUNK_BUILDDATE As String = """ & Now & """"
     cOutput.Add "' end of generated code"
     cOutput.Add vbNullString
     Clipboard.Clear

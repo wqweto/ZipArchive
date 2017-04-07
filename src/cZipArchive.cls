@@ -11,6 +11,13 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+'=========================================================================
+'
+' cZipArchive (c) 2017 by wqweto@gmail.com
+'
+' A single-class pure VB6 library for zip archives management
+'
+'=========================================================================
 Option Explicit
 DefObj A-Z
 Private Const MODULE_NAME As String = "cZipArchive"
@@ -56,6 +63,7 @@ Private Const STR_THUNK2 As String = _
     "owAAAMIAAAAbAQUAwwAAAOIAAAAcAQUA4wAAAAEBAAAdAQAAAgEAAAIBAAAQERIACAcJBgoFCwQMAw0CDgEPAAAAAAABAAAAAQAAAAEAAAACAAAAAgAAAAIAAAADAAAAAwAAAAMAAAAEAAAABAAAAAQAAQAFAAAABgAAAAUAAQAHAAAACAAAAAYAAgAJAAAADAAAAAcAAgANAAAAEAAAAAgAAwARAAAAGAAAAAkAAwAZAAAAIAAAAAoABAAhAAAAMAAAAAsABAAxAAAAQAAAAAwABQBBAAAAYAAAAA0ABQBhAAAAgAAAAA4ABgCBAAAAwAAAAA8ABgDBAAAAAAEAABAABwABAQAAgAEAABEABwCBAQAAAAIAABIACAABAgAAAAMAABMACAABAwAAAAQAABQACQABBAAAAAYAABUACQABBgAAAAgAABYACgABCAAAAAwAABcACgABDAAAABAAABgACwABEAAAABgAABkACwABGAAAACAAABoADAABIAAA" & _
     "ADAAABsADAABMAAAAEAAABwADQABQAAAAGAAAB0ADQABYAAAAIAAAAAAAABkELcdyCBuO6ww2SaQQdx29FFra1hhsk08cQVQIIO47USTD/Doo9bWjLNhy7DCZJvU0tOGeOIKoBzyvb0="
 Private Const STR_THUNK_OFFSETS As String = "96|160|208|272|288|400|0|0|0|0|5840|6208|5584|6188|6568"
+Private Const STR_THUNK_BUILDDATE As String = "7.4.2017 18:44:04"
 ' end of generated code
 
 '=========================================================================
@@ -304,6 +312,14 @@ End Type
 '=========================================================================
 ' Properties
 '=========================================================================
+
+Property Get SemVersion() As String
+    SemVersion = "0.1.1"
+End Property
+
+Property Get ThunkBuildDate() As String
+    ThunkBuildDate = STR_THUNK_BUILDDATE
+End Property
 
 Property Get LastError() As String
     LastError = m_sLastError
