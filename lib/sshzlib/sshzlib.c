@@ -691,7 +691,7 @@ int ZLIB_STDCALL zlib_compress_block(void *handle, unsigned char *block, int len
      */
     lz77_compress(ectx, block, len);
     zlib_outbits(rtbl, out, 0, 7);            /* close block */
-    if (final)                                /* align to a byte boundary */
+    if (final && out->noutbits)               /* align to a byte boundary */
         zlib_outbits(rtbl, out, 0, 8 - out->noutbits); 
 
     *outblock = out->outbuf;
