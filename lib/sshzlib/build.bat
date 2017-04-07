@@ -28,6 +28,8 @@ copy *.pdb %bin_dir% > nul 2> nul
 copy *.obj %bin_dir% > nul 2> nul
 dumpbin /relocations %bin_dir%\sshzlib.obj > %bin_dir%\sshzlib.txt
 
+..\codegen\codegen.exe
+
 :cleanup
 del /q *.exp *.lib *.obj *.dll *.pdb *.ilk ~$* 2> nul
 

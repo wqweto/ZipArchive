@@ -43,8 +43,6 @@
 
 #define ZLIB_STDCALL __stdcall
 
-#ifdef ZLIB_STANDALONE
-
 void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, unsigned char *block, int len, unsigned int *pcrc);
 void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam);
 void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int lParam, int wParam);
@@ -79,10 +77,6 @@ static void *memset(void *dest, int c, size_t count)
 #define snewn(n, type) ( (type *) rtbl->vbzlib_malloc((n) * sizeof(type)) )
 #define sresize(x, n, type) ( (type *) rtbl->vbzlib_realloc((x), (n) * sizeof(type)) )
 #define sfree(x) ( rtbl->vbzlib_free((x)) )
-
-#else
-#include "ssh.h"
-#endif
 
 #ifndef FALSE
 #define FALSE 0
@@ -125,10 +119,6 @@ struct LZ77Context {
     struct RelocTable *rtbl;
     struct LZ77InternalContext *ictx;
     void *userdata;
-#ifndef ZLIB_STANDALONE
-    void (*literal) (struct LZ77Context * ctx, unsigned char c);
-    void (*match) (struct LZ77Context * ctx, int distance, int len);
-#endif
 };
 
 /*
@@ -144,7 +134,7 @@ static int ZLIB_STDCALL lz77_init(struct LZ77Context *ctx);
  * instead call literal() for everything.
  */
 static void ZLIB_STDCALL lz77_compress(struct LZ77Context *ctx,
-                          unsigned char *data, int len, int compress);
+                          unsigned char *data, int len);
 
 /*
  * Modifiable parameters.
@@ -250,7 +240,7 @@ static __inline int ZLIB_STDCALL lz77_hash(unsigned char *data)
 }
 
 static void ZLIB_STDCALL lz77_compress(struct LZ77Context *ctx,
-                          unsigned char *data, int len, int compress)
+                          unsigned char *data, int len)
 {
     struct LZ77InternalContext *st = ctx->ictx;
     struct RelocTable *rtbl = ctx->rtbl;
@@ -291,7 +281,7 @@ static void ZLIB_STDCALL lz77_compress(struct LZ77Context *ctx,
     while (len > 0) {
 
         /* Don't even look for a match, if we're not compressing. */
-        if (compress && len >= HASHCHARS) {
+        if (len >= HASHCHARS) {
             /*
              * Hash the next few characters.
              */
@@ -422,10 +412,6 @@ struct Outbuf {
     int outlen, outsize;
     unsigned long outbits;
     int noutbits;
-    int firstblock;
-#ifndef ZLIB_STANDALONE
-    int comp_disabled;
-#endif
 };
 
 static void ZLIB_STDCALL zlib_outbits(struct RelocTable *rtbl, struct Outbuf *out, unsigned long bits, int nbits)
@@ -558,16 +544,6 @@ static void ZLIB_STDCALL zlib_literal(struct LZ77Context *ectx, unsigned char c)
     struct RelocTable *rtbl = ectx->rtbl;
     struct Outbuf *out = (struct Outbuf *) ectx->userdata;
 
-#ifndef ZLIB_STANDALONE
-    if (out->comp_disabled) {
-        /*
-         * We're in an uncompressed block, so just output the byte.
-         */
-        zlib_outbits(rtbl, out, c, 8);
-        return;
-    }
-#endif
-
     if (c <= 143) {
         /* 0 through 143 are 8 bits long starting at 00110000. */
         zlib_outbits(rtbl, out, rtbl->mirrorbytes[0x30 + c], 8);
@@ -584,10 +560,6 @@ static void ZLIB_STDCALL zlib_match(struct LZ77Context *ectx, int distance, int 
     int i, j, k;
     struct Outbuf *out = (struct Outbuf *) ectx->userdata;
     
-#ifndef ZLIB_STANDALONE
-    assert(!out->comp_disabled);
-#endif
-
     while (len > 0) {
         int thislen;
 
@@ -679,17 +651,9 @@ void *ZLIB_STDCALL zlib_compress_init(struct RelocTable *rtbl)
 
     ectx->rtbl = rtbl;
     lz77_init(ectx);
-#ifndef ZLIB_STANDALONE
-    ectx->literal = (lz77_literal_t)((char *)rtbl->vbzlib_compress_init + ((char *)zlib_literal-(char*)vbzlib_compress_init));
-    ectx->match = (lz77_match_t)((char *)rtbl->vbzlib_compress_init + ((char *)zlib_match-(char *)vbzlib_compress_init));
-#endif
 
     out = snew(struct Outbuf);
     out->outbits = out->noutbits = 0;
-    out->firstblock = 1;
-#ifndef ZLIB_STANDALONE
-    out->comp_disabled = FALSE;
-#endif
     ectx->userdata = out;
 
     return ectx;
@@ -704,180 +668,31 @@ void ZLIB_STDCALL zlib_compress_cleanup(void *handle)
     sfree(ectx);
 }
 
-#ifndef ZLIB_STANDALONE
-
-/*
- * Turn off actual LZ77 analysis for one block, to facilitate
- * construction of a precise-length IGNORE packet. Returns the
- * length adjustment (which is only valid for packets < 65536
- * bytes, but that seems reasonable enough).
- */
-static int ZLIB_STDCALL zlib_disable_compression(void *handle)
-{
-    struct LZ77Context *ectx = (struct LZ77Context *)handle;
-    struct Outbuf *out = (struct Outbuf *) ectx->userdata;
-    int n;
-
-    out->comp_disabled = TRUE;
-
-    n = 0;
-    /*
-     * If this is the first block, we will start by outputting two
-     * header bytes, and then three bits to begin an uncompressed
-     * block. This will cost three bytes (because we will start on
-     * a byte boundary, this is certain).
-     */
-    if (out->firstblock) {
-        n = 3;
-    } else {
-        /*
-         * Otherwise, we will output seven bits to close the
-         * previous static block, and _then_ three bits to begin an
-         * uncompressed block, and then flush the current byte.
-         * This may cost two bytes or three, depending on noutbits.
-         */
-        n += (out->noutbits + 10) / 8;
-    }
-
-    /*
-     * Now we output four bytes for the length / ~length pair in
-     * the uncompressed block.
-     */
-    n += 4;
-
-    return n;
-}
-
-#endif
-
 int ZLIB_STDCALL zlib_compress_block(void *handle, unsigned char *block, int len,
-                        unsigned char **outblock, int *outlen)
+                        unsigned char **outblock, int *outlen, int final)
 {
     struct LZ77Context *ectx = (struct LZ77Context *)handle;
     struct RelocTable *rtbl = ectx->rtbl;
     struct Outbuf *out = (struct Outbuf *) ectx->userdata;
-    int in_block;
 
     out->outbuf = NULL;
     out->outlen = out->outsize = 0;
 
     /*
-     * If this is the first block, output the Zlib (RFC1950) header
-     * bytes 78 9C. (Deflate compression, 32K window size, default
-     * algorithm.)
+     * Start a Deflate (RFC1951) fixed-trees block. We
+     * transmit a bit (BFINAL=final), followed by a zero
+     * bit and a one bit (BTYPE=01). Of course these are in
+     * the wrong order (01 final).
      */
-    if (out->firstblock) {
-#ifndef ZLIB_STANDALONE
-        zlib_outbits(rtbl, out, 0x9C78, 16);
-#endif
-        out->firstblock = 0;
+    zlib_outbits(rtbl, out, 2 + final, 3);
 
-        in_block = FALSE;
-    } else
-        in_block = TRUE;
-
-#ifndef ZLIB_STANDALONE
-    if (out->comp_disabled) {
-        if (in_block)
-            zlib_outbits(rtbl, out, 0, 7);            /* close static block */
-
-        while (len > 0) {
-            int blen = (len < 65535 ? len : 65535);
-
-            /*
-             * Start a Deflate (RFC1951) uncompressed block. We
-             * transmit a zero bit (BFINAL=0), followed by two more
-             * zero bits (BTYPE=00). Of course these are in the
-             * wrong order (00 0), not that it matters.
-             */
-            zlib_outbits(rtbl, out, 0, 3);
-
-            /*
-             * Output zero bits to align to a byte boundary.
-             */
-            if (out->noutbits)
-                zlib_outbits(rtbl, out, 0, 8 - out->noutbits);
-
-            /*
-             * Output the block length, and then its one's
-             * complement. They're little-endian, so all we need to
-             * do is pass them straight to outbits() with bit count
-             * 16.
-             */
-            zlib_outbits(rtbl, out, blen, 16);
-            zlib_outbits(rtbl, out, blen ^ 0xFFFF, 16);
-
-            /*
-             * Do the `compression': we need to pass the data to
-             * lz77_compress so that it will be taken into account
-             * for subsequent (distance,length) pairs. But
-             * lz77_compress is passed FALSE, which means it won't
-             * actually find (or even look for) any matches; so
-             * every character will be passed straight to
-             * zlib_literal which will spot out->comp_disabled and
-             * emit in the uncompressed format.
-             */
-            lz77_compress(ectx, block, blen, FALSE);
-
-            len -= blen;
-            block += blen;
-        }
-        zlib_outbits(rtbl, out, 2, 3);        /* open new block */
-    } else
-#endif
-    {
-        if (!in_block) {
-            /*
-             * Start a Deflate (RFC1951) fixed-trees block. We
-             * transmit a zero bit (BFINAL=0), followed by a zero
-             * bit and a one bit (BTYPE=01). Of course these are in
-             * the wrong order (01 0).
-             */
-            zlib_outbits(rtbl, out, 2, 3);
-        }
-
-        /*
-         * Do the compression.
-         */
-        lz77_compress(ectx, block, len, TRUE);
-
-        /*
-         * End the block (by transmitting code 256, which is
-         * 0000000 in fixed-tree mode), and transmit some empty
-         * blocks to ensure we have emitted the byte containing the
-         * last piece of genuine data. There are three ways we can
-         * do this:
-         *
-         *  - Minimal flush. Output end-of-block and then open a
-         *    new static block. This takes 9 bits, which is
-         *    guaranteed to flush out the last genuine code in the
-         *    closed block; but allegedly zlib can't handle it.
-         *
-         *  - Zlib partial flush. Output EOB, open and close an
-         *    empty static block, and _then_ open the new block.
-         *    This is the best zlib can handle.
-         *
-         *  - Zlib sync flush. Output EOB, then an empty
-         *    _uncompressed_ block (000, then sync to byte
-         *    boundary, then send bytes 00 00 FF FF). Then open the
-         *    new block.
-         *
-         * For the moment, we will use Zlib partial flush.
-         */
-        zlib_outbits(rtbl, out, 0, 7);            /* close block */
-        if (len > 0) {
-            zlib_outbits(rtbl, out, 2, 3 + 7);    /* empty static block */
-            zlib_outbits(rtbl, out, 2, 3);        /* open new block */
-        }
-        else {
-            zlib_outbits(rtbl, out, 3, 3 + 7);    /* signal last block (empty static) */
-            zlib_outbits(rtbl, out, 0, 8 - out->noutbits);
-        }
-    }
-
-#ifndef ZLIB_STANDALONE
-    out->comp_disabled = FALSE;
-#endif
+    /*
+     * Do the compression.
+     */
+    lz77_compress(ectx, block, len);
+    zlib_outbits(rtbl, out, 0, 7);            /* close block */
+    if (final)                                /* align to a byte boundary */
+        zlib_outbits(rtbl, out, 0, 8 - out->noutbits); 
 
     *outblock = out->outbuf;
     *outlen = out->outlen;
@@ -1163,36 +978,6 @@ int ZLIB_STDCALL zlib_decompress_block(void *handle, unsigned char *block, int l
             len--;
         }
         if (dctx->state == START) {
-#ifndef ZLIB_STANDALONE
-            /* Expect 16-bit zlib header. */
-            if (dctx->nbits < 16)
-                goto finished;         /* done all we can */
-
-            /*
-             * The header is stored as a big-endian 16-bit integer,
-             * in contrast to the general little-endian policy in
-             * the rest of the format :-(
-             */
-            header = (((dctx->bits & 0xFF00) >> 8) |
-                      ((dctx->bits & 0x00FF) << 8));
-            EATBITS(16);
-
-            /*
-             * Check the header:
-             *
-             *  - bits 8-11 should be 1000 (Deflate/RFC1951)
-             *  - bits 12-15 should be at most 0111 (window size)
-             *  - bit 5 should be zero (no dictionary present)
-             *  - we don't care about bits 6-7 (compression rate)
-             *  - bits 0-4 should be set up to make the whole thing
-             *    a multiple of 31 (checksum).
-             */
-            if ((header & 0x0F00) != 0x0800 ||
-                (header & 0xF000) >  0x7000 ||
-                (header & 0x0020) != 0x0000 ||
-                (header % 31) != 0)
-                goto decode_error;
-#endif
             dctx->state = OUTSIDEBLK;
         }
         else if (dctx->state == OUTSIDEBLK) {
@@ -1392,8 +1177,6 @@ decode_error:
     return 0;
 }
 
-#ifdef ZLIB_STANDALONE
-
 static const unsigned int zdat_crc32tab[16] = {
    0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190,
    0x6b6b51f4, 0x4db26158, 0x5005713c, 0xedb88320, 0xf00f9344,
@@ -1457,7 +1240,7 @@ int ZLIB_STDCALL test_compress(char *filename) {
         ret = fread(buf, 1, sizeof(buf), fp);
         if (ret <= 0)
             break;
-        zlib_compress_block(handle, buf, ret, &outbuf, &outlen);
+        zlib_compress_block(handle, buf, ret, &outbuf, &outlen, FALSE);
         if (outbuf) {
             if (outlen)
                 fwrite(outbuf, 1, outlen, stdout);
@@ -1578,6 +1361,7 @@ struct IoBuffers {
     int len;
     unsigned char *outblock;
     int outlen;
+    int final;
 };
 
 /* crc is previous value for incremental computation, 0xffffffff initially */
@@ -1607,7 +1391,7 @@ void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int lParam, in
 int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam) {
     if (pcrc)
         vbzlib_crc32(((struct LZ77Context *)handle)->rtbl, buf->block, buf->len, pcrc);
-    return zlib_compress_block(handle, buf->block, buf->len, &buf->outblock, &buf->outlen);
+    return zlib_compress_block(handle, buf->block, buf->len, &buf->outblock, &buf->outlen, buf->final);
 }
 
 void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam) {
@@ -1654,20 +1438,3 @@ void ZLIB_STDCALL vbzlib_extract_thunk(struct RelocTable *rtbl, struct ThunkInfo
 int __stdcall _DllMainCRTStartup(int hInst, int fdwReason, void *lpReserved) {
     return 1;
 }
-
-#else
-
-const struct ssh_compress ssh_zlib = {
-    "zlib",
-    "zlib@openssh.com", /* delayed version */
-    zlib_compress_init,
-    zlib_compress_cleanup,
-    zlib_compress_block,
-    zlib_decompress_init,
-    zlib_decompress_cleanup,
-    zlib_decompress_block,
-    zlib_disable_compression,
-    "zlib (RFC1950)"
-};
-
-#endif
