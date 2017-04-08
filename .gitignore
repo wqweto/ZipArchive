@@ -13,3 +13,5 @@
 *.pdb
 _del/*
 ~*
+*.xlsb
+sshzlib.txt

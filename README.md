@@ -15,8 +15,7 @@ A single-class pure VB6 library for zip archives management
         .Extract "extract_folder"
     End With
     
-### ToDo (not supported)
+### ToDo (not supported yet)
 
-    - Compression level
     - Deflate64 (de)compressor
     - Zip64 format extension (sizes above 2GB+, unicode filenames)
