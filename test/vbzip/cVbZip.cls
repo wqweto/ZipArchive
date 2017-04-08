@@ -20,6 +20,7 @@ DefObj A-Z
 
 Private Const ERR_MISSING_ARCHIVE   As String = "Missing archive"
 Private Const ERR_NO_FILES          As String = "No files specified"
+Private Const ERR_INVALID_LEVEL     As String = "Invalid compression level. Use 0 to 9"
 Private Const STR_LIST_HDR          As String = "Date       Time     Attr        Size Compressed Name"
 Private Const STR_LIST_SEP          As String = "------------------- ----- ---------- ---------- -------------------"
 
@@ -54,6 +55,7 @@ Public Function Init(vArgs As Variant) As Boolean
     Dim lTotalSize      As Long
     Dim lTotalCompressed As Long
     Dim lCount          As Long
+    Dim lLevel          As Long
 
     On Error GoTo EH
     Set m_oArchive = New cZipArchive
@@ -75,6 +77,15 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsolePrint ERR_NO_FILES & vbCrLf
                 GoTo QH
             End If
+            If .Item("-m") = "0" Then
+                lLevel = 0
+            Else
+                lLevel = Val(.Item("-m"))
+                If lLevel < 1 Or lLevel > 9 Then
+                    ConsolePrint ERR_INVALID_LEVEL & vbCrLf
+                    GoTo QH
+                End If
+            End If
             For lIdx = 1 To .Item("numfiles")
                 sFile = .Item("file" & lIdx)
                 If InStr(sFile, "*") > 0 Or InStr(sFile, "?") > 0 Then
@@ -95,7 +106,7 @@ Public Function Init(vArgs As Variant) As Boolean
                 End If
             Next
             m_sAction = "Compressing "
-            If Not m_oArchive.CompressArchive(.Item("zip")) Then
+            If Not m_oArchive.CompressArchive(.Item("zip"), Level:=lLevel) Then
                 GoTo QH
             End If
         Case "l"
@@ -175,7 +186,7 @@ Public Function Init(vArgs As Variant) As Boolean
                     "    x     extract files from archive" & vbCrLf & vbCrLf & _
                     " options:" & vbCrLf & _
                     "    -r    recurse subdirectories" & vbCrLf & _
-                    "    -m    compression level (ToDo: impl)" & vbCrLf & _
+                    "    -m    compression level (default 6)" & vbCrLf & _
                     "    -bd   no percentage indicator" & vbCrLf & _
                     "    -e    include empty folders" & vbCrLf
             Else
@@ -219,11 +230,11 @@ Private Function ParseOpt(vArgs As Variant) As Object
             Select Case Left$(vArgs(lIdx), 1)
             Case "-", "/"
                 Select Case Mid$(vArgs(lIdx), 2, 1)
-                Case "o"
+                Case "o", "m"
                     If Len(vArgs(lIdx)) > 2 Then
-                        .Item("-o") = Mid$(vArgs(lIdx), 3)
+                        .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = Mid$(vArgs(lIdx), 3)
                     ElseIf LenB(vArgs(lIdx + 1)) <> 0 Then
-                        .Item("-o") = vArgs(lIdx + 1)
+                        .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = vArgs(lIdx + 1)
                         lIdx = lIdx + 1
                     End If
                 Case Else
@@ -245,10 +256,17 @@ Private Function ParseOpt(vArgs As Variant) As Object
 End Function
 
 Private Sub m_oArchive_Error(ByVal FileIdx As Long, Source As String, Description As String, Cancel As Boolean)
+    Dim sPrefix         As String
+    
     If LenB(m_sLastRow) <> 0 Then
         ConsolePrint vbCrLf
     End If
-    ConsolePrint "Error: " & Description & vbCrLf
+    If FileIdx >= 0 Then
+        sPrefix = "Error processing " & At(m_oArchive.FileInfo(FileIdx), 0)
+    Else
+        sPrefix = "Error"
+    End If
+    ConsolePrint sPrefix & ": " & Description & vbCrLf
     m_sLastRow = vbNullString
     Cancel = True
 End Sub
@@ -267,6 +285,6 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, By
         If At(vInfo, ucsIdxSize) <> 0 Then
             sPercent = " [" & Format$(At(vInfo, ucsIdxCompressedSize) * 100# / At(vInfo, ucsIdxSize), "0.0") & "%] "
         End If
-        ConsolePrint vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent & vbCrLf
+        ConsolePrint IIf(LenB(m_sLastRow) <> 0, vbCr, vbNullString) & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent & vbCrLf
     End If
 End Sub
