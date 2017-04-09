@@ -77,7 +77,9 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsolePrint ERR_NO_FILES & vbCrLf
                 GoTo QH
             End If
-            If .Item("-m") = "0" Then
+            If IsEmpty(.Item("-m")) Then
+                lLevel = 6
+            ElseIf .Item("-m") = "0" Then
                 lLevel = 0
             Else
                 lLevel = Val(.Item("-m"))
