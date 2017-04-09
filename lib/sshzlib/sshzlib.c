@@ -702,7 +702,7 @@ static void ZLIB_STDCALL zlib_outbits(struct RelocTable *rtbl, struct Outbuf *ou
     out->noutbits += nbits;
     while (out->noutbits >= 8) {
         if (out->outlen >= out->outsize) {
-            out->outsize = (out->outlen + 64) * 2;
+            out->outsize = out->outsize << 1;
             out->outbuf = sresize(out->outbuf, out->outsize, unsigned char);
         }
         out->outbuf[out->outlen++] = (unsigned char) (out->outbits & 0xFF);
@@ -956,8 +956,9 @@ int ZLIB_STDCALL zlib_compress_block(void *handle, const unsigned char *block, i
     struct RelocTable *rtbl = ectx->rtbl;
     struct Outbuf *out = (struct Outbuf *) ectx->userdata;
 
-    out->outbuf = NULL;
-    out->outlen = out->outsize = 0;
+    out->outbuf = snewn(32768, unsigned char);
+    out->outsize = 32768;
+    out->outlen = 0;
 
     /*
      * Start a Deflate (RFC1951) fixed-trees block. We
@@ -1243,7 +1244,7 @@ static void ZLIB_STDCALL zlib_emit_char(struct zlib_decompress_ctx *dctx, int c)
     dctx->window[dctx->winpos] = c;
     dctx->winpos = (dctx->winpos + 1) & (WINSIZE - 1);
     if (dctx->outlen >= dctx->outsize) {
-        dctx->outsize = (dctx->outlen + 64) * 2;
+        dctx->outsize = dctx->outlen << 1;
         dctx->outblk = sresize(dctx->outblk, dctx->outsize, unsigned char);
     }
     dctx->outblk[dctx->outlen++] = c;
@@ -1259,8 +1260,8 @@ int ZLIB_STDCALL zlib_decompress_block(void *handle, const unsigned char *block,
     const struct coderecord *rec;
     int code, blktype, rep, dist, nlen, header;
 
-    dctx->outblk = snewn(256, unsigned char);
-    dctx->outsize = 256;
+    dctx->outblk = snewn(32768, unsigned char);
+    dctx->outsize = 32768;
     dctx->outlen = 0;
 
     while (len > 0 || dctx->nbits > 0) {
