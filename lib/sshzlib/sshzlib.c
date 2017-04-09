@@ -122,29 +122,12 @@ struct LZ77Context {
 };
 
 /*
- * Initialise the private fields of an LZ77Context. It's up to the
- * user to initialise the public fields.
- */
-static int ZLIB_STDCALL lz77_init(struct LZ77Context *ctx);
-
-/*
- * Supply data to be compressed. Will update the private fields of
- * the LZ77Context, and will call literal() and match() to output.
- * If `compress' is FALSE, it will never emit a match, but will
- * instead call literal() for everything.
- */
-static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
-                          unsigned char *data, int len, int maxmatch);
-static void ZLIB_STDCALL lz77_compress_lazy(struct LZ77Context *ctx,
-                          unsigned char *data, int len, int maxmatch);
-
-/*
  * Modifiable parameters.
  */
 #define WINSIZE 32768                  /* window size. Must be power of 2! */
-#define HASHMAX (256*256)              /* one more than max hash value */
 #define HASHBITS 16
-#define MAXMATCH 200                   /* how many matches we track */
+#define HASHMAX (1<<HASHBITS)          /* one more than max hash value */
+#define MAXMATCH 1000                  /* how many matches we track */
 #define HASHCHARS 4                    /* how many chars make a hash */
 
 /*
@@ -177,8 +160,13 @@ struct LZ77InternalContext {
     struct HashEntry hashtab[HASHMAX];
     unsigned char pending[HASHCHARS];
     int npending;
+    int matchdist[MAXMATCH];
 };
 
+/*
+ * Initialise the private fields of an LZ77Context. It's up to the
+ * user to initialise the public fields.
+ */
 static int ZLIB_STDCALL lz77_init(struct LZ77Context *ctx)
 {
     struct RelocTable *rtbl = ctx->rtbl;
@@ -236,27 +224,25 @@ static void ZLIB_STDCALL lz77_advance(struct LZ77InternalContext *st,
 }
 
 #define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
+#define DWORDAT(k) *((unsigned int *)&st->data[(st->winpos+k)&(WINSIZE-1)])
 
 static __inline int ZLIB_STDCALL lz77_hash3(unsigned char *data)
 {
-    //return (257 * data[0] + 263 * data[1] + 269 * data[2]) & (HASHMAX - 1);
-    return ((unsigned int)data[0] + ((unsigned int)data[1] << 8) + ((unsigned int)data[2] << 16)) * 0x1E35A7BD >> (32 - HASHBITS);
+    return (*((unsigned int *)data) << 8) * 0x1E35A7BD >> (32 - HASHBITS);
 }
 
-static __inline int ZLIB_STDCALL lz77_hash4(unsigned char *data)
+static __inline int ZLIB_STDCALL lz77_hash(unsigned char *data)
 {
     return *((unsigned int *)data) * 0x1E35A7BD >> (32 - HASHBITS);
 }
 
-#define lz77_hash lz77_hash4
-
 static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
-                          unsigned char *data, int len, int maxmatch)
+                          unsigned char *data, int len, int maxmatch, int nicelen)
 {
     struct LZ77InternalContext *st = ctx->ictx;
     struct RelocTable *rtbl = ctx->rtbl;
-    int i, distance, off, nmatch, matchlen, advance;
-    int matches[MAXMATCH];
+    int i, j, distance, off, nmatch, matchlen, advance;
+    int *matches = st->matchdist;
 
     assert(st->npending <= HASHCHARS);
 
@@ -271,7 +257,6 @@ static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
      */
     for (i = 0; i < st->npending; i++) {
         unsigned char foo[HASHCHARS];
-        int j;
         if (len + st->npending - i < HASHCHARS) {
             /* Update the pending array. */
             for (j = i; j < st->npending; j++)
@@ -287,8 +272,13 @@ static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
 
     while (len > 0) {
 
-        /* Don't even look for a match, if we're not compressing. */
+        /* Don't even look for a match, if not enough data left. */
         if (len >= HASHCHARS) {
+            /*
+             * Setup overflow for DWORDAT
+             */
+            ((unsigned int *)&st->data[WINSIZE])[0] = ((unsigned int *)&st->data[0])[0];
+
             /*
              * Hash the next few characters.
              */
@@ -305,10 +295,7 @@ static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
                 /* distance = WINSIZE if off == st->winpos   */
                 distance =
                     WINSIZE - ((off + WINSIZE - st->winpos) & (WINSIZE - 1));
-                if (data[0] == CHARAT(0 - distance)
-                        && data[1] == CHARAT(1 - distance)
-                        && data[2] == CHARAT(2 - distance)
-                        && data[3] == CHARAT(3 - distance)) {
+                if (!(((unsigned int *)data)[0] ^ DWORDAT(0 - distance))) {
                     matches[nmatch] = distance;
                     if (++nmatch >= maxmatch)
                         break;
@@ -325,20 +312,22 @@ static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
              * assume here that it's always worth favouring a
              * longer match over a shorter one.)
              */
-            matchlen = HASHCHARS;
-            while (matchlen < len) {
-                int j;
+            if (nicelen > len)
+                nicelen = len;
+            
+            for (matchlen = HASHCHARS; matchlen < nicelen; matchlen++) {
+                unsigned char ch = data[matchlen];
                 for (i = j = 0; i < nmatch; i++) {
-                    if (data[matchlen] ==
-                        CHARAT(matchlen - matches[i])) {
+                    if (ch == CHARAT(matchlen - matches[i])) {
                         matches[j++] = matches[i];
                     }
                 }
-                if (j == 0)
+                if (j <= 1)
                     break;
-                matchlen++;
                 nmatch = j;
             }
+            while (matchlen < len && data[matchlen] == CHARAT(matchlen - matches[0]))
+                matchlen++;
 
             /*
              * We've now got all the longest matches. We favour the
@@ -369,19 +358,14 @@ static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
     }
 }
 
-#undef HASHCHARS
-#define HASHCHARS 4
-#undef lz77_hash
-#define lz77_hash lz77_hash4
-
 static void ZLIB_STDCALL lz77_compress_lazy(struct LZ77Context *ctx,
-                          unsigned char *data, int len, int maxmatch)
+                          unsigned char *data, int len, int maxmatch, int nicelen)
 {
     struct LZ77InternalContext *st = ctx->ictx;
     struct RelocTable *rtbl = ctx->rtbl;
-    int i, distance, off, nmatch, matchlen, advance;
+    int i, j, distance, off, nmatch, matchlen, advance;
     struct Match defermatch;
-    int matches[MAXMATCH];
+    int *matches = st->matchdist;
     int deferchr;
 
     assert(st->npending <= HASHCHARS);
@@ -396,8 +380,7 @@ static void ZLIB_STDCALL lz77_compress_lazy(struct LZ77Context *ctx,
      * HASHCHARS in size.
      */
     for (i = 0; i < st->npending; i++) {
-        unsigned char foo[HASHCHARS+1];
-        int j;
+        unsigned char foo[HASHCHARS];
         if (len + st->npending - i < HASHCHARS) {
             /* Update the pending array. */
             for (j = i; j < st->npending; j++)
@@ -416,7 +399,169 @@ static void ZLIB_STDCALL lz77_compress_lazy(struct LZ77Context *ctx,
     deferchr = '\0';
     while (len > 0) {
 
-        /* Don't even look for a match, if we're not compressing. */
+        /* Don't even look for a match, if not enough data left. */
+        if (len >= HASHCHARS) {
+            /*
+             * Setup overflow for DWORDAT
+             */
+            ((unsigned int *)&st->data[WINSIZE])[0] = ((unsigned int *)&st->data[0])[0];
+
+            /*
+             * Hash the next few characters.
+             */
+            int hash = lz77_hash(data);
+
+            /*
+             * Look the hash up in the corresponding hash chain and see
+             * what we can find.
+             */
+            nmatch = 0;
+            for (off = st->hashtab[hash].first;
+                 off != INVALID; off = st->win[off].next) {
+                /* distance = 1       if off == st->winpos-1 */
+                /* distance = WINSIZE if off == st->winpos   */
+                distance =
+                    WINSIZE - ((off + WINSIZE - st->winpos) & (WINSIZE - 1));
+                if (!(((unsigned int *)data)[0] ^ DWORDAT(0 - distance))) {
+                    matches[nmatch] = distance;
+                    if (++nmatch >= maxmatch)
+                        break;
+                }
+            }
+        } else {
+            nmatch = 0;
+        }
+
+        if (nmatch > 0) {
+            /*
+             * We've now filled up matches[] with nmatch potential
+             * matches. Follow them down to find the longest. (We
+             * assume here that it's always worth favouring a
+             * longer match over a shorter one.)
+             */
+            if (nicelen > len)
+                nicelen = len;
+            
+            for (matchlen = HASHCHARS; matchlen < nicelen; matchlen++) {
+                unsigned char ch = data[matchlen];
+                for (i = j = 0; i < nmatch; i++) {
+                    if (ch == CHARAT(matchlen - matches[i])) {
+                        matches[j++] = matches[i];
+                    }
+                }
+                if (j <= 1)
+                    break;
+                nmatch = j;
+            }
+            while (matchlen < len && data[matchlen] == CHARAT(matchlen - matches[0]))
+                matchlen++;
+
+            /*
+             * We've now got all the longest matches. We favour the
+             * shorter distances, which means we go with matches[0].
+             * So see if we want to defer it or throw it away.
+             */
+            if (defermatch.len > 0) {
+                if (matchlen > defermatch.len + 1) {
+                    /* We have a better match. Emit the deferred char,
+                     * and defer this match. */
+                    zlib_literal(ctx, (unsigned char) deferchr);
+                    defermatch.distance = matches[0];
+                    defermatch.len = matchlen;
+                    deferchr = data[0];
+                    advance = 1;
+                } else {
+                    /* We don't have a better match. Do the deferred one. */
+                    zlib_match(ctx, defermatch.distance, defermatch.len);
+                    advance = defermatch.len - 1;
+                    defermatch.len = 0;
+                }
+            } else {
+                /* There was no deferred match. Defer this one. */
+                defermatch.distance = matches[0];
+                defermatch.len = matchlen;
+                deferchr = data[0];
+                advance = 1;
+            }
+        } else {
+            /*
+             * We found no matches. Emit the deferred match, if
+             * any; otherwise emit a literal.
+             */
+            if (defermatch.len > 0) {
+                zlib_match(ctx, defermatch.distance, defermatch.len);
+                advance = defermatch.len - 1;
+                defermatch.len = 0;
+            } else {
+                zlib_literal(ctx, data[0]);
+                advance = 1;
+            }
+        }
+
+        /*
+         * Now advance the position by `advance' characters,
+         * keeping the window and hash chains consistent.
+         */
+        while (advance > 0) {
+            if (len >= HASHCHARS) {
+                lz77_advance(st, *data, lz77_hash(data));
+            } else {
+                assert(st->npending < HASHCHARS);
+                st->pending[st->npending++] = *data;
+            }
+            data++;
+            len--;
+            advance--;
+        }
+    }
+}
+
+#undef HASHCHARS
+#define HASHCHARS 3
+#define lz77_hash lz77_hash3
+
+static void ZLIB_STDCALL lz77_compress_lazy_hash3(struct LZ77Context *ctx,
+                          unsigned char *data, int len)
+{
+    struct LZ77InternalContext *st = ctx->ictx;
+    struct RelocTable *rtbl = ctx->rtbl;
+    int i, j, distance, off, nmatch, matchlen, advance;
+    struct Match defermatch;
+    int *matches = st->matchdist;
+    int deferchr;
+
+    assert(st->npending <= HASHCHARS);
+
+    /*
+     * Add any pending characters from last time to the window. (We
+     * might not be able to.)
+     *
+     * This leaves st->pending empty in the usual case (when len >=
+     * HASHCHARS); otherwise it leaves st->pending empty enough that
+     * adding all the remaining 'len' characters will not push it past
+     * HASHCHARS in size.
+     */
+    for (i = 0; i < st->npending; i++) {
+        unsigned char foo[HASHCHARS];
+        if (len + st->npending - i < HASHCHARS) {
+            /* Update the pending array. */
+            for (j = i; j < st->npending; j++)
+                st->pending[j - i] = st->pending[j];
+            break;
+        }
+        for (j = 0; j < HASHCHARS; j++)
+            foo[j] = (i + j < st->npending ? st->pending[i + j] :
+                      data[i + j - st->npending]);
+        lz77_advance(st, foo[0], lz77_hash(foo));
+    }
+    st->npending -= i;
+
+    defermatch.distance = 0; /* appease compiler */
+    defermatch.len = 0;
+    deferchr = '\0';
+    while (len > 0) {
+
+        /* Don't even look for a match, if not enough data left. */
         if (len >= HASHCHARS) {
             /*
              * Hash the next few characters.
@@ -438,7 +583,7 @@ static void ZLIB_STDCALL lz77_compress_lazy(struct LZ77Context *ctx,
                         && data[1] == CHARAT(1 - distance)
                         && data[2] == CHARAT(2 - distance)) {
                     matches[nmatch] = distance;
-                    if (++nmatch >= maxmatch)
+                    if (++nmatch >= MAXMATCH)
                         break;
                 }
             }
@@ -453,20 +598,19 @@ static void ZLIB_STDCALL lz77_compress_lazy(struct LZ77Context *ctx,
              * assume here that it's always worth favouring a
              * longer match over a shorter one.)
              */
-            matchlen = HASHCHARS;
-            while (matchlen < len) {
-                int j;
+            for (matchlen = HASHCHARS; matchlen < len; matchlen++) {
+                unsigned char ch = data[matchlen];
                 for (i = j = 0; i < nmatch; i++) {
-                    if (CHARAT(matchlen) ==
-                        CHARAT(matchlen - matches[i])) {
+                    if (ch == CHARAT(matchlen - matches[i])) {
                         matches[j++] = matches[i];
                     }
                 }
-                if (j == 0)
+                if (j <= 1)
                     break;
-                matchlen++;
                 nmatch = j;
             }
+            while (matchlen < len && data[matchlen] == CHARAT(matchlen - matches[0]))
+                matchlen++;
 
             /*
              * We've now got all the longest matches. We favour the
@@ -804,7 +948,7 @@ void ZLIB_STDCALL zlib_compress_cleanup(void *handle)
 }
 
 int ZLIB_STDCALL zlib_compress_block(void *handle, unsigned char *block, int len,
-                        unsigned char **outblock, int *outlen, int final, int greedy, int maxmatch)
+                        unsigned char **outblock, int *outlen, int final, int greedy, int maxmatch, int nicelen)
 {
     struct LZ77Context *ectx = (struct LZ77Context *)handle;
     struct RelocTable *rtbl = ectx->rtbl;
@@ -819,15 +963,23 @@ int ZLIB_STDCALL zlib_compress_block(void *handle, unsigned char *block, int len
      * bit and a one bit (BTYPE=01). Of course these are in
      * the wrong order (01 final).
      */
-    zlib_outbits(rtbl, out, 2 + final, 3);
+    zlib_outbits(rtbl, out, 2 + (final != 0), 3);
 
     /*
      * Do the compression.
      */
     if (greedy)
-        lz77_compress_greedy(ectx, block, len, maxmatch);
-    else
-        lz77_compress_lazy(ectx, block, len, maxmatch);
+        lz77_compress_greedy(ectx, block, len, maxmatch, nicelen);
+    else {
+#ifdef ZLIB_COMPRESS_LAZY_HASH3
+        if (maxmatch < 200)
+            lz77_compress_lazy(ectx, block, len, maxmatch, nicelen);
+        else
+            lz77_compress_lazy_hash3(ectx, block, len);
+#else
+        lz77_compress_lazy(ectx, block, len, maxmatch, nicelen);
+#endif
+    }
     zlib_outbits(rtbl, out, 0, 7);            /* close block */
     if (final && out->noutbits)               /* align to a byte boundary */
         zlib_outbits(rtbl, out, 0, 8 - out->noutbits); 
@@ -1502,6 +1654,7 @@ struct IoBuffers {
     int final;
     int greedy;
     int maxmatch;
+    int nicelen;
 };
 
 /* crc is previous value for incremental computation, 0xffffffff initially */
@@ -1531,7 +1684,7 @@ void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int lParam, in
 int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam) {
     if (pcrc)
         vbzlib_crc32(((struct LZ77Context *)handle)->rtbl, buf->block, buf->len, pcrc);
-    return zlib_compress_block(handle, buf->block, buf->len, &buf->outblock, &buf->outlen, buf->final, buf->greedy, buf->maxmatch);
+    return zlib_compress_block(handle, buf->block, buf->len, &buf->outblock, &buf->outlen, buf->final, buf->greedy, buf->maxmatch, buf->nicelen);
 }
 
 void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam) {
