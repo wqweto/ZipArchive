@@ -43,7 +43,7 @@
 
 #define ZLIB_STDCALL __stdcall
 
-void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, unsigned char *block, int len, unsigned int *pcrc);
+void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *block, int len, unsigned int *pcrc);
 void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam);
 void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int lParam, int wParam);
 int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam);
@@ -105,7 +105,7 @@ struct RelocTable {
     const struct coderecord *distcodes;
     const unsigned char *mirrorbytes;
     const unsigned char *lenlenmap;
-    const unsigned int *crc32tab;
+    const unsigned int *crc32table;
 };
 
 /* ----------------------------------------------------------------------
@@ -225,23 +225,25 @@ static void ZLIB_STDCALL lz77_advance(struct LZ77InternalContext *st,
 
 #define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
 #define DWORDAT(k) *((unsigned int *)&st->data[(st->winpos+k)&(WINSIZE-1)])
+// from brotli's Hash frunction
+#define kHashMul32 0x1E35A7BD
 
-static __inline int ZLIB_STDCALL lz77_hash3(unsigned char *data)
+static __inline int ZLIB_STDCALL lz77_hash3(const unsigned char *data)
 {
-    return (*((unsigned int *)data) << 8) * 0x1E35A7BD >> (32 - HASHBITS);
+    return (*((unsigned int *)data) << 8) * kHashMul32 >> (32 - HASHBITS);
 }
 
-static __inline int ZLIB_STDCALL lz77_hash(unsigned char *data)
+static __inline int ZLIB_STDCALL lz77_hash(const unsigned char *data)
 {
-    return *((unsigned int *)data) * 0x1E35A7BD >> (32 - HASHBITS);
+    return *((unsigned int *)data) * kHashMul32 >> (32 - HASHBITS);
 }
 
 static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
-                          unsigned char *data, int len, int maxmatch, int nicelen)
+                          const unsigned char *data, int len, int maxmatch, int nicelen)
 {
     struct LZ77InternalContext *st = ctx->ictx;
     struct RelocTable *rtbl = ctx->rtbl;
-    int i, j, distance, off, nmatch, matchlen, advance;
+    int i, j, distance, off, nmatch, matchlen, advance, hash;
     int *matches = st->matchdist;
 
     assert(st->npending <= HASHCHARS);
@@ -282,7 +284,7 @@ static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
             /*
              * Hash the next few characters.
              */
-            int hash = lz77_hash(data);
+            hash = lz77_hash(data);
 
             /*
              * Look the hash up in the corresponding hash chain and see
@@ -359,11 +361,11 @@ static void ZLIB_STDCALL lz77_compress_greedy(struct LZ77Context *ctx,
 }
 
 static void ZLIB_STDCALL lz77_compress_lazy(struct LZ77Context *ctx,
-                          unsigned char *data, int len, int maxmatch, int nicelen)
+                          const unsigned char *data, int len, int maxmatch, int nicelen)
 {
     struct LZ77InternalContext *st = ctx->ictx;
     struct RelocTable *rtbl = ctx->rtbl;
-    int i, j, distance, off, nmatch, matchlen, advance;
+    int i, j, distance, off, nmatch, matchlen, advance, hash;
     struct Match defermatch;
     int *matches = st->matchdist;
     int deferchr;
@@ -409,7 +411,7 @@ static void ZLIB_STDCALL lz77_compress_lazy(struct LZ77Context *ctx,
             /*
              * Hash the next few characters.
              */
-            int hash = lz77_hash(data);
+            hash = lz77_hash(data);
 
             /*
              * Look the hash up in the corresponding hash chain and see
@@ -521,11 +523,11 @@ static void ZLIB_STDCALL lz77_compress_lazy(struct LZ77Context *ctx,
 #define lz77_hash lz77_hash3
 
 static void ZLIB_STDCALL lz77_compress_lazy_hash3(struct LZ77Context *ctx,
-                          unsigned char *data, int len)
+                          const unsigned char *data, int len)
 {
     struct LZ77InternalContext *st = ctx->ictx;
     struct RelocTable *rtbl = ctx->rtbl;
-    int i, j, distance, off, nmatch, matchlen, advance;
+    int i, j, distance, off, nmatch, matchlen, advance, hash;
     struct Match defermatch;
     int *matches = st->matchdist;
     int deferchr;
@@ -566,7 +568,7 @@ static void ZLIB_STDCALL lz77_compress_lazy_hash3(struct LZ77Context *ctx,
             /*
              * Hash the next few characters.
              */
-            int hash = lz77_hash(data);
+            hash = lz77_hash(data);
 
             /*
              * Look the hash up in the corresponding hash chain and see
@@ -947,7 +949,7 @@ void ZLIB_STDCALL zlib_compress_cleanup(void *handle)
     sfree(ectx);
 }
 
-int ZLIB_STDCALL zlib_compress_block(void *handle, unsigned char *block, int len,
+int ZLIB_STDCALL zlib_compress_block(void *handle, const unsigned char *block, int len,
                         unsigned char **outblock, int *outlen, int final, int greedy, int maxmatch, int nicelen)
 {
     struct LZ77Context *ectx = (struct LZ77Context *)handle;
@@ -1249,7 +1251,7 @@ static void ZLIB_STDCALL zlib_emit_char(struct zlib_decompress_ctx *dctx, int c)
 
 #define EATBITS(n) ( dctx->nbits -= (n), dctx->bits >>= (n) )
 
-int ZLIB_STDCALL zlib_decompress_block(void *handle, unsigned char *block, int len,
+int ZLIB_STDCALL zlib_decompress_block(void *handle, const unsigned char *block, int len,
                           unsigned char **outblock, int *outlen)
 {
     struct zlib_decompress_ctx *dctx = (struct zlib_decompress_ctx *)handle;
@@ -1467,14 +1469,7 @@ decode_error:
     return 0;
 }
 
-static const unsigned int zdat_crc32tab[16] = {
-   0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190,
-   0x6b6b51f4, 0x4db26158, 0x5005713c, 0xedb88320, 0xf00f9344,
-   0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278,
-   0xbdbdf21c
-};
-    
-struct RelocTable rtable = {
+static struct RelocTable rtable = {
     vbzlib_compress_init,
     vbzlib_compress_cleanup,
     vbzlib_compress_block,
@@ -1489,165 +1484,11 @@ struct RelocTable rtable = {
     zdat_distcodes,
     zdat_mirrorbytes,
     zdat_lenlenmap,
-    zdat_crc32tab,
+    0,
 };
 
-#ifdef ZLIB_TEST_MAIN
-#include <stdio.h>
-#include <string.h>
-
-void *ZLIB_STDCALL vbzlib_malloc(size_t size) {
-    return malloc(size);
-}
-void *ZLIB_STDCALL vbzlib_realloc(void *ptr, size_t size) {
-    return realloc(ptr, size);
-}
-void ZLIB_STDCALL vbzlib_free(void *ptr) {
-    free(ptr);
-}
-
-int ZLIB_STDCALL test_compress(char *filename) {
-    struct RelocTable *rtbl = &rtable;
-    FILE *fp;
-    unsigned char buf[16], *outbuf;
-    int ret, outlen;
-    void *handle;
-
-    handle = zlib_compress_init(rtbl);
-
-    if (filename)
-        fp = fopen(filename, "rb");
-    else
-        fp = stdin;
-
-    if (!fp) {
-        assert(filename);
-        fprintf(stderr, "unable to open '%s'\n", filename);
-        return 1;
-    }
-
-    while (1) {
-        ret = fread(buf, 1, sizeof(buf), fp);
-        if (ret <= 0)
-            break;
-        zlib_compress_block(handle, buf, ret, &outbuf, &outlen, FALSE, MAXMATCH);
-        if (outbuf) {
-            if (outlen)
-                fwrite(outbuf, 1, outlen, stdout);
-            sfree(outbuf);
-        } else {
-            fprintf(stderr, "encoding error\n");
-            fclose(fp);
-            return 1;
-        }
-    }
-
-    zlib_compress_cleanup(handle);
-
-    if (filename)
-        fclose(fp);
-
-    return 0;
-}
-
-int ZLIB_STDCALL test_decompress(int noheader, char *filename) {
-    struct RelocTable *rtbl = &rtable;
-    FILE *fp;
-    unsigned char buf[16], *outbuf;
-    int ret, outlen;
-    void *handle;
-
-    handle = zlib_decompress_init(rtbl);
-
-    if (noheader) {
-        /*
-         * Provide missing zlib header if -d was specified.
-         */
-        zlib_decompress_block(handle, "\x78\x9C", 2, &outbuf, &outlen);
-        assert(outlen == 0);
-    }
-
-    if (filename)
-        fp = fopen(filename, "rb");
-    else
-        fp = stdin;
-
-    if (!fp) {
-        assert(filename);
-        fprintf(stderr, "unable to open '%s'\n", filename);
-        return 1;
-    }
-
-    while (1) {
-        ret = fread(buf, 1, sizeof(buf), fp);
-        if (ret <= 0)
-            break;
-        zlib_decompress_block(handle, buf, ret, &outbuf, &outlen);
-        if (outbuf) {
-            if (outlen)
-                fwrite(outbuf, 1, outlen, stdout);
-            sfree(outbuf);
-        } else {
-            fprintf(stderr, "decoding error\n");
-            fclose(fp);
-            return 1;
-        }
-    }
-
-    zlib_decompress_cleanup(handle);
-
-    if (filename)
-        fclose(fp);
-
-    return 0;
-}
-
-#define _O_BINARY       0x8000  /* file mode is binary (untranslated) */
-
-int main(int argc, char **argv)
-{
-    unsigned char buf[16], *outbuf;
-    int ret, outlen;
-    void *handle;
-    int noheader = FALSE, opts = TRUE, compress = FALSE;
-    char *filename = NULL;
-
-    _setmode(fileno(stdout), _O_BINARY);
-    rtable.vbzlib_malloc = vbzlib_malloc;
-    rtable.vbzlib_realloc = vbzlib_realloc;
-    rtable.vbzlib_free = vbzlib_free;
-    while (--argc) {
-        char *p = *++argv;
-
-        if (p[0] == '-' && opts) {
-            if (!strcmp(p, "-d"))
-                noheader = TRUE;
-            if (!strcmp(p, "-c"))
-                compress = TRUE;
-            else if (!strcmp(p, "--"))
-                opts = FALSE;          /* next thing is filename */
-            else {
-                fprintf(stderr, "unknown command line option '%s'\n", p);
-                return 1;
-            }
-        } else if (!filename) {
-            filename = p;
-        } else {
-            fprintf(stderr, "can only handle one filename\n");
-            return 1;
-        }
-    }
-    
-    if (compress)
-        return test_compress(filename);
-    else
-        return test_decompress(noheader, filename);
-}
-
-#endif
-
 struct IoBuffers {
-    unsigned char *block;
+    const unsigned char *block;
     int len;
     unsigned char *outblock;
     int outlen;
@@ -1657,20 +1498,38 @@ struct IoBuffers {
     int nicelen;
 };
 
-/* crc is previous value for incremental computation, 0xffffffff initially */
-void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, unsigned char *block, int len, unsigned int *pcrc)
+// from libdeflate's crc32_slice4 function
+static __inline unsigned int ZLIB_STDCALL
+crc32_update_byte(const unsigned int *crc32_table, unsigned int remainder, unsigned char next_byte)
 {
-    const unsigned int *crc32tab = rtbl->crc32tab;
-    unsigned char *last = block + len;
-    unsigned int crc = *pcrc;
-   
-    while(block < last)
-    {
-        crc ^= *block++;
-        crc = crc32tab[crc & 0x0f] ^ (crc >> 4);
-        crc = crc32tab[crc & 0x0f] ^ (crc >> 4);
-    }
-    *pcrc = crc;
+	return (remainder >> 8) ^ crc32_table[(unsigned char)remainder ^ next_byte];
+}
+
+void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *block, int len, unsigned int *pcrc)
+{
+    const unsigned int *crc32_table = rtbl->crc32table;
+	const unsigned char *p = block;
+	const unsigned char *end = block + len;
+	const unsigned char *end32;
+    unsigned int remainder = *pcrc;
+
+	for (; ((unsigned int)p & 3) && p != end; p++)
+		remainder = crc32_update_byte(crc32_table, remainder, *p);
+
+	end32 = p + ((end - p) & ~3);
+	for (; p != end32; p += 4) {
+		unsigned int v = *((const unsigned int *)p);
+		remainder =
+		    crc32_table[0x300 + (unsigned char)((remainder ^ v) >>  0)] ^
+		    crc32_table[0x200 + (unsigned char)((remainder ^ v) >>  8)] ^
+		    crc32_table[0x100 + (unsigned char)((remainder ^ v) >> 16)] ^
+		    crc32_table[0x000 + (unsigned char)((remainder ^ v) >> 24)];
+	}
+
+	for (; p != end; p++)
+		remainder = crc32_update_byte(crc32_table, remainder, *p);
+
+	*pcrc = remainder;
 }
 
 void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam) {
@@ -1719,15 +1578,15 @@ void ZLIB_STDCALL vbzlib_extract_thunk(struct RelocTable *rtbl, struct ThunkInfo
     info->code_start = zlib_compress_init;
     info->code_end = vbzlib_extract_thunk;
     info->data_start = (void *)zdat_mirrorbytes;
-    info->data_end = (char *)zdat_crc32tab + sizeof(zdat_crc32tab);
+    info->data_end = (char *)zdat_lenlenmap + sizeof(zdat_lenlenmap);
 #else
     info->code_start = vbzlib_crc32;
     info->code_end = (char *)zlib_outbits + 96;
     info->data_start = (void *)zdat_mirrorbytes;
-    info->data_end = (char *)zdat_crc32tab + sizeof(zdat_crc32tab);
+    info->data_end = (char *)zdat_distcodes + sizeof(zdat_distcodes);
 #endif
 }
 
-int __stdcall _DllMainCRTStartup(int hInst, int fdwReason, void *lpReserved) {
+static int __stdcall _DllMainCRTStartup(int hInst, int fdwReason, void *lpReserved) {
     return 1;
 }
