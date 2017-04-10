@@ -68,7 +68,7 @@ Public Function ConsoleRead(Optional ByVal lSize As Long = 1) As String
     hIn = GetStdHandle(STD_INPUT_HANDLE)
     ReDim baBuffer(0 To lSize - 1) As Byte
     If ReadFile(hIn, baBuffer(0), UBound(baBuffer) + 1, lSize, 0) And lSize > 0 Then
-        sText = String$(lSize, "!")
+        sText = String$(lSize, 0)
         Call OemToCharBuff(baBuffer(0), sText, lSize + 1)
     End If
     ConsoleRead = sText

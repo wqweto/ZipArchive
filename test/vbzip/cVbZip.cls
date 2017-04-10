@@ -182,16 +182,17 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsolePrint "Usage: vbzip.exe <command> [-options...] <archive_file> [files]..." & vbCrLf & _
                     "e.g. vbzip.exe a backup.zip doc1.txt reports*.xls" & vbCrLf & vbCrLf & _
                     "Commands:" & vbCrLf & _
-                    "  a     add files to archive" & vbCrLf & _
-                    "  l     list archive contents" & vbCrLf & _
-                    "  t     test archive integrity" & vbCrLf & _
-                    "  x     extract files from archive" & vbCrLf & vbCrLf & _
+                    "  a         add files to archive" & vbCrLf & _
+                    "  l         list archive contents" & vbCrLf & _
+                    "  t         test archive integrity" & vbCrLf & _
+                    "  x         extract files from archive" & vbCrLf & vbCrLf & _
                     "Options:" & vbCrLf & _
-                    "  -r    recurse subdirectories" & vbCrLf & _
-                    "  -m    compression level (default 6)" & vbCrLf & _
-                    "  -i    no percentage indicator" & vbCrLf & _
-                    "  -e    include empty folders" & vbCrLf & _
-                    "  -y    assume yes to all questions" & vbCrLf
+                    "  -r        recurse subfolders" & vbCrLf & _
+                    "  -e        include empty folders" & vbCrLf & _
+                    "  -m LEVEL  compression level [default: 6]" & vbCrLf & _
+                    "  -o OUTPUT output folder to extract to" & vbCrLf & _
+                    "  -i        no percentage indicator" & vbCrLf & _
+                    "  -y        assume yes to all questions" & vbCrLf
             Else
                 ConsolePrint "Invalid command: " & .Item("command") & vbCrLf
             End If
