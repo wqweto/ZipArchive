@@ -91,6 +91,7 @@ Private Const FILE_BEGIN                    As Long = 0
 Private Const FILE_CURRENT                  As Long = 1
 Private Const FILE_END                      As Long = 2
 '--- for MultiByteToWideChar
+Private Const CP_UTF8                       As Long = 65001
 Private Const CP_OEMCP                      As Long = 1
 '--- for FormatMessage
 Private Const FORMAT_MESSAGE_FROM_SYSTEM    As Long = &H1000
@@ -118,7 +119,7 @@ Private Declare Function GetModuleHandle Lib "kernel32" Alias "GetModuleHandleA"
 Private Declare Function GetProcAddress Lib "kernel32" (ByVal hModule As Long, ByVal lpProcName As String) As Long
 Private Declare Function CallWindowProc Lib "user32" Alias "CallWindowProcA" (ByVal lpPrevWndFunc As Long, ByVal hWnd As Long, Optional ByVal Msg As Long, Optional ByVal wParam As Long, Optional ByVal lParam As Long) As Long
 Private Declare Sub CoTaskMemFree Lib "ole32" (ByVal pv As Long)
-Private Declare Function CryptStringToBinary Lib "crypt32" Alias "CryptStringToBinaryW" (ByVal pszString As Long, ByVal cchString As Long, ByVal dwFlags As Long, ByVal pbBinary As Long, ByRef pcbBinary As Long, ByRef pdwSkip As Long, ByRef pdwFlags As Long) As Long
+Private Declare Function MultiByteToWideChar Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, lpMultiByteStr As Any, ByVal cbMultiByte As Long, lpWideCharStr As Any, ByVal cchWideChar As Long) As Long
 #If ImplCompress Then
     Private Declare Function FileTimeToDosDateTime Lib "kernel32" (lpFileTime As FILETIME, ByVal lpFatDate As Long, ByVal lpFatTime As Long) As Long
     Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As Long, ByVal cchWideChar As Long, ByVal lpMultiByteStr As Long, ByVal cchMultiByte As Long, ByVal lpDefaultChar As Long, ByVal lpUsedDefaultChar As Long) As Long
@@ -127,13 +128,15 @@ Private Declare Function CryptStringToBinary Lib "crypt32" Alias "CryptStringToB
 #End If ' ImplCompress
 #If ImplDecompress Then
     Private Declare Function DosDateTimeToFileTime Lib "kernel32" (ByVal wFatDate As Long, ByVal wFatTime As Long, lpFileTime As FILETIME) As Long
-    Private Declare Function MultiByteToWideChar Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, lpMultiByteStr As Any, ByVal cbMultiByte As Long, lpWideCharStr As Any, ByVal cchWideChar As Long) As Long
 #End If ' ImplDecompress
 #If Not ImplUseShared Then
     Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageA" (ByVal dwFlags As Long, lpSource As Long, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As String, ByVal nSize As Long, Args As Any) As Long
     Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
     Private Declare Function CreateDirectory Lib "kernel32" Alias "CreateDirectoryA" (ByVal lpPathName As String, ByVal lpSecurityAttributes As Long) As Long
 #End If ' Not ImplUseShared
+#If ImplUseApiForBase64 Then
+    Private Declare Function CryptStringToBinary Lib "crypt32" Alias "CryptStringToBinaryW" (ByVal pszString As Long, ByVal cchString As Long, ByVal dwFlags As Long, ByVal pbBinary As Long, ByRef pcbBinary As Long, ByRef pdwSkip As Long, ByRef pdwFlags As Long) As Long
+#End If ' ImplUseApiForBase64
 
 Private Type FILETIME
     dwLowDateTime       As Long
@@ -191,6 +194,11 @@ Private Const ERR_INIT_DECOMPRESSOR As String = "Cannot init inflate decompresso
 Private Const ERR_READING_ARCHIVE   As String = "Error reading archive"
 Private Const ERR_DECOMPRESSING     As String = "Error decompressing"
 Private Const ERR_CRC_CHECK         As String = "CRC check failed"
+Private Const ERR_ENTRY_INVALID_SIG As String = "Entry %1 has invalid signature"
+Private Const ERR_ENTRY_NO_FILENAME As String = "Entry %1 has no filename"
+Private Const ERR_MISSING_ECD_RECORD As String = "Missing end-of-central-directory record"
+Private Const STR_STREAM            As String = "[stream]"
+Private Const STR_ENTRY             As String = "[entry %1]"
 
 Private m_uRtbl                 As UcsZlibRelocTableType
 Private m_sLastError            As String
@@ -213,6 +221,8 @@ Private Type UcsFileInfo
     LastModified        As Date
     Method              As Long
     Offset              As Long
+    Flags               As Long
+    Extra()             As Byte
     SourceFile          As Variant
 End Type
 
@@ -269,6 +279,12 @@ Private Enum UcsRelocIndexesEnum
     ucsIdx_LenLenMap
 End Enum
 
+Private Enum UcsHeaderFlagsEnum
+    ucsZcfEncrypted = 2 ^ 0                     ' If set, indicates that the file is encrypted
+    ucsZcfHasDataDescriptor = 2 ^ 3
+    ucsZcfUseUtf8 = 2 ^ 11                      ' Language encoding flag (EFS)
+End Enum
+
 Private Type UcsLocalHeaderType
     Signature       As Long                     'Signature
     VerExt          As Integer                  'version needed to extract
@@ -322,7 +338,7 @@ End Type
 '=========================================================================
 
 Property Get SemVersion() As String
-    SemVersion = "0.1.3"
+    SemVersion = "0.1.4"
 End Property
 
 Property Get ThunkBuildDate() As String
@@ -440,7 +456,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.CSize = 0
             pvOutputLocalHeader uArchiveFile, uLocal, .FileName
             lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
-            If (.Attributes And vbDirectory) = 0 Then
+            If (.Attributes And vbDirectory + vbVolume) = 0 Then
                 If Level > 0 Then
                     hCtx = CallWindowProc(m_uRtbl.CompressInit, VarPtr(m_uRtbl))
                     If hCtx = 0 Then
@@ -542,6 +558,7 @@ SkipFile:
                 uCentral.USize = .Size
                 uCentral.AttribX = .Attributes
                 uCentral.Offset = .Offset
+                uCentral.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
                 pvOutputCentralHeader uArchiveFile, uCentral, .FileName, .Comment
                 lEntries = lEntries + 1
             End If
@@ -683,7 +700,7 @@ End Function
 Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderType, FileName As String)
     Dim baFName()       As Byte
     
-    baFName = pvToOemString(Replace(FileName, "\", "/"))
+    baFName = pvToOemString(Replace(FileName, "\", "/"), IIf((uHdr.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, CP_OEMCP))
     uHdr.LenFname = UBound(baFName) + 1
     uHdr.LenExt = 0
     Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) + VarPtr(uHdr.LenExt) + 2 - VarPtr(uHdr.Crc32) = LNG_LEN_LOCAL
@@ -696,11 +713,13 @@ Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderT
 End Sub
 
 Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHeaderType, FileName As String, Comment As String)
+    Dim lCodePage       As Long
     Dim baFName()       As Byte
     Dim baComment()     As Byte
     
-    baFName = pvToOemString(Replace(FileName, "\", "/"))
-    baComment = pvToOemString(Comment)
+    lCodePage = IIf((uHdr.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, CP_OEMCP)
+    baFName = pvToOemString(Replace(FileName, "\", "/"), lCodePage)
+    baComment = pvToOemString(Comment, lCodePage)
     uHdr.LenFname = UBound(baFName) + 1
     uHdr.LenExt = 0
     uHdr.LenCom = UBound(baComment) + 1
@@ -745,15 +764,15 @@ Private Sub pvToDosDateTime(dDate As Date, nDate As Integer, nTime As Integer)
     Call FileTimeToDosDateTime(uFileTime, VarPtr(nDate), VarPtr(nTime))
 End Sub
 
-Private Function pvToOemString(sText As String) As Byte()
+Private Function pvToOemString(sText As String, Optional ByVal lCodePage As Long = CP_OEMCP) As Byte()
     Dim baRetVal()      As Byte
     Dim lSize           As Long
     
     If Len(sText) <> 0 Then
-        lSize = WideCharToMultiByte(CP_OEMCP, 0, StrPtr(sText), Len(sText), 0, 0, 0, 0)
+        lSize = WideCharToMultiByte(lCodePage, 0, StrPtr(sText), Len(sText), 0, 0, 0, 0)
         If lSize > 0 Then
             ReDim baRetVal(0 To lSize - 1) As Byte
-            lSize = WideCharToMultiByte(CP_OEMCP, 0, StrPtr(sText), Len(sText), VarPtr(baRetVal(0)), UBound(baRetVal) + 1, 0, 0)
+            lSize = WideCharToMultiByte(lCodePage, 0, StrPtr(sText), Len(sText), VarPtr(baRetVal(0)), UBound(baRetVal) + 1, 0, 0)
             pvToOemString = baRetVal
         Else
             pvToOemString = ApiEmptyByteArray()
@@ -773,11 +792,13 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
     Dim uArchiveFile    As UcsVfsFileType
     Dim uEndHdr         As UcsEndHeaderType
     Dim lIdx            As Long
-    Dim baComment()     As Byte
     Dim sArchiveComment As String
     Dim uFiles()        As UcsFileInfo
     Dim uCentral        As UcsCentralHeaderType
     Dim baFName()       As Byte
+    Dim baExtra()       As Byte
+    Dim baComment()     As Byte
+    Dim lCodePage       As Long
     
     On Error GoTo EH
     pvSetError
@@ -795,7 +816,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
         End If
     Next
     If lIdx > MAX_END_SEEK Then
-        Err.Raise vbObjectError, , ERR_INVALID_ARCHIVE & " (missing ECDR)"
+        Err.Raise vbObjectError, , ERR_INVALID_ARCHIVE & ". " & ERR_MISSING_ECD_RECORD
         GoTo QH
     End If
     If uEndHdr.LenCom > 0 Then
@@ -813,6 +834,10 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
             pvVfsRead uArchiveFile, VarPtr(uCentral.Signature), VarPtr(uCentral.FDate) + 2 - VarPtr(uCentral.Signature)
             pvVfsRead uArchiveFile, VarPtr(uCentral.Crc32), VarPtr(uCentral.AttribI) + 2 - VarPtr(uCentral.Crc32)
             pvVfsRead uArchiveFile, VarPtr(uCentral.AttribX), VarPtr(uCentral.Offset) + 4 - VarPtr(uCentral.AttribX)
+            If uCentral.Signature <> LNG_SIG_CENTRAL Then
+                pvSetError MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". " & Replace(ERR_ENTRY_INVALID_SIG, "%1", lIdx + 1)
+                GoTo QH
+            End If
             .Method = uCentral.Method
             .LastModified = pvFromDosDateTime(uCentral.FDate, uCentral.FTime)
             .Crc32 = uCentral.Crc32
@@ -820,21 +845,28 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
             .Size = uCentral.USize
             .Attributes = uCentral.AttribX
             .Offset = uCentral.Offset
+            .Flags = uCentral.Flags
+            lCodePage = IIf((.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, CP_OEMCP)
             Debug.Assert uCentral.LenFname > 0
             If uCentral.LenFname > 0 Then
                 ReDim baFName(0 To uCentral.LenFname - 1) As Byte
                 pvVfsRead uArchiveFile, VarPtr(baFName(0)), uCentral.LenFname
-                .FileName = Replace(pvFromOemString(baFName), "/", "\")
+                .FileName = pvToWinFileName(baFName, lCodePage)
             Else
-                If pvSetError(MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". Entry " & lIdx + 1 & " has no filename", CanContinue:=True) Then
+                If pvSetError(MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". " & Replace(ERR_ENTRY_NO_FILENAME, "%1", lIdx + 1), CanContinue:=True) Then
                     GoTo QH
                 End If
-                .FileName = "[entry " & lIdx + 1 & "]"
+                .FileName = Replace(STR_ENTRY, "%1", lIdx + 1)
+            End If
+            If uCentral.LenExt > 0 Then
+                ReDim baExtra(0 To uCentral.LenExt - 1) As Byte
+                pvVfsRead uArchiveFile, VarPtr(baExtra(0)), uCentral.LenExt
+                .Extra = baExtra
             End If
             If uCentral.LenCom > 0 Then
                 ReDim baComment(0 To uCentral.LenCom - 1) As Byte
                 pvVfsRead uArchiveFile, VarPtr(baComment(0)), uCentral.LenCom
-                .Comment = pvFromOemString(baComment)
+                .Comment = pvFromOemString(baComment, lCodePage)
             End If
         End With
     Next
@@ -922,10 +954,10 @@ Public Function Extract( _
             End If
             '--- sanity checks
             If uLocal.Signature <> LNG_SIG_LOCAL Then
-                Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & " (Signature)"
+                Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & ". " & Replace(ERR_ENTRY_INVALID_SIG, "%1", lIdx + 1)
             End If
-            If Replace(pvFromOemString(baFName), "/", "\") <> .FileName Then
-                Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & " (Filename)"
+            If pvToWinFileName(baFName, .Flags) <> .FileName Then
+'                Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & " (Filename)"
             End If
             If .Method <> LNG_METHOD_DEFLATE And .Method <> LNG_METHOD_STORE Then
                 Err.Raise vbObjectError, , ERR_UNSUPPORTED_METHOD & " (" & .Method & ")"
@@ -1010,7 +1042,9 @@ Public Function Extract( _
                     Err.Raise vbObjectError, , ERR_CRC_CHECK
                 End If
             Else
-                pvVfsSetEof uFile, .FileName
+                If (.Attributes And vbDirectory + vbVolume) = 0 Then
+                    pvVfsSetEof uFile, .FileName
+                End If
                 '--- note: Total=1 to prevent division by zero in client code
                 RaiseEvent Progress(lIdx, 1, 1, m_bCancel)
                 If m_bCancel Then
@@ -1066,11 +1100,10 @@ Private Function pvFromDosDateTime(ByVal nDate As Integer, ByVal nTime As Intege
     End If
 End Function
 
-Private Function pvFromOemString(baBuffer() As Byte) As String
-    If UBound(baBuffer) >= 0 Then
-        pvFromOemString = String(UBound(baBuffer) + 1, 0)
-        Call MultiByteToWideChar(CP_OEMCP, 0, baBuffer(0), UBound(baBuffer) + 1, ByVal StrPtr(pvFromOemString), Len(pvFromOemString))
-    End If
+Private Function pvToWinFileName(baBuffer() As Byte, ByVal lCodePage As Long) As String
+    '--- replaces non-ANSI symbols with underscore too
+    pvToWinFileName = Replace(Replace(StrConv(StrConv(pvFromOemString(baBuffer, lCodePage), _
+        vbFromUnicode), vbUnicode), "/", "\"), "?", "_")
 End Function
 
 #End If ' ImplDecompress
@@ -1081,7 +1114,7 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
     Dim hFind           As Long
     
     If IsObject(File) Then
-        pvVfsOpen.FileName = "[stream]"
+        pvVfsOpen.FileName = STR_STREAM
         Set pvVfsOpen.Proxy = File
         If Not pvVfsOpen.Proxy Is Nothing Then
             pvVfsOpen.Data.nFileSizeLow = pvVfsOpen.Proxy.VfsSetFilePointer(0, FILE_END)
@@ -1107,7 +1140,7 @@ Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
     Dim sError          As String
     
     If IsObject(File) Then
-        pvVfsCreate.FileName = "[stream]"
+        pvVfsCreate.FileName = STR_STREAM
         Set pvVfsCreate.Proxy = File
     Else
         pvVfsCreate.FileName = File
@@ -1200,6 +1233,18 @@ End Sub
 
 '= common ================================================================
 
+Private Function pvFromOemString(baBuffer() As Byte, Optional ByVal lCodePage As Long = CP_OEMCP) As String
+    Dim lSize           As Long
+    
+    If UBound(baBuffer) >= 0 Then
+        lSize = MultiByteToWideChar(lCodePage, 0, baBuffer(0), UBound(baBuffer) + 1, 0, 0)
+        If lSize > 0 Then
+            pvFromOemString = String(lSize, 0)
+            lSize = MultiByteToWideChar(lCodePage, 0, baBuffer(0), UBound(baBuffer) + 1, ByVal StrPtr(pvFromOemString), lSize)
+        End If
+    End If
+End Function
+
 Private Function pvFromFileTime(uFileTime As FILETIME) As Date
     Dim uLocalTime      As FILETIME
     Dim uSysTime        As SYSTEMTIME
@@ -1227,7 +1272,7 @@ Private Function pvToFileTime(dDate As Date) As FILETIME
     Call LocalFileTimeToFileTime(uLocalTime, pvToFileTime)
 End Function
 
-Private Function pvSetError(Optional Source As String, Optional Description As String, Optional CanContinue As Boolean) As Boolean
+Private Function pvSetError(Optional Source As String, Optional Description As String, Optional ByVal CanContinue As Boolean) As Boolean
     If StrPtr(Source) = 0 And StrPtr(Description) = 0 Then
         m_sLastError = vbNullString
         m_bCancel = False
@@ -1339,7 +1384,7 @@ Private Function MkPath(sPath As String, sError As String) As Boolean
             sError = GetSystemMessage(Err.LastDllError) & " (" & sPath & ")"
             Exit Function
         End If
-    ElseIf (lAttrib And vbDirectory) = 0 Then
+    ElseIf (lAttrib And vbDirectory + vbVolume) = 0 Then
         sError = "File already exists (" & sPath & ")"
         Exit Function
     End If
