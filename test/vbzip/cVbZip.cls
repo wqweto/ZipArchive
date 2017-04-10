@@ -179,18 +179,19 @@ Public Function Init(vArgs As Variant) As Boolean
             End If
         Case Else
             If LenB(.Item("command")) = 0 Or .Item("command") = "?" Then
-                ConsolePrint "usage: vbzip.exe <command> [-options...] <archive_file> [files...]" & vbCrLf & _
-                    "e.g. vbzip.exe a backup.zip doc1.txt reports*.doc" & vbCrLf & vbCrLf & _
-                    " commands:" & vbCrLf & _
-                    "    a     add files to archive" & vbCrLf & _
-                    "    l     list archive contents" & vbCrLf & _
-                    "    t     test archive integrity" & vbCrLf & _
-                    "    x     extract files from archive" & vbCrLf & vbCrLf & _
-                    " options:" & vbCrLf & _
-                    "    -r    recurse subdirectories" & vbCrLf & _
-                    "    -m    compression level (default 6)" & vbCrLf & _
-                    "    -bd   no percentage indicator" & vbCrLf & _
-                    "    -e    include empty folders" & vbCrLf
+                ConsolePrint "Usage: vbzip.exe <command> [-options...] <archive_file> [files]..." & vbCrLf & _
+                    "e.g. vbzip.exe a backup.zip doc1.txt reports*.xls" & vbCrLf & vbCrLf & _
+                    "Commands:" & vbCrLf & _
+                    "  a     add files to archive" & vbCrLf & _
+                    "  l     list archive contents" & vbCrLf & _
+                    "  t     test archive integrity" & vbCrLf & _
+                    "  x     extract files from archive" & vbCrLf & vbCrLf & _
+                    "Options:" & vbCrLf & _
+                    "  -r    recurse subdirectories" & vbCrLf & _
+                    "  -m    compression level (default 6)" & vbCrLf & _
+                    "  -i    no percentage indicator" & vbCrLf & _
+                    "  -e    include empty folders" & vbCrLf & _
+                    "  -y    assume yes to all questions" & vbCrLf
             Else
                 ConsolePrint "Invalid command: " & .Item("command") & vbCrLf
             End If
@@ -220,16 +221,16 @@ Private Function FormatAttr(ByVal eAttr As VbFileAttribute) As String
     End If
 End Function
     
-
 Private Function ParseOpt(vArgs As Variant) As Object
     Dim oOpt            As Object
     Dim lIdx            As Long
+    Dim bNoMoreOpt      As Boolean
 
     Set oOpt = CreateObject("Scripting.Dictionary")
     With oOpt
         .CompareMode = 1
         For lIdx = 0 To UBound(vArgs)
-            Select Case Left$(vArgs(lIdx), 1)
+            Select Case Left$(vArgs(lIdx), 1 + bNoMoreOpt)
             Case "-", "/"
                 Select Case Mid$(vArgs(lIdx), 2, 1)
                 Case "o", "m"
@@ -238,6 +239,10 @@ Private Function ParseOpt(vArgs As Variant) As Object
                     ElseIf LenB(vArgs(lIdx + 1)) <> 0 Then
                         .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = vArgs(lIdx + 1)
                         lIdx = lIdx + 1
+                    End If
+                Case "-"
+                    If Len(vArgs(lIdx)) = 2 Then
+                        bNoMoreOpt = True
                     End If
                 Case Else
                     .Item("-" & Mid$(vArgs(lIdx), 2)) = True
@@ -258,19 +263,27 @@ Private Function ParseOpt(vArgs As Variant) As Object
 End Function
 
 Private Sub m_oArchive_Error(ByVal FileIdx As Long, Source As String, Description As String, Cancel As Boolean)
-    Dim sPrefix         As String
-    
     If LenB(m_sLastRow) <> 0 Then
         ConsolePrint vbCrLf
     End If
-    If FileIdx >= 0 Then
-        sPrefix = "Error processing " & At(m_oArchive.FileInfo(FileIdx), 0)
-    Else
-        sPrefix = "Error"
-    End If
-    ConsolePrint sPrefix & ": " & Description & vbCrLf
+    ConsolePrint "Error: " & Description & vbCrLf
     m_sLastRow = vbNullString
-    Cancel = True
+    If Not Cancel And Not m_oOpt.Item("-y") Then
+        Do
+            ConsolePrint "Do you want to continue (y/n/a)? "
+            Select Case LCase$(Left$(ConsoleReadLine(), 1))
+            Case "y"
+                GoTo QH
+            Case "n"
+                Exit Do
+            Case "a"
+                m_oOpt.Item("-y") = True
+                GoTo QH
+            End Select
+        Loop
+        Cancel = True
+    End If
+QH:
 End Sub
 
 Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, ByVal Total As Long, Cancel As Boolean)
@@ -278,7 +291,7 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, By
     Dim vInfo           As Variant
 
     If Current < Total Then
-        If Not m_oOpt.Item("-bd") Then
+        If Not m_oOpt.Item("-i") Then
             sPercent = " - " & Format$(Current * 100# / Total, "0.0") & "%"
             m_sLastRow = ConsolePrint(vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent)
         End If

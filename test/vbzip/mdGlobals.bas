@@ -6,11 +6,14 @@ DefObj A-Z
 ' API
 '=========================================================================
 
+Private Const STD_INPUT_HANDLE          As Long = -10&
 Private Const STD_OUTPUT_HANDLE         As Long = -11&
 
 Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) As Long
+Private Declare Function ReadFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToRead As Long, lpNumberOfBytesRead As Long, ByVal lpOverlapped As Long) As Long
 Private Declare Function WriteFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToWrite As Long, lpNumberOfBytesWritten As Long, lpOverlapped As Any) As Long
 Private Declare Function CharToOemBuff Lib "user32" Alias "CharToOemBuffA" (ByVal lpszSrc As String, lpszDst As Any, ByVal cchDstLength As Long) As Long
+Private Declare Function OemToCharBuff Lib "user32" Alias "OemToCharBuffA" (lpszSrc As Any, ByVal lpszDst As String, ByVal cchDstLength As Long) As Long
 Private Declare Function CommandLineToArgvW Lib "shell32" (ByVal lpCmdLine As Long, pNumArgs As Long) As Long
 Private Declare Function LocalFree Lib "kernel32" (ByVal hMem As Long) As Long
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
@@ -55,6 +58,35 @@ Public Function ConsolePrint(ByVal sText As String, ParamArray A() As Variant) A
             Call WriteFile(hOut, baBuffer(0), UBound(baBuffer) + 1, dwDummy, ByVal 0&)
         End If
     End If
+End Function
+
+Public Function ConsoleRead(Optional ByVal lSize As Long = 1) As String
+    Dim hIn             As Long
+    Dim baBuffer()      As Byte
+    Dim sText           As String
+    
+    hIn = GetStdHandle(STD_INPUT_HANDLE)
+    ReDim baBuffer(0 To lSize - 1) As Byte
+    If ReadFile(hIn, baBuffer(0), UBound(baBuffer) + 1, lSize, 0) And lSize > 0 Then
+        sText = String$(lSize, "!")
+        Call OemToCharBuff(baBuffer(0), sText, lSize + 1)
+    End If
+    ConsoleRead = sText
+End Function
+
+Public Function ConsoleReadLine() As String
+    Dim sChar           As String
+    Dim sText           As String
+    
+    Do
+        sChar = ConsoleRead()
+        If sChar = vbLf Then
+            Exit Do
+        ElseIf sChar <> vbCr Then
+            sText = sText & sChar
+        End If
+    Loop
+    ConsoleReadLine = sText
 End Function
 
 Public Function SplitArgs(sText As String) As Variant
