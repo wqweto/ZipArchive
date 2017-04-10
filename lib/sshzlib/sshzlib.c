@@ -1503,34 +1503,34 @@ struct IoBuffers {
 static __inline unsigned int ZLIB_STDCALL
 crc32_update_byte(const unsigned int *crc32_table, unsigned int remainder, unsigned char next_byte)
 {
-	return (remainder >> 8) ^ crc32_table[(unsigned char)remainder ^ next_byte];
+    return (remainder >> 8) ^ crc32_table[(unsigned char)remainder ^ next_byte];
 }
 
 void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *block, int len, unsigned int *pcrc)
 {
     const unsigned int *crc32_table = rtbl->crc32table;
-	const unsigned char *p = block;
-	const unsigned char *end = block + len;
-	const unsigned char *end32;
+    const unsigned char *p = block;
+    const unsigned char *end = block + len;
+    const unsigned char *end32;
     unsigned int remainder = *pcrc;
 
-	for (; ((unsigned int)p & 3) && p != end; p++)
-		remainder = crc32_update_byte(crc32_table, remainder, *p);
+    for (; ((unsigned int)p & 3) && p != end; p++)
+        remainder = crc32_update_byte(crc32_table, remainder, *p);
 
-	end32 = p + ((end - p) & ~3);
-	for (; p != end32; p += 4) {
-		unsigned int v = *((const unsigned int *)p);
-		remainder =
-		    crc32_table[0x300 + (unsigned char)((remainder ^ v) >>  0)] ^
-		    crc32_table[0x200 + (unsigned char)((remainder ^ v) >>  8)] ^
-		    crc32_table[0x100 + (unsigned char)((remainder ^ v) >> 16)] ^
-		    crc32_table[0x000 + (unsigned char)((remainder ^ v) >> 24)];
-	}
+    end32 = p + ((end - p) & ~3);
+    for (; p != end32; p += 4) {
+        unsigned int v = *((const unsigned int *)p);
+        remainder =
+            crc32_table[0x300 + (unsigned char)((remainder ^ v) >>  0)] ^
+            crc32_table[0x200 + (unsigned char)((remainder ^ v) >>  8)] ^
+            crc32_table[0x100 + (unsigned char)((remainder ^ v) >> 16)] ^
+            crc32_table[0x000 + (unsigned char)((remainder ^ v) >> 24)];
+    }
 
-	for (; p != end; p++)
-		remainder = crc32_update_byte(crc32_table, remainder, *p);
+    for (; p != end; p++)
+        remainder = crc32_update_byte(crc32_table, remainder, *p);
 
-	*pcrc = remainder;
+    *pcrc = remainder;
 }
 
 void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam) {
