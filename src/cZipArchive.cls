@@ -367,7 +367,7 @@ Public Function AddFile( _
     Dim uFile           As UcsVfsFileType
     
     On Error GoTo EH
-    m_sLastError = vbNullString
+    pvSetError
     If m_lFileCount = 0 Then
         ReDim m_uFiles(0 To 2) As UcsFileInfo
     ElseIf m_lFileCount > UBound(m_uFiles) Then
@@ -416,7 +416,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
     Dim lEntries        As Long
     
     On Error GoTo EH
-    m_sLastError = vbNullString
+    pvSetError
     m_lCurrentFile = -1
     ReDim baBuffer(0 To LNG_IOBUF_SIZE - 1) As Byte
     ReDim baNext(0 To LNG_IOBUF_SIZE - 1) As Byte
@@ -577,7 +577,7 @@ EH:
     pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
     Resume QH
 EH_Continue:
-    If pvSetError(MODULE_NAME & "." & FUNC_NAME, Err.Description) Then
+    If pvSetError(MODULE_NAME & "." & FUNC_NAME, Err.Description, CanContinue:=True) Then
         Resume QH
     Else
         Resume SkipFile
@@ -599,7 +599,7 @@ Public Function AddFromFolder( _
     Dim sName           As String
     
     On Error GoTo EH
-    m_sLastError = vbNullString
+    pvSetError
     Set cFolders = New Collection
     lIdx = InStrRev(sFolderAndMask, "\")
     If lIdx > 0 Then
@@ -780,7 +780,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
     Dim baFName()       As Byte
     
     On Error GoTo EH
-    m_sLastError = vbNullString
+    pvSetError
     m_lCurrentFile = -1
     uArchiveFile = pvVfsOpen(ArchiveFile)
     For lIdx = 0 To MAX_END_SEEK
@@ -826,7 +826,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                 pvVfsRead uArchiveFile, VarPtr(baFName(0)), uCentral.LenFname
                 .FileName = Replace(pvFromOemString(baFName), "/", "\")
             Else
-                If pvSetError(MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". Entry " & lIdx + 1 & " has no filename") Then
+                If pvSetError(MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". Entry " & lIdx + 1 & " has no filename", CanContinue:=True) Then
                     GoTo QH
                 End If
                 .FileName = "[entry " & lIdx + 1 & "]"
@@ -876,7 +876,7 @@ Public Function Extract( _
     Dim sFilter         As String
     
     On Error GoTo EH
-    m_sLastError = vbNullString
+    pvSetError
     m_lCurrentFile = -1
     If IsEmpty(m_vArchiveFile) Then
         Err.Raise vbObjectError, , ERR_ARCHIVE_NOT_OPEN
@@ -1046,7 +1046,7 @@ EH:
     pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
     Resume QH
 EH_Continue:
-    If pvSetError(MODULE_NAME & "." & FUNC_NAME, Err.Description) Then
+    If pvSetError(MODULE_NAME & "." & FUNC_NAME, Err.Description, CanContinue:=True) Then
         Resume QH
     Else
         Resume SkipFile
@@ -1227,17 +1227,25 @@ Private Function pvToFileTime(dDate As Date) As FILETIME
     Call LocalFileTimeToFileTime(uLocalTime, pvToFileTime)
 End Function
 
-Private Function pvSetError(ByVal Source As String, ByVal Description As String) As Boolean
-    #If ImplLogging Then
-        If m_lCurrentFile >= 0 Then
-            Debug.Print Description, m_uFiles(m_lCurrentFile).FileName, Timer
-        Else
-            Debug.Print Description, Timer
+Private Function pvSetError(Optional Source As String, Optional Description As String, Optional CanContinue As Boolean) As Boolean
+    If StrPtr(Source) = 0 And StrPtr(Description) = 0 Then
+        m_sLastError = vbNullString
+        m_bCancel = False
+    Else
+        #If ImplLogging Then
+            If m_lCurrentFile >= 0 Then
+                Debug.Print "Error in " & Source & ": " & Description, m_uFiles(m_lCurrentFile).FileName, Timer
+            Else
+                Debug.Print "Error in " & Source & ": " & Description, Timer
+            End If
+        #End If ' ImplLogging
+        m_sLastError = Description
+        If Not CanContinue Then
+            m_bCancel = True
         End If
-    #End If ' ImplLogging
-    m_sLastError = Description
-    RaiseEvent Error(m_lCurrentFile, Source, Description, m_bCancel)
-    pvSetError = m_bCancel
+        RaiseEvent Error(m_lCurrentFile, Source, m_sLastError, m_bCancel)
+        pvSetError = m_bCancel
+    End If
 End Function
 
 '= zlib thunks ===========================================================
