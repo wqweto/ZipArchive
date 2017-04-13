@@ -129,7 +129,7 @@ Private Declare Function MultiByteToWideChar Lib "kernel32" (ByVal CodePage As L
 #If ImplDecompress Then
     Private Declare Function DosDateTimeToFileTime Lib "kernel32" (ByVal wFatDate As Long, ByVal wFatTime As Long, lpFileTime As FILETIME) As Long
 #End If ' ImplDecompress
-#If Not ImplUseShared Then
+#If ImplUseShared = 0 Then
     Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageA" (ByVal dwFlags As Long, lpSource As Long, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As String, ByVal nSize As Long, Args As Any) As Long
     Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
     Private Declare Function CreateDirectory Lib "kernel32" Alias "CreateDirectoryA" (ByVal lpPathName As String, ByVal lpSecurityAttributes As Long) As Long
@@ -281,7 +281,8 @@ End Enum
 
 Private Enum UcsHeaderFlagsEnum
     ucsZcfEncrypted = 2 ^ 0                     ' If set, indicates that the file is encrypted
-    ucsZcfHasDataDescriptor = 2 ^ 3
+    ucsZcfCompressOptionMask = 2 ^ 1 Or 2 ^ 2   ' 0 - normal, 1 - maximum, 2 - fast, 3 - super fast
+    ucsZcfHasDataDescriptor = 2 ^ 3             ' Values are put in the data descriptor immediately following the compressed data
     ucsZcfUseUtf8 = 2 ^ 11                      ' Language encoding flag (EFS)
 End Enum
 
@@ -396,8 +397,8 @@ Public Function AddFile( _
         Else
             .FileName = Mid$(uFile.FileName, InStrRev(uFile.FileName, "\") + 1)
         End If
-        .Size = IIf(Right(.FileName, 1) = "\", 0, uFile.Data.nFileSizeLow)
-        .Attributes = IIf(Right(.FileName, 1) = "\", vbDirectory, uFile.Data.dwFileAttributes)
+        .Size = IIf(Right$(.FileName, 1) = "\", 0, uFile.Data.nFileSizeLow)
+        .Attributes = IIf(Right$(.FileName, 1) = "\", vbDirectory, uFile.Data.dwFileAttributes)
         .Comment = Comment
         .LastModified = pvFromFileTime(uFile.Data.ftLastWriteTime)
         AssignVariant .SourceFile, File
@@ -620,7 +621,7 @@ Public Function AddFromFolder( _
     Set cFolders = New Collection
     lIdx = InStrRev(sFolderAndMask, "\")
     If lIdx > 0 Then
-        sFolder = Left(sFolderAndMask, lIdx - 1)
+        sFolder = Left$(sFolderAndMask, lIdx - 1)
     End If
     sMask = Mid$(sFolderAndMask, lIdx + 1)
     If LenB(sFolder) = 0 Then
@@ -1368,7 +1369,7 @@ End Function
 
 '= shared ================================================================
 
-#If Not ImplUseShared Then
+#If ImplUseShared = 0 Then
 
 Private Function MkPath(sPath As String, sError As String) As Boolean
     Dim lAttrib         As Long
