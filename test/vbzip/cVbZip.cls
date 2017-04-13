@@ -147,8 +147,10 @@ Public Function Init(vArgs As Variant) As Boolean
                 sText = sText & " " & Right$(Space(10) & Format$(lTotalCompressed, "0"), 10)
                 sText = sText & " " & Format$(lCount, "0") & " file(s)"
                 ConsolePrint sText & vbCrLf
-            Else
+            ElseIf m_oArchive.FileCount > 0 Then
                 ConsolePrint "No matches found" & vbCrLf
+            Else
+                ConsolePrint "Archive is empty" & vbCrLf
             End If
         Case "t"
             If LenB(.Item("zip")) = 0 Then

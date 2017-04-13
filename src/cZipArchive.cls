@@ -805,20 +805,20 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
     pvSetError
     m_lCurrentFile = -1
     uArchiveFile = pvVfsOpen(ArchiveFile)
-    For lIdx = 0 To MAX_END_SEEK
-        If pvVfsSeek(uArchiveFile, -LNG_LEN_END - lIdx, FILE_END) <= 0 Then
-            lIdx = MAX_END_SEEK + 1
-            Exit For
-        End If
-        Debug.Assert VarPtr(uEndHdr.LenCom) + 2 - VarPtr(uEndHdr.Signature) = LNG_LEN_END
-        pvVfsRead uArchiveFile, VarPtr(uEndHdr), LNG_LEN_END
-        If uEndHdr.Signature = LNG_SIG_END And uEndHdr.LenCom = lIdx Then
-            Exit For
-        End If
-    Next
-    If lIdx > MAX_END_SEEK Then
+    lIdx = pvVfsSeek(uArchiveFile, 0, FILE_END)
+    If lIdx >= LNG_LEN_END Then
+        For lIdx = 0 To LimitLong(lIdx - LNG_LEN_END, , MAX_END_SEEK)
+            pvVfsSeek uArchiveFile, -LNG_LEN_END - lIdx, FILE_END
+            Debug.Assert VarPtr(uEndHdr.LenCom) + 2 - VarPtr(uEndHdr.Signature) = LNG_LEN_END
+            pvVfsRead uArchiveFile, VarPtr(uEndHdr), LNG_LEN_END
+            If uEndHdr.Signature = LNG_SIG_END And uEndHdr.LenCom = lIdx Then
+                lIdx = -1
+                Exit For
+            End If
+        Next
+    End If
+    If lIdx >= 0 Then
         Err.Raise vbObjectError, , ERR_INVALID_ARCHIVE & ". " & ERR_MISSING_ECD_RECORD
-        GoTo QH
     End If
     If uEndHdr.LenCom > 0 Then
         ReDim baComment(0 To uEndHdr.LenCom - 1) As Byte
