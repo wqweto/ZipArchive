@@ -7,6 +7,13 @@ A single-class pure VB6 library for zip archives management
         .AddFile "your_file"
         .CompressArchive "test.zip"
     End With
+    
+### Compress all files and sub-folders
+
+    With New cZipArchive
+        .AddFromFolder "C:\Path\To\*.*", Recursive:=True
+        .CompressArchive "archive.zip"
+    End With
 
 ### Extract
 
