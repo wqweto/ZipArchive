@@ -339,7 +339,7 @@ End Type
 '=========================================================================
 
 Property Get SemVersion() As String
-    SemVersion = "0.1.4"
+    SemVersion = "0.1.5"
 End Property
 
 Property Get ThunkBuildDate() As String
