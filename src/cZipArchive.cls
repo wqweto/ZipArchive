@@ -705,8 +705,10 @@ Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderT
     uHdr.LenFname = UBound(baFName) + 1
     uHdr.LenExt = 0
     Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) + VarPtr(uHdr.LenExt) + 2 - VarPtr(uHdr.Crc32) = LNG_LEN_LOCAL
-    pvVfsWrite uFile, VarPtr(uHdr.Signature), VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature)
-    pvVfsWrite uFile, VarPtr(uHdr.Crc32), VarPtr(uHdr.LenExt) + 2 - VarPtr(uHdr.Crc32)
+    Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) = 14
+    pvVfsWrite uFile, VarPtr(uHdr.Signature), 14
+    Debug.Assert VarPtr(uHdr.LenExt) + 2 - VarPtr(uHdr.Crc32) = 16
+    pvVfsWrite uFile, VarPtr(uHdr.Crc32), 16
     Debug.Assert uHdr.LenFname > 0
     If uHdr.LenFname > 0 Then
         pvVfsWrite uFile, VarPtr(baFName(0)), uHdr.LenFname
@@ -725,9 +727,12 @@ Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHea
     uHdr.LenExt = 0
     uHdr.LenCom = UBound(baComment) + 1
     Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) + VarPtr(uHdr.AttribI) + 2 - VarPtr(uHdr.Crc32) + VarPtr(uHdr.Offset) + 4 - VarPtr(uHdr.AttribX) = LNG_LEN_CENTRAL
-    pvVfsWrite uFile, VarPtr(uHdr.Signature), VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature)
-    pvVfsWrite uFile, VarPtr(uHdr.Crc32), VarPtr(uHdr.AttribI) + 2 - VarPtr(uHdr.Crc32)
-    pvVfsWrite uFile, VarPtr(uHdr.AttribX), VarPtr(uHdr.Offset) + 4 - VarPtr(uHdr.AttribX)
+    Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) = 16
+    pvVfsWrite uFile, VarPtr(uHdr.Signature), 16
+    Debug.Assert VarPtr(uHdr.AttribI) + 2 - VarPtr(uHdr.Crc32) = 22
+    pvVfsWrite uFile, VarPtr(uHdr.Crc32), 22
+    Debug.Assert VarPtr(uHdr.Offset) + 4 - VarPtr(uHdr.AttribX) = 8
+    pvVfsWrite uFile, VarPtr(uHdr.AttribX), 8
     Debug.Assert uHdr.LenFname > 0
     If uHdr.LenFname > 0 Then
         pvVfsWrite uFile, VarPtr(baFName(0)), uHdr.LenFname
@@ -832,9 +837,12 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
         m_lCurrentFile = lIdx
         With uFiles(lIdx)
             Debug.Assert VarPtr(uCentral.FDate) + 2 - VarPtr(uCentral.Signature) + VarPtr(uCentral.AttribI) + 2 - VarPtr(uCentral.Crc32) + VarPtr(uCentral.Offset) + 4 - VarPtr(uCentral.AttribX) = LNG_LEN_CENTRAL
-            pvVfsRead uArchiveFile, VarPtr(uCentral.Signature), VarPtr(uCentral.FDate) + 2 - VarPtr(uCentral.Signature)
-            pvVfsRead uArchiveFile, VarPtr(uCentral.Crc32), VarPtr(uCentral.AttribI) + 2 - VarPtr(uCentral.Crc32)
-            pvVfsRead uArchiveFile, VarPtr(uCentral.AttribX), VarPtr(uCentral.Offset) + 4 - VarPtr(uCentral.AttribX)
+            Debug.Assert VarPtr(uCentral.FDate) + 2 - VarPtr(uCentral.Signature) = 16
+            pvVfsRead uArchiveFile, VarPtr(uCentral.Signature), 16
+            Debug.Assert VarPtr(uCentral.AttribI) + 2 - VarPtr(uCentral.Crc32) = 22
+            pvVfsRead uArchiveFile, VarPtr(uCentral.Crc32), 22
+            Debug.Assert VarPtr(uCentral.Offset) + 4 - VarPtr(uCentral.AttribX) = 8
+            pvVfsRead uArchiveFile, VarPtr(uCentral.AttribX), 8
             If uCentral.Signature <> LNG_SIG_CENTRAL Then
                 pvSetError MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". " & Replace(ERR_ENTRY_INVALID_SIG, "%1", lIdx + 1)
                 GoTo QH
@@ -942,8 +950,10 @@ Public Function Extract( _
             '--- read local header
             pvVfsSeek uArchiveFile, .Offset, FILE_BEGIN
             Debug.Assert VarPtr(uLocal.FDate) + 2 - VarPtr(uLocal.Signature) + VarPtr(uLocal.LenExt) + 2 - VarPtr(uLocal.Crc32) = LNG_LEN_LOCAL
-            pvVfsRead uArchiveFile, VarPtr(uLocal.Signature), VarPtr(uLocal.FDate) + 2 - VarPtr(uLocal.Signature)
-            pvVfsRead uArchiveFile, VarPtr(uLocal.Crc32), VarPtr(uLocal.LenExt) + 2 - VarPtr(uLocal.Crc32)
+            Debug.Assert VarPtr(uLocal.FDate) + 2 - VarPtr(uLocal.Signature) = 14
+            pvVfsRead uArchiveFile, VarPtr(uLocal.Signature), 14
+            Debug.Assert VarPtr(uLocal.LenExt) + 2 - VarPtr(uLocal.Crc32) = 16
+            pvVfsRead uArchiveFile, VarPtr(uLocal.Crc32), 16
             Debug.Assert uLocal.LenFname > 0
             If uLocal.LenFname > 0 Then
                 ReDim baFName(0 To uLocal.LenFname - 1) As Byte
@@ -1484,7 +1494,8 @@ Private Function FromBase64Array(sText As String) As Byte()
         Call CopyMemory(ByVal lPtr, lCh, 3)
         lPtr = lPtr + 3
     Next
-    lPtr = lPtr - VarPtr(baOutput(0))
+    '--- note: unsigned substract for LARGEADDRESSAWARE processes
+    lPtr = ((lPtr Xor &H80000000) - VarPtr(baOutput(0))) Xor &H80000000
     '-- handle trailing 4 chars (or input error)
     If lIdx <= UBound(baInput) Then
         lCh = laTable(baInput(lIdx + 0))
