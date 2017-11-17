@@ -165,6 +165,7 @@ Private Sub Command5_Click()
     Dim dblTimer        As Double
     Dim bResult         As Boolean
     Dim sLastError      As String
+    Dim baOutput()      As Byte
 
     ChDrive "D:"
     ChDir "D:\TEMP\Unzip\SQL-Server-First-Responder-Kit-2017-02"
@@ -174,7 +175,9 @@ Private Sub Command5_Click()
     With m_oZip
         .AddFromFolder ".\*.sql", Recursive:=True, TargetFolder:="Kit", IncludeEmptyFolders:=True
 '        .AddFromFolder "D:\TEMP\Unzip\Empty\*.*", Recursive:=True, TargetFolder:="Kit", IncludeEmptyFolders:=True
+        bResult = .CompressArchive(baOutput)
         bResult = .CompressArchive("D:\TEMP\aaa3.zip")
+        Debug.Assert FileLen("D:\TEMP\aaa3.zip") = UBound(baOutput) + 1
         sLastError = .LastError
     End With
     Set m_oZip = Nothing
