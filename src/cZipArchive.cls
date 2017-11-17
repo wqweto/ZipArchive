@@ -1259,15 +1259,17 @@ Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lS
 End Function
 
 Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lSize As Long) As Long
-    Const INCR_SIZE     As Long = 64& * 1024
+    Const MAX_STEP      As Long = 2 ^ 24 '--- 16MB
     Dim lOffset         As Long
     
     If Not IsEmpty(uFile.BufferArray) Then
         lOffset = uFile.BufferPtr - uFile.BufferBase
         If lOffset + lSize > uFile.BufferSize Then
-            Do While lOffset + lSize > uFile.BufferSize
-                uFile.BufferSize = uFile.BufferSize + INCR_SIZE And -INCR_SIZE
-            Loop
+            If lOffset + lSize <= MAX_STEP Then
+                uFile.BufferSize = LimitLong(2 ^ Int(Log(lOffset + lSize) / Log(2) + 1), 8192)
+            Else
+                uFile.BufferSize = (lOffset + lSize + MAX_STEP - 1) And -MAX_STEP
+            End If
             ReDim Preserve uFile.BufferArray(0 To uFile.BufferSize - 1) As Byte
             uFile.BufferBase = pvArrPtr(uFile.BufferArray)
             uFile.BufferPtr = uFile.BufferBase + lOffset
