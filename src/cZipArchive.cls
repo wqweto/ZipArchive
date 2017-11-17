@@ -36,6 +36,7 @@ Event Progress(ByVal FileIdx As Long, ByVal Current As Long, ByVal Total As Long
 Event Error(ByVal FileIdx As Long, Source As String, Description As String, Cancel As Boolean)
 #If ImplDecompress Then
     Event BeforeExtract(ByVal FileIdx As Long, File As Variant, SkipFile As Boolean, Cancel As Boolean)
+    Event ExtractComplete(ByVal FileIdx As Long, File As Variant)
 #End If ' ImplDecompress
 
 '=========================================================================
@@ -1074,6 +1075,11 @@ Public Function Extract( _
                     m_sLastError = ERR_USER_CANCEL
                     GoTo QH
                 End If
+            End If
+            If VarType(OutputTarget) = vbString Then
+                RaiseEvent ExtractComplete(lIdx, vFileName)
+            Else
+                RaiseEvent ExtractComplete(lIdx, OutputTarget)
             End If
             '--- success (entries extracted)
             Extract = True
