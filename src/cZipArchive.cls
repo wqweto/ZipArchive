@@ -1165,6 +1165,9 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
         If pvVfsOpen.BufferBase <> 0 Then
             pvVfsOpen.BufferSize = UBound(File) + 1
         End If
+        pvVfsOpen.Data.nFileSizeLow = pvVfsOpen.BufferSize
+        pvVfsOpen.Data.dwFileAttributes = vbArchive
+        pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
     ElseIf IsObject(File) Then
         pvVfsOpen.FileName = STR_STREAM
         Set pvVfsOpen.Stream = File
@@ -1256,17 +1259,15 @@ Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lS
 End Function
 
 Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lSize As Long) As Long
-    Const MAX_STEP      As Long = 2 ^ 24 '--- 16MB
+    Const INCR_SIZE     As Long = 64& * 1024
     Dim lOffset         As Long
     
     If Not IsEmpty(uFile.BufferArray) Then
         lOffset = uFile.BufferPtr - uFile.BufferBase
         If lOffset + lSize > uFile.BufferSize Then
-            If lOffset + lSize <= MAX_STEP Then
-                uFile.BufferSize = LimitLong(2 ^ Int(Log(lOffset + lSize) / Log(2) + 1), 8192)
-            Else
-                uFile.BufferSize = (lOffset + lSize + MAX_STEP - 1) And -MAX_STEP
-            End If
+            Do While lOffset + lSize > uFile.BufferSize
+                uFile.BufferSize = uFile.BufferSize + INCR_SIZE And -INCR_SIZE
+            Loop
             ReDim Preserve uFile.BufferArray(0 To uFile.BufferSize - 1) As Byte
             uFile.BufferBase = pvArrPtr(uFile.BufferArray)
             uFile.BufferPtr = uFile.BufferBase + lOffset

@@ -129,6 +129,7 @@ Private Sub Command3_Click()
         .AddFile pvInitMemStream("D:\TEMP\thunk.bin"), "mem/thunk.bin"
         .AddFile pvInitMemStream("D:\TEMP\aaa.pdf"), "mem/report.pdf"
         .AddFile pvInitMemStream("D:\TEMP\enwik8.txt"), "mem/enwik8.txt"
+        .AddFile ReadBinaryFile("D:\TEMP\aaa.pdf"), "mem/report2.pdf"
         bResult = .CompressArchive(oOutput, Level:=lLevel)
         sLastError = .LastError
     End With
