@@ -899,9 +899,8 @@ EH:
 End Function
 
 Public Function Extract( _
-            TargetFolder As String, _
-            Optional Filter As Variant, _
-            Optional OutputFile As Variant) As Boolean
+            OutputTarget As Variant, _
+            Optional Filter As Variant) As Boolean
     Const FUNC_NAME     As String = "Extract"
     Dim baBuffer()      As Byte
     Dim uArchiveFile    As UcsVfsFileType
@@ -914,7 +913,7 @@ Public Function Extract( _
     Dim lResult         As Long
     Dim hCtx            As Long
     Dim uBuf            As UcsZlibBuffersType
-    Dim vFile           As Variant
+    Dim vFileName       As Variant
     Dim uFile           As UcsVfsFileType
     Dim lCrc32          As Long
     Dim bSkip           As Boolean
@@ -928,8 +927,8 @@ Public Function Extract( _
     End If
     ReDim baBuffer(0 To LNG_IOBUF_SIZE - 1) As Byte
     uArchiveFile = pvVfsOpen(m_vArchiveFile)
-    If Not IsMissing(Filter) And Not IsArray(Filter) Then
-        sFilter = IIf(Filter = "*.*", "*", Replace(Filter, "[", "[[]"))
+    If VarType(Filter) = vbString Then
+        sFilter = IIf(Filter = "*.*", "*", Replace(Replace(Filter, "/", "\"), "[", "[[]"))
     End If
     '--- touch to open for read
     pvVfsRead uArchiveFile, 0, 0
@@ -937,18 +936,20 @@ Public Function Extract( _
         m_lCurrentFile = lIdx
         With m_uFiles(lIdx)
             '--- check if current entry is filtered
-            If Not IsMissing(Filter) Then
-                If IsArray(Filter) Then
-                    If Not At(Filter, lIdx) Then
+            If IsMissing(Filter) Then
+                '--- do nothing
+            ElseIf IsArray(Filter) Then
+                If Not At(Filter, lIdx) Then
+                    GoTo SkipFile
+                End If
+            ElseIf VarType(Filter) = vbString Then
+                If Not .FileName Like sFilter Then
+                    If Not Mid$(.FileName, InStrRev(.FileName, "\") + 1) Like sFilter Then
                         GoTo SkipFile
                     End If
-                ElseIf LenB(sFilter) <> 0 Then
-                    If Not .FileName Like sFilter Then
-                        If Not Mid$(.FileName, InStrRev(.FileName, "\") + 1) Like sFilter Then
-                            GoTo SkipFile
-                        End If
-                    End If
                 End If
+            ElseIf Not lIdx = Filter Then
+                GoTo SkipFile
             End If
             On Error GoTo EH_Continue
             '--- read local header
@@ -977,23 +978,27 @@ Public Function Extract( _
             If .Method <> LNG_METHOD_DEFLATE And .Method <> LNG_METHOD_STORE Then
                 Err.Raise vbObjectError, , ERR_UNSUPPORTED_METHOD & " (" & .Method & ")"
             End If
-            vFile = PathCombine(TargetFolder, .FileName)
             bSkip = False
-            RaiseEvent BeforeExtract(lIdx, vFile, bSkip, m_bCancel)
+            If VarType(OutputTarget) = vbString Then
+                vFileName = PathCombine(CStr(OutputTarget), .FileName)
+                RaiseEvent BeforeExtract(lIdx, vFileName, bSkip, m_bCancel)
+            Else
+                RaiseEvent BeforeExtract(lIdx, OutputTarget, bSkip, m_bCancel)
+            End If
             If m_bCancel Then
                 GoTo QH
             End If
             If bSkip Then
                 GoTo SkipFile
             End If
-            '--- allow output to buffer, stream object or file
-            If IsMissing(OutputFile) Then
-                uFile = pvVfsCreate(vFile)
+            '--- allow output to buffer, stream object or (customized) filename
+            If VarType(OutputTarget) = vbString Then
+                uFile = pvVfsCreate(vFileName)
             Else
-                If IsArray(OutputFile) And .Size > 0 Then
-                    ReDim OutputFile(0 To .Size - 1) As Byte
+                If IsArray(OutputTarget) And .Size > 0 Then
+                    ReDim OutputTarget(0 To .Size - 1) As Byte
                 End If
-                uFile = pvVfsCreate(OutputFile)
+                uFile = pvVfsCreate(OutputTarget)
             End If
             If .CompressedSize > 0 Then
                 lCrc32 = -1

@@ -192,7 +192,7 @@ Private Sub Command6_Click()
     m_bCancel = False
     With m_oZip
         .OpenArchive ReadBinaryFile("D:\temp\aaa2.zip")
-        bResult = .Extract(vbNullString, "report.pdf", baOutput)
+        bResult = .Extract(baOutput, 1)
         WriteBinaryFile "D:\temp\report.pdf", baOutput
         sLastError = .LastError
     End With
