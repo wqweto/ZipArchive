@@ -197,6 +197,7 @@ Private Const ERR_CRC_CHECK         As String = "CRC check failed"
 Private Const ERR_ENTRY_INVALID_SIG As String = "Entry %1 has invalid signature"
 Private Const ERR_ENTRY_NO_FILENAME As String = "Entry %1 has no filename"
 Private Const ERR_MISSING_ECD_RECORD As String = "Missing end-of-central-directory record"
+Private Const STR_BUFFER            As String = "[buffer]"
 Private Const STR_STREAM            As String = "[stream]"
 Private Const STR_ENTRY             As String = "[entry %1]"
 
@@ -228,7 +229,10 @@ End Type
 
 Private Type UcsVfsFileType
     Handle              As Long
-    Proxy               As Object
+    Stream              As Object
+    BufferBase          As Long
+    BufferSize          As Long
+    BufferPtr           As Long
     Data                As WIN32_FIND_DATA
     FileName            As String
 End Type
@@ -973,12 +977,7 @@ Public Function Extract( _
             If .Method <> LNG_METHOD_DEFLATE And .Method <> LNG_METHOD_STORE Then
                 Err.Raise vbObjectError, , ERR_UNSUPPORTED_METHOD & " (" & .Method & ")"
             End If
-            '--- allow output to (in-memory) vfs proxy object
-            If IsMissing(OutputFile) Then
-                vFile = PathCombine(TargetFolder, .FileName)
-            Else
-                AssignVariant vFile, OutputFile
-            End If
+            vFile = PathCombine(TargetFolder, .FileName)
             bSkip = False
             RaiseEvent BeforeExtract(lIdx, vFile, bSkip, m_bCancel)
             If m_bCancel Then
@@ -987,7 +986,15 @@ Public Function Extract( _
             If bSkip Then
                 GoTo SkipFile
             End If
-            uFile = pvVfsCreate(vFile)
+            '--- allow output to buffer, stream object or file
+            If IsMissing(OutputFile) Then
+                uFile = pvVfsCreate(vFile)
+            Else
+                If IsArray(OutputFile) And .Size > 0 Then
+                    ReDim OutputFile(0 To .Size - 1) As Byte
+                End If
+                uFile = pvVfsCreate(OutputFile)
+            End If
             If .CompressedSize > 0 Then
                 lCrc32 = -1
                 If .Method = LNG_METHOD_DEFLATE Then
@@ -1119,16 +1126,39 @@ End Function
 
 #End If ' ImplDecompress
 
+Private Function pvArrPtr(vArray As Variant) As Long
+    Const VT_BYREF      As Long = &H4000
+    Dim lPtr            As Long
+    
+    '--- note: unsigned add for LARGEADDRESSAWARE processes
+    lPtr = Peek(((VarPtr(vArray) Xor &H80000000) + 8) Xor &H80000000)
+    If (Peek(VarPtr(vArray)) And VT_BYREF) <> 0 Then
+        lPtr = Peek(lPtr)
+    End If
+    If lPtr <> 0 Then
+        pvArrPtr = Peek(((lPtr Xor &H80000000) + 12) Xor &H80000000)
+    End If
+End Function
+
 '= VFS ===================================================================
 
 Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
     Dim hFind           As Long
     
-    If IsObject(File) Then
+    If IsArray(File) Then
+        pvVfsOpen.FileName = STR_BUFFER
+        pvVfsOpen.BufferBase = pvArrPtr(File)
+        pvVfsOpen.BufferPtr = pvVfsOpen.BufferBase
+        If pvVfsOpen.BufferBase <> 0 Then
+            pvVfsOpen.BufferSize = UBound(File) + 1
+        Else
+            pvVfsOpen.BufferSize = -1
+        End If
+    ElseIf IsObject(File) Then
         pvVfsOpen.FileName = STR_STREAM
-        Set pvVfsOpen.Proxy = File
-        If Not pvVfsOpen.Proxy Is Nothing Then
-            pvVfsOpen.Data.nFileSizeLow = pvVfsOpen.Proxy.VfsSetFilePointer(0, FILE_END)
+        Set pvVfsOpen.Stream = File
+        If Not pvVfsOpen.Stream Is Nothing Then
+            pvVfsOpen.Data.nFileSizeLow = pvVfsOpen.Stream.VfsSetFilePointer(0, FILE_END)
         End If
         pvVfsOpen.Data.dwFileAttributes = vbArchive
         pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
@@ -1150,9 +1180,18 @@ End Function
 Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
     Dim sError          As String
     
-    If IsObject(File) Then
+    If IsArray(File) Then
+        pvVfsCreate.FileName = STR_BUFFER
+        pvVfsCreate.BufferBase = pvArrPtr(File)
+        pvVfsCreate.BufferPtr = pvVfsCreate.BufferBase
+        If pvVfsCreate.BufferBase <> 0 Then
+            pvVfsCreate.BufferSize = UBound(File) + 1
+        Else
+            pvVfsCreate.BufferSize = -1
+        End If
+    ElseIf IsObject(File) Then
         pvVfsCreate.FileName = STR_STREAM
-        Set pvVfsCreate.Proxy = File
+        Set pvVfsCreate.Stream = File
     Else
         pvVfsCreate.FileName = File
         If InStrRev(File, "\") > 0 Then
@@ -1174,16 +1213,20 @@ Private Function pvVfsClose(uFile As UcsVfsFileType)
         Call CloseHandle(uFile.Handle)
         uFile.Handle = 0
     End If
-    Set uFile.Proxy = Nothing
+    Set uFile.Stream = Nothing
 End Function
 
 Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lSize As Long) As Long
-    If Not uFile.Proxy Is Nothing Then
+    If uFile.BufferSize <> 0 Then
+        pvVfsRead = LimitLong(lSize, 0, uFile.BufferSize - (uFile.BufferPtr - uFile.BufferBase))
+        Call CopyMemory(ByVal lPtr, ByVal uFile.BufferPtr, pvVfsRead)
+        uFile.BufferPtr = uFile.BufferPtr + pvVfsRead
+    ElseIf Not uFile.Stream Is Nothing Then
         If uFile.Handle = 0 Then
             uFile.Handle = INVALID_HANDLE_VALUE
-            uFile.Proxy.VfsSetFilePointer 0, FILE_BEGIN
+            uFile.Stream.VfsSetFilePointer 0, FILE_BEGIN
         End If
-        pvVfsRead = uFile.Proxy.VfsReadFile(lPtr, lSize)
+        pvVfsRead = uFile.Stream.VfsReadFile(lPtr, lSize)
     Else
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
             uFile.Handle = CreateFile(uFile.FileName, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)
@@ -1198,12 +1241,16 @@ Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lS
 End Function
 
 Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lSize As Long) As Long
-    If Not uFile.Proxy Is Nothing Then
+    If uFile.BufferSize <> 0 Then
+        pvVfsWrite = LimitLong(lSize, 0, uFile.BufferSize - (uFile.BufferPtr - uFile.BufferBase))
+        Call CopyMemory(ByVal uFile.BufferPtr, ByVal lPtr, pvVfsWrite)
+        uFile.BufferPtr = uFile.BufferPtr + pvVfsWrite
+    ElseIf Not uFile.Stream Is Nothing Then
         If uFile.Handle = 0 Then
             uFile.Handle = INVALID_HANDLE_VALUE
-            uFile.Proxy.VfsSetFilePointer 0, FILE_BEGIN
+            uFile.Stream.VfsSetFilePointer 0, FILE_BEGIN
         End If
-        pvVfsWrite = uFile.Proxy.VfsWriteFile(lPtr, lSize)
+        pvVfsWrite = uFile.Stream.VfsWriteFile(lPtr, lSize)
     Else
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
             uFile.Handle = CreateFile(uFile.FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
@@ -1218,8 +1265,18 @@ Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal l
 End Function
 
 Private Function pvVfsSeek(uFile As UcsVfsFileType, ByVal lPosition As Long, ByVal lMoveMethod As Long) As Long
-    If Not uFile.Proxy Is Nothing Then
-        pvVfsSeek = uFile.Proxy.VfsSetFilePointer(lPosition, lMoveMethod)
+    If uFile.BufferSize <> 0 Then
+        Select Case lMoveMethod
+        Case FILE_BEGIN
+            pvVfsSeek = lPosition
+        Case FILE_CURRENT
+            pvVfsSeek = uFile.BufferPtr - uFile.BufferBase + lPosition
+        Case FILE_END
+            pvVfsSeek = uFile.BufferSize + lPosition
+        End Select
+        uFile.BufferPtr = uFile.BufferBase + pvVfsSeek
+    ElseIf Not uFile.Stream Is Nothing Then
+        pvVfsSeek = uFile.Stream.VfsSetFilePointer(lPosition, lMoveMethod)
     Else
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
             '--- touch to open for read
@@ -1233,8 +1290,10 @@ Private Function pvVfsSeek(uFile As UcsVfsFileType, ByVal lPosition As Long, ByV
 End Function
 
 Private Sub pvVfsSetEof(uFile As UcsVfsFileType, sMetaData As String)
-    If Not uFile.Proxy Is Nothing Then
-        uFile.Proxy.VfsSetEndOfFile sMetaData
+    If uFile.BufferSize <> 0 Then
+        '--- do nothing
+    ElseIf Not uFile.Stream Is Nothing Then
+        uFile.Stream.VfsSetEndOfFile sMetaData
     Else
         If SetEndOfFile(uFile.Handle) = 0 Then
             Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
@@ -1557,6 +1616,10 @@ Private Function LimitLong( _
     Else
         LimitLong = lValue
     End If
+End Function
+
+Private Function Peek(ByVal lPtr As Long) As Long
+    Call CopyMemory(Peek, ByVal lPtr, 4)
 End Function
 
 #End If ' Not ImplUseShared

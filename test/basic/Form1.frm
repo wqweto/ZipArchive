@@ -4,11 +4,19 @@ Begin VB.Form Form1
    ClientHeight    =   3804
    ClientLeft      =   108
    ClientTop       =   456
-   ClientWidth     =   7416
+   ClientWidth     =   8604
    LinkTopic       =   "Form1"
    ScaleHeight     =   3804
-   ScaleWidth      =   7416
+   ScaleWidth      =   8604
    StartUpPosition =   3  'Windows Default
+   Begin VB.CommandButton Command6 
+      Caption         =   "Command6"
+      Height          =   432
+      Left            =   6804
+      TabIndex        =   6
+      Top             =   504
+      Width           =   1440
+   End
    Begin VB.CommandButton Command5 
       Caption         =   "Command5"
       Height          =   432
@@ -167,6 +175,25 @@ Private Sub Command5_Click()
         .AddFromFolder ".\*.sql", Recursive:=True, TargetFolder:="Kit", IncludeEmptyFolders:=True
 '        .AddFromFolder "D:\TEMP\Unzip\Empty\*.*", Recursive:=True, TargetFolder:="Kit", IncludeEmptyFolders:=True
         bResult = .CompressArchive("D:\TEMP\aaa3.zip")
+        sLastError = .LastError
+    End With
+    Set m_oZip = Nothing
+    labProgress.Caption = IIf(bResult, "Done. ", sLastError & ". ") & Format(Timer - dblTimer, "0.000") & " elapsed"
+End Sub
+
+Private Sub Command6_Click()
+    Dim dblTimer        As Double
+    Dim bResult         As Boolean
+    Dim sLastError      As String
+    Dim baOutput()      As Byte
+
+    dblTimer = Timer
+    Set m_oZip = New cZipArchive
+    m_bCancel = False
+    With m_oZip
+        .OpenArchive ReadBinaryFile("D:\temp\aaa2.zip")
+        bResult = .Extract(vbNullString, "report.pdf", baOutput)
+        WriteBinaryFile "D:\temp\report.pdf", baOutput
         sLastError = .LastError
     End With
     Set m_oZip = Nothing
