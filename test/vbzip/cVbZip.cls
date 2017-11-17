@@ -161,7 +161,7 @@ Public Function Init(vArgs As Variant) As Boolean
                 GoTo QH
             End If
             m_sAction = "Testing "
-            m_oArchive.Extract vbNullString, OutputFile:=New cDummyStream
+            m_oArchive.Extract New cDummyStream
         Case "x"
             If LenB(.Item("zip")) = 0 Then
                 ConsolePrint ERR_MISSING_ARCHIVE & vbCrLf
