@@ -21,6 +21,8 @@ Private Declare Function ApiSysAllocString Lib "oleaut32" Alias "SysAllocString"
 Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
 Private Declare Sub ExitProcess Lib "kernel32" (ByVal uExitCode As Long)
 
+Private m_sLastConsolePrint         As String
+
 '=========================================================================
 ' Functions
 '=========================================================================
@@ -51,6 +53,7 @@ Public Function ConsolePrint(ByVal sText As String, ParamArray A() As Variant) A
     '--- output
     hOut = GetStdHandle(STD_OUTPUT_HANDLE)
     If hOut = 0 Then
+        m_sLastConsolePrint = ConsolePrint
         Debug.Print ConsolePrint;
     Else
         ReDim baBuffer(0 To Len(ConsolePrint) - 1) As Byte
@@ -66,10 +69,18 @@ Public Function ConsoleRead(Optional ByVal lSize As Long = 1) As String
     Dim sText           As String
     
     hIn = GetStdHandle(STD_INPUT_HANDLE)
-    ReDim baBuffer(0 To lSize - 1) As Byte
-    If ReadFile(hIn, baBuffer(0), UBound(baBuffer) + 1, lSize, 0) And lSize > 0 Then
-        sText = String$(lSize, 0)
-        Call OemToCharBuff(baBuffer(0), sText, lSize + 1)
+    If hIn = 0 Then
+        sText = InputBox(m_sLastConsolePrint, "Console")
+        If StrPtr(sText) = 0 Then
+            End
+        End If
+        sText = sText & vbLf
+    Else
+        ReDim baBuffer(0 To lSize - 1) As Byte
+        If ReadFile(hIn, baBuffer(0), UBound(baBuffer) + 1, lSize, 0) And lSize > 0 Then
+            sText = String$(lSize, 0)
+            Call OemToCharBuff(baBuffer(0), sText, lSize + 1)
+        End If
     End If
     ConsoleRead = sText
 End Function
@@ -80,13 +91,16 @@ Public Function ConsoleReadLine() As String
     
     Do
         sChar = ConsoleRead()
-        If sChar = vbLf Then
-            Exit Do
-        ElseIf sChar <> vbCr Then
-            sText = sText & sChar
-        End If
+        Do While LenB(sChar) <> 0
+            If Left$(sChar, 1) = vbLf Then
+                ConsoleReadLine = sText
+                Exit Function
+            ElseIf Left$(sChar, 1) <> vbCr Then
+                sText = sText & Left$(sChar, 1)
+            End If
+            sChar = Mid$(sChar, 2)
+        Loop
     Loop
-    ConsoleReadLine = sText
 End Function
 
 Public Function SplitArgs(sText As String) As Variant
