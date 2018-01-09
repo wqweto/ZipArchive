@@ -172,11 +172,11 @@ Public Function Init(vArgs As Variant) As Boolean
             End If
             m_sAction = "Extracting "
             If .Item("numfiles") = 0 Then
-                m_oArchive.Extract .Item("-o")
+                m_oArchive.Extract CStr(.Item("-o"))
             Else
                 For lIdx = 1 To .Item("numfiles")
                     sFile = .Item("file" & lIdx)
-                    m_oArchive.Extract .Item("-o"), sFile
+                    m_oArchive.Extract CStr(.Item("-o")), sFile
                 Next
             End If
         Case Else
