@@ -190,7 +190,7 @@ Private Const ERR_EMPTY_ARCHIVE     As String = "Empty archive"
 Private Const ERR_INVALID_ARCHIVE   As String = "Invalid archive"
 Private Const ERR_ARCHIVE_NOT_OPEN  As String = "Archive not opened"
 Private Const ERR_INVALID_LOCALHDR  As String = "Invalid local header"
-Private Const ERR_UNSUPPORTED_METHOD As String = "Unsupported compression method"
+Private Const ERR_UNSUPPORTED_METHOD As String = "Unsupported compression method %1"
 Private Const ERR_INIT_DECOMPRESSOR As String = "Cannot init inflate decompressor"
 Private Const ERR_READING_ARCHIVE   As String = "Error reading archive"
 Private Const ERR_DECOMPRESSING     As String = "Error decompressing"
@@ -978,7 +978,12 @@ Public Function Extract( _
 '                Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & " (Filename)"
             End If
             If .Method <> LNG_METHOD_DEFLATE And .Method <> LNG_METHOD_STORE Then
-                Err.Raise vbObjectError, , ERR_UNSUPPORTED_METHOD & " (" & .Method & ")"
+'                Err.Raise vbObjectError, , Replace(ERR_UNSUPPORTED_METHOD , "%1", .Method)
+                If pvSetError(MODULE_NAME & "." & FUNC_NAME, Replace(ERR_UNSUPPORTED_METHOD, "%1", .Method), CanContinue:=True) Then
+                    GoTo QH
+                Else
+                    .Method = LNG_METHOD_STORE
+                End If
             End If
             bSkip = False
             If VarType(OutputTarget) = vbString Then
