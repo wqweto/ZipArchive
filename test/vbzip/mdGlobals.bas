@@ -6,17 +6,22 @@ DefObj A-Z
 ' API
 '=========================================================================
 
+Private Const STD_INPUT_HANDLE          As Long = -10&
 Private Const STD_OUTPUT_HANDLE         As Long = -11&
 
 Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) As Long
+Private Declare Function ReadFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToRead As Long, lpNumberOfBytesRead As Long, ByVal lpOverlapped As Long) As Long
 Private Declare Function WriteFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToWrite As Long, lpNumberOfBytesWritten As Long, lpOverlapped As Any) As Long
 Private Declare Function CharToOemBuff Lib "user32" Alias "CharToOemBuffA" (ByVal lpszSrc As String, lpszDst As Any, ByVal cchDstLength As Long) As Long
+Private Declare Function OemToCharBuff Lib "user32" Alias "OemToCharBuffA" (lpszSrc As Any, ByVal lpszDst As String, ByVal cchDstLength As Long) As Long
 Private Declare Function CommandLineToArgvW Lib "shell32" (ByVal lpCmdLine As Long, pNumArgs As Long) As Long
 Private Declare Function LocalFree Lib "kernel32" (ByVal hMem As Long) As Long
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 Private Declare Function ApiSysAllocString Lib "oleaut32" Alias "SysAllocString" (ByVal Ptr As Long) As Long
 Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
 Private Declare Sub ExitProcess Lib "kernel32" (ByVal uExitCode As Long)
+
+Private m_sLastConsolePrint         As String
 
 '=========================================================================
 ' Functions
@@ -48,6 +53,7 @@ Public Function ConsolePrint(ByVal sText As String, ParamArray A() As Variant) A
     '--- output
     hOut = GetStdHandle(STD_OUTPUT_HANDLE)
     If hOut = 0 Then
+        m_sLastConsolePrint = ConsolePrint
         Debug.Print ConsolePrint;
     Else
         ReDim baBuffer(0 To Len(ConsolePrint) - 1) As Byte
@@ -55,6 +61,46 @@ Public Function ConsolePrint(ByVal sText As String, ParamArray A() As Variant) A
             Call WriteFile(hOut, baBuffer(0), UBound(baBuffer) + 1, dwDummy, ByVal 0&)
         End If
     End If
+End Function
+
+Public Function ConsoleRead(Optional ByVal lSize As Long = 1) As String
+    Dim hIn             As Long
+    Dim baBuffer()      As Byte
+    Dim sText           As String
+    
+    hIn = GetStdHandle(STD_INPUT_HANDLE)
+    If hIn = 0 Then
+        sText = InputBox(m_sLastConsolePrint, "Console")
+        If StrPtr(sText) = 0 Then
+            End
+        End If
+        sText = sText & vbLf
+    Else
+        ReDim baBuffer(0 To lSize - 1) As Byte
+        If ReadFile(hIn, baBuffer(0), UBound(baBuffer) + 1, lSize, 0) And lSize > 0 Then
+            sText = String$(lSize, 0)
+            Call OemToCharBuff(baBuffer(0), sText, lSize + 1)
+        End If
+    End If
+    ConsoleRead = sText
+End Function
+
+Public Function ConsoleReadLine() As String
+    Dim sChar           As String
+    Dim sText           As String
+    
+    Do
+        sChar = ConsoleRead()
+        Do While LenB(sChar) <> 0
+            If Left$(sChar, 1) = vbLf Then
+                ConsoleReadLine = sText
+                Exit Function
+            ElseIf Left$(sChar, 1) <> vbCr Then
+                sText = sText & Left$(sChar, 1)
+            End If
+            sChar = Mid$(sChar, 2)
+        Loop
+    Loop
 End Function
 
 Public Function SplitArgs(sText As String) As Variant

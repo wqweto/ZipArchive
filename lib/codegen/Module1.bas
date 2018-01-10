@@ -38,7 +38,6 @@ Private Type RelocTable
     zdat_distcodes      As Long
     zdat_mirrorbytes    As Long
     zdat_lenlenmap      As Long
-    zdat_crc32tab       As Long
 End Type
 
 Private Type ThunkInfo
@@ -102,7 +101,7 @@ Public Sub CodegenThunk()
         End If
         sText = sText & "|" & lOffset
     Next
-    For lIdx = VarPtr(m_uRtbl.zdat_lencodes) To VarPtr(m_uRtbl.zdat_crc32tab) Step 4
+    For lIdx = VarPtr(m_uRtbl.zdat_lencodes) To VarPtr(m_uRtbl.zdat_lenlenmap) Step 4
         lOffset = Peek(lIdx)
         lOffset = lOffset - m_uInfo.DataStart + pvAlign(m_uInfo.CodeSize, ALIGN_SIZE)
         sText = sText & "|" & lOffset

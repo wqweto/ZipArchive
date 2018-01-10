@@ -21,8 +21,8 @@ DefObj A-Z
 Private Const ERR_MISSING_ARCHIVE   As String = "Missing archive"
 Private Const ERR_NO_FILES          As String = "No files specified"
 Private Const ERR_INVALID_LEVEL     As String = "Invalid compression level. Use 0 to 9"
-Private Const STR_LIST_HDR          As String = "Date       Time     Attr        Size Compressed Name"
-Private Const STR_LIST_SEP          As String = "------------------- ----- ---------- ---------- -------------------"
+Private Const STR_LIST_HDR          As String = "Date       Time       Attr       Size Compressed Name"
+Private Const STR_LIST_SEP          As String = "------------------- ------ ---------- ---------- -------------------"
 
 Private WithEvents m_oArchive   As cZipArchive
 Attribute m_oArchive.VB_VarHelpID = -1
@@ -40,6 +40,7 @@ Private Enum UcsInfoIndexesEnum
     ucsIdxLastModified
     ucsIdxMethod
     ucsIdxOffset
+    ucsIdxFlags
 End Enum
 
 '=========================================================================
@@ -62,7 +63,7 @@ Public Function Init(vArgs As Variant) As Boolean
     Set m_oOpt = ParseOpt(vArgs)
     With m_oOpt
         If Not .Item("nologo") Then
-            ConsolePrint "VbZip " & m_oArchive.SemVersion & " (c) 2017 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
+            ConsolePrint "VbZip " & m_oArchive.SemVersion & " (c) 2017-2018 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
         End If
         If LenB(.Item("zip")) <> 0 Then
             ConsolePrint "Archive: " & .Item("zip") & vbCrLf
@@ -77,7 +78,9 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsolePrint ERR_NO_FILES & vbCrLf
                 GoTo QH
             End If
-            If .Item("-m") = "0" Then
+            If IsEmpty(.Item("-m")) Then
+                lLevel = 6
+            ElseIf .Item("-m") = "0" Then
                 lLevel = 0
             Else
                 lLevel = Val(.Item("-m"))
@@ -94,15 +97,17 @@ Public Function Init(vArgs As Variant) As Boolean
                     If sMask = "*" Or sMask = "*.*" Then
                         .Item("-e") = True
                     End If
-                    m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r"), IncludeEmptyFolders:=.Item("-e")
+                    m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r"), _
+                        IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p")
                 ElseIf (FileAttr(sFile) And vbDirectory) <> 0 Then
                     If .Item("-r") Then
                         sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
                         .Item("-e") = True
                     End If
-                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), IncludeEmptyFolders:=.Item("-e"), TargetFolder:=sMask
+                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), _
+                        IncludeEmptyFolders:=.Item("-e"), TargetFolder:=sMask, Password:=.Item("-p")
                 Else
-                    m_oArchive.AddFile sFile
+                    m_oArchive.AddFile sFile, Password:=.Item("-p")
                 End If
             Next
             m_sAction = "Compressing "
@@ -128,9 +133,9 @@ Public Function Init(vArgs As Variant) As Boolean
                         ConsolePrint STR_LIST_SEP & vbCrLf
                     End If
                     sText = Format$(At(vInfo, ucsIdxLastModified), "yyyy\-MM\-dd hh\:mm\:ss")
-                    sText = sText & " " & FormatAttr(At(vInfo, ucsIdxAttributes))
-                    sText = sText & " " & Right$(Space(10) & Format$(At(vInfo, ucsIdxSize), "0"), 10)
-                    sText = sText & " " & Right$(Space(10) & Format$(At(vInfo, ucsIdxCompressedSize), "0"), 10)
+                    sText = sText & " " & FormatAttr(At(vInfo, ucsIdxAttributes), At(vInfo, ucsIdxFlags))
+                    sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, ucsIdxSize), "0"), 10)
+                    sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, ucsIdxCompressedSize), "0"), 10)
                     sText = sText & " " & At(vInfo, ucsIdxFileName)
                     ConsolePrint sText & vbCrLf
                     lTotalSize = lTotalSize + At(vInfo, ucsIdxSize)
@@ -140,13 +145,15 @@ Public Function Init(vArgs As Variant) As Boolean
             Next
             If lCount > 0 Then
                 ConsolePrint STR_LIST_SEP & vbCrLf
-                sText = Space(25)
-                sText = sText & " " & Right$(Space(10) & Format$(lTotalSize, "0"), 10)
-                sText = sText & " " & Right$(Space(10) & Format$(lTotalCompressed, "0"), 10)
+                sText = Space$(26)
+                sText = sText & " " & Right$(Space$(10) & Format$(lTotalSize, "0"), 10)
+                sText = sText & " " & Right$(Space$(10) & Format$(lTotalCompressed, "0"), 10)
                 sText = sText & " " & Format$(lCount, "0") & " file(s)"
                 ConsolePrint sText & vbCrLf
-            Else
+            ElseIf m_oArchive.FileCount > 0 Then
                 ConsolePrint "No matches found" & vbCrLf
+            Else
+                ConsolePrint "Archive is empty" & vbCrLf
             End If
         Case "t"
             If LenB(.Item("zip")) = 0 Then
@@ -157,7 +164,7 @@ Public Function Init(vArgs As Variant) As Boolean
                 GoTo QH
             End If
             m_sAction = "Testing "
-            m_oArchive.Extract vbNullString, OutputFile:=New cDummyStream
+            m_oArchive.Extract New cDummyStream
         Case "x"
             If LenB(.Item("zip")) = 0 Then
                 ConsolePrint ERR_MISSING_ARCHIVE & vbCrLf
@@ -168,33 +175,36 @@ Public Function Init(vArgs As Variant) As Boolean
             End If
             m_sAction = "Extracting "
             If .Item("numfiles") = 0 Then
-                m_oArchive.Extract .Item("-o")
+                m_oArchive.Extract CStr(.Item("-o")), Password:=.Item("-p")
             Else
                 For lIdx = 1 To .Item("numfiles")
                     sFile = .Item("file" & lIdx)
-                    m_oArchive.Extract .Item("-o"), sFile
+                    m_oArchive.Extract CStr(.Item("-o")), Filter:=sFile, Password:=.Item("-p")
                 Next
             End If
         Case Else
             If LenB(.Item("command")) = 0 Or .Item("command") = "?" Then
-                ConsolePrint "usage: vbzip.exe <command> [-options...] <archive_file> [files...]" & vbCrLf & _
-                    "e.g. vbzip.exe a backup.zip doc1.txt reports*.doc" & vbCrLf & vbCrLf & _
-                    " commands:" & vbCrLf & _
-                    "    a     add files to archive" & vbCrLf & _
-                    "    l     list archive contents" & vbCrLf & _
-                    "    t     test archive integrity" & vbCrLf & _
-                    "    x     extract files from archive" & vbCrLf & vbCrLf & _
-                    " options:" & vbCrLf & _
-                    "    -r    recurse subdirectories" & vbCrLf & _
-                    "    -m    compression level (default 6)" & vbCrLf & _
-                    "    -bd   no percentage indicator" & vbCrLf & _
-                    "    -e    include empty folders" & vbCrLf
+                ConsolePrint "Usage: vbzip.exe <command> [-options...] <archive_file> [files]..." & vbCrLf & _
+                    "e.g. vbzip.exe a backup.zip doc1.txt reports*.xls" & vbCrLf & vbCrLf & _
+                    "Commands:" & vbCrLf & _
+                    "  a           add files to archive" & vbCrLf & _
+                    "  l           list archive contents" & vbCrLf & _
+                    "  t           test archive integrity" & vbCrLf & _
+                    "  x           extract files from archive" & vbCrLf & vbCrLf & _
+                    "Options:" & vbCrLf & _
+                    "  -r          recurse subfolders" & vbCrLf & _
+                    "  -e          include empty folders" & vbCrLf & _
+                    "  -m LEVEL    compression level [default: 6]" & vbCrLf & _
+                    "  -o OUTPUT   output folder to extract to" & vbCrLf & _
+                    "  -i          no percentage indicator" & vbCrLf & _
+                    "  -y          assume yes to all questions" & vbCrLf & _
+                    "  -p PASSWORD password used to encrypt/decrypt files" & vbCrLf
             Else
                 ConsolePrint "Invalid command: " & .Item("command") & vbCrLf
             End If
         End Select
         If Len(m_sLastRow) <> 0 Then
-            ConsolePrint vbCr & Space(Len(m_sLastRow)) & vbCr
+            ConsolePrint vbCr & Space$(Len(m_sLastRow)) & vbCr
             ConsolePrint "Done" & vbCrLf
         End If
     End With
@@ -206,36 +216,42 @@ EH:
     ConsolePrint "unhandled error: " & Err.Description & vbCrLf
 End Function
 
-Private Function FormatAttr(ByVal eAttr As VbFileAttribute) As String
+Private Function FormatAttr(ByVal eAttr As VbFileAttribute, ByVal lFlags As Long) As String
     If eAttr = vbDirectory Then
-        FormatAttr = "[DIR]"
+        FormatAttr = " [DIR]"
     Else
-        FormatAttr = Left$(IIf(eAttr And vbArchive, "A", vbNullString) & _
+        FormatAttr = Right$("......" & _
+            IIf(eAttr And vbArchive, "A", vbNullString) & _
             IIf(eAttr And vbDirectory, "D", vbNullString) & _
             IIf(eAttr And vbReadOnly, "R", vbNullString) & _
             IIf(eAttr And vbHidden, "H", vbNullString) & _
-            IIf(eAttr And vbSystem, "S", vbNullString) & ".....", 5)
+            IIf(eAttr And vbSystem, "S", vbNullString) & _
+            IIf(lFlags And 1, "E", vbNullString), 6)
     End If
 End Function
     
-
 Private Function ParseOpt(vArgs As Variant) As Object
     Dim oOpt            As Object
     Dim lIdx            As Long
+    Dim bNoMoreOpt      As Boolean
 
     Set oOpt = CreateObject("Scripting.Dictionary")
     With oOpt
         .CompareMode = 1
         For lIdx = 0 To UBound(vArgs)
-            Select Case Left$(vArgs(lIdx), 1)
+            Select Case Left$(vArgs(lIdx), 1 + bNoMoreOpt)
             Case "-", "/"
                 Select Case Mid$(vArgs(lIdx), 2, 1)
-                Case "o", "m"
+                Case "o", "m", "p"
                     If Len(vArgs(lIdx)) > 2 Then
                         .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = Mid$(vArgs(lIdx), 3)
                     ElseIf LenB(vArgs(lIdx + 1)) <> 0 Then
                         .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = vArgs(lIdx + 1)
                         lIdx = lIdx + 1
+                    End If
+                Case "-"
+                    If Len(vArgs(lIdx)) = 2 Then
+                        bNoMoreOpt = True
                     End If
                 Case Else
                     .Item("-" & Mid$(vArgs(lIdx), 2)) = True
@@ -256,19 +272,27 @@ Private Function ParseOpt(vArgs As Variant) As Object
 End Function
 
 Private Sub m_oArchive_Error(ByVal FileIdx As Long, Source As String, Description As String, Cancel As Boolean)
-    Dim sPrefix         As String
-    
     If LenB(m_sLastRow) <> 0 Then
         ConsolePrint vbCrLf
     End If
-    If FileIdx >= 0 Then
-        sPrefix = "Error processing " & At(m_oArchive.FileInfo(FileIdx), 0)
-    Else
-        sPrefix = "Error"
-    End If
-    ConsolePrint sPrefix & ": " & Description & vbCrLf
+    ConsolePrint "Error: " & Description & vbCrLf
     m_sLastRow = vbNullString
-    Cancel = True
+    If Not Cancel And Not m_oOpt.Item("-y") Then
+        Do
+            ConsolePrint "Do you want to continue (y/n/a)? "
+            Select Case LCase$(Left$(ConsoleReadLine(), 1))
+            Case "y"
+                GoTo QH
+            Case "n"
+                Exit Do
+            Case "a"
+                m_oOpt.Item("-y") = True
+                GoTo QH
+            End Select
+        Loop
+        Cancel = True
+    End If
+QH:
 End Sub
 
 Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, ByVal Total As Long, Cancel As Boolean)
@@ -276,7 +300,7 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, By
     Dim vInfo           As Variant
 
     If Current < Total Then
-        If Not m_oOpt.Item("-bd") Then
+        If Not m_oOpt.Item("-i") Then
             sPercent = " - " & Format$(Current * 100# / Total, "0.0") & "%"
             m_sLastRow = ConsolePrint(vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent)
         End If
