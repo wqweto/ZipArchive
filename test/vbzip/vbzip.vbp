@@ -4,6 +4,7 @@ Module=mdGlobals; mdGlobals.bas
 Class=cVbZip; cVbZip.cls
 Class=cZipArchive; ..\..\src\cZipArchive.cls
 Class=cDummyStream; cDummyStream.cls
+Class=cZipCrypto; ..\..\src\cZipCrypto.cls
 Startup="Sub Main"
 HelpFile=""
 Title="VbZip"
@@ -21,7 +22,7 @@ VersionCompanyName="Unicontsoft"
 VersionFileDescription="VbZip"
 VersionLegalCopyright="VbZip (c) 2017 by wqweto@gmail.com"
 VersionProductName="VbZip"
-CondComp="ZIP_COMPRESS = 1 : ZIP_EXTRACT = 1"
+CondComp="ZIP_COMPRESS = 1 : ZIP_EXTRACT = 1 : ZIP_CRYPTO = 1"
 CompilationType=0
 OptimizationType=0
 FavorPentiumPro(tm)=0

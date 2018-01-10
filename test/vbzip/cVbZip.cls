@@ -62,7 +62,7 @@ Public Function Init(vArgs As Variant) As Boolean
     Set m_oOpt = ParseOpt(vArgs)
     With m_oOpt
         If Not .Item("nologo") Then
-            ConsolePrint "VbZip " & m_oArchive.SemVersion & " (c) 2017 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
+            ConsolePrint "VbZip " & m_oArchive.SemVersion & " (c) 2017-2018 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
         End If
         If LenB(.Item("zip")) <> 0 Then
             ConsolePrint "Archive: " & .Item("zip") & vbCrLf
@@ -172,11 +172,11 @@ Public Function Init(vArgs As Variant) As Boolean
             End If
             m_sAction = "Extracting "
             If .Item("numfiles") = 0 Then
-                m_oArchive.Extract CStr(.Item("-o"))
+                m_oArchive.Extract CStr(.Item("-o")), Password:=.Item("-p")
             Else
                 For lIdx = 1 To .Item("numfiles")
                     sFile = .Item("file" & lIdx)
-                    m_oArchive.Extract CStr(.Item("-o")), sFile
+                    m_oArchive.Extract CStr(.Item("-o")), Filter:=sFile, Password:=.Item("-p")
                 Next
             End If
         Case Else
@@ -184,17 +184,18 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsolePrint "Usage: vbzip.exe <command> [-options...] <archive_file> [files]..." & vbCrLf & _
                     "e.g. vbzip.exe a backup.zip doc1.txt reports*.xls" & vbCrLf & vbCrLf & _
                     "Commands:" & vbCrLf & _
-                    "  a         add files to archive" & vbCrLf & _
-                    "  l         list archive contents" & vbCrLf & _
-                    "  t         test archive integrity" & vbCrLf & _
-                    "  x         extract files from archive" & vbCrLf & vbCrLf & _
+                    "  a           add files to archive" & vbCrLf & _
+                    "  l           list archive contents" & vbCrLf & _
+                    "  t           test archive integrity" & vbCrLf & _
+                    "  x           extract files from archive" & vbCrLf & vbCrLf & _
                     "Options:" & vbCrLf & _
-                    "  -r        recurse subfolders" & vbCrLf & _
-                    "  -e        include empty folders" & vbCrLf & _
-                    "  -m LEVEL  compression level [default: 6]" & vbCrLf & _
-                    "  -o OUTPUT output folder to extract to" & vbCrLf & _
-                    "  -i        no percentage indicator" & vbCrLf & _
-                    "  -y        assume yes to all questions" & vbCrLf
+                    "  -r          recurse subfolders" & vbCrLf & _
+                    "  -e          include empty folders" & vbCrLf & _
+                    "  -m LEVEL    compression level [default: 6]" & vbCrLf & _
+                    "  -o OUTPUT   output folder to extract to" & vbCrLf & _
+                    "  -i          no percentage indicator" & vbCrLf & _
+                    "  -y          assume yes to all questions" & vbCrLf & _
+                    "  -p PASSWORD password used to encrypt/decrypt files" & vbCrLf
             Else
                 ConsolePrint "Invalid command: " & .Item("command") & vbCrLf
             End If
@@ -236,7 +237,7 @@ Private Function ParseOpt(vArgs As Variant) As Object
             Select Case Left$(vArgs(lIdx), 1 + bNoMoreOpt)
             Case "-", "/"
                 Select Case Mid$(vArgs(lIdx), 2, 1)
-                Case "o", "m"
+                Case "o", "m", "p"
                     If Len(vArgs(lIdx)) > 2 Then
                         .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = Mid$(vArgs(lIdx), 3)
                     ElseIf LenB(vArgs(lIdx + 1)) <> 0 Then
