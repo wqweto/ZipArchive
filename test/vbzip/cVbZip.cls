@@ -21,8 +21,8 @@ DefObj A-Z
 Private Const ERR_MISSING_ARCHIVE   As String = "Missing archive"
 Private Const ERR_NO_FILES          As String = "No files specified"
 Private Const ERR_INVALID_LEVEL     As String = "Invalid compression level. Use 0 to 9"
-Private Const STR_LIST_HDR          As String = "Date       Time     Attr        Size Compressed Name"
-Private Const STR_LIST_SEP          As String = "------------------- ----- ---------- ---------- -------------------"
+Private Const STR_LIST_HDR          As String = "Date       Time       Attr       Size Compressed Name"
+Private Const STR_LIST_SEP          As String = "------------------- ------ ---------- ---------- -------------------"
 
 Private WithEvents m_oArchive   As cZipArchive
 Attribute m_oArchive.VB_VarHelpID = -1
@@ -40,6 +40,7 @@ Private Enum UcsInfoIndexesEnum
     ucsIdxLastModified
     ucsIdxMethod
     ucsIdxOffset
+    ucsIdxFlags
 End Enum
 
 '=========================================================================
@@ -96,15 +97,17 @@ Public Function Init(vArgs As Variant) As Boolean
                     If sMask = "*" Or sMask = "*.*" Then
                         .Item("-e") = True
                     End If
-                    m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r"), IncludeEmptyFolders:=.Item("-e")
+                    m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r"), _
+                        IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p")
                 ElseIf (FileAttr(sFile) And vbDirectory) <> 0 Then
                     If .Item("-r") Then
                         sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
                         .Item("-e") = True
                     End If
-                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), IncludeEmptyFolders:=.Item("-e"), TargetFolder:=sMask
+                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), _
+                        IncludeEmptyFolders:=.Item("-e"), TargetFolder:=sMask, Password:=.Item("-p")
                 Else
-                    m_oArchive.AddFile sFile
+                    m_oArchive.AddFile sFile, Password:=.Item("-p")
                 End If
             Next
             m_sAction = "Compressing "
@@ -130,9 +133,9 @@ Public Function Init(vArgs As Variant) As Boolean
                         ConsolePrint STR_LIST_SEP & vbCrLf
                     End If
                     sText = Format$(At(vInfo, ucsIdxLastModified), "yyyy\-MM\-dd hh\:mm\:ss")
-                    sText = sText & " " & FormatAttr(At(vInfo, ucsIdxAttributes))
-                    sText = sText & " " & Right$(Space(10) & Format$(At(vInfo, ucsIdxSize), "0"), 10)
-                    sText = sText & " " & Right$(Space(10) & Format$(At(vInfo, ucsIdxCompressedSize), "0"), 10)
+                    sText = sText & " " & FormatAttr(At(vInfo, ucsIdxAttributes), At(vInfo, ucsIdxFlags))
+                    sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, ucsIdxSize), "0"), 10)
+                    sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, ucsIdxCompressedSize), "0"), 10)
                     sText = sText & " " & At(vInfo, ucsIdxFileName)
                     ConsolePrint sText & vbCrLf
                     lTotalSize = lTotalSize + At(vInfo, ucsIdxSize)
@@ -142,9 +145,9 @@ Public Function Init(vArgs As Variant) As Boolean
             Next
             If lCount > 0 Then
                 ConsolePrint STR_LIST_SEP & vbCrLf
-                sText = Space(25)
-                sText = sText & " " & Right$(Space(10) & Format$(lTotalSize, "0"), 10)
-                sText = sText & " " & Right$(Space(10) & Format$(lTotalCompressed, "0"), 10)
+                sText = Space$(26)
+                sText = sText & " " & Right$(Space$(10) & Format$(lTotalSize, "0"), 10)
+                sText = sText & " " & Right$(Space$(10) & Format$(lTotalCompressed, "0"), 10)
                 sText = sText & " " & Format$(lCount, "0") & " file(s)"
                 ConsolePrint sText & vbCrLf
             ElseIf m_oArchive.FileCount > 0 Then
@@ -201,7 +204,7 @@ Public Function Init(vArgs As Variant) As Boolean
             End If
         End Select
         If Len(m_sLastRow) <> 0 Then
-            ConsolePrint vbCr & Space(Len(m_sLastRow)) & vbCr
+            ConsolePrint vbCr & Space$(Len(m_sLastRow)) & vbCr
             ConsolePrint "Done" & vbCrLf
         End If
     End With
@@ -213,15 +216,17 @@ EH:
     ConsolePrint "unhandled error: " & Err.Description & vbCrLf
 End Function
 
-Private Function FormatAttr(ByVal eAttr As VbFileAttribute) As String
+Private Function FormatAttr(ByVal eAttr As VbFileAttribute, ByVal lFlags As Long) As String
     If eAttr = vbDirectory Then
-        FormatAttr = "[DIR]"
+        FormatAttr = " [DIR]"
     Else
-        FormatAttr = Left$(IIf(eAttr And vbArchive, "A", vbNullString) & _
+        FormatAttr = Right$("......" & _
+            IIf(eAttr And vbArchive, "A", vbNullString) & _
             IIf(eAttr And vbDirectory, "D", vbNullString) & _
             IIf(eAttr And vbReadOnly, "R", vbNullString) & _
             IIf(eAttr And vbHidden, "H", vbNullString) & _
-            IIf(eAttr And vbSystem, "S", vbNullString) & ".....", 5)
+            IIf(eAttr And vbSystem, "S", vbNullString) & _
+            IIf(lFlags And 1, "E", vbNullString), 6)
     End If
 End Function
     
