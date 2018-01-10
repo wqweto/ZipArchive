@@ -22,6 +22,8 @@ Option Explicit
 DefObj A-Z
 'Private Const MODULE_NAME As String = "cZipCrypto"
 
+#Const ImplUseShared = ZIP_USESHARED
+
 '=========================================================================
 ' API
 '=========================================================================
@@ -37,10 +39,12 @@ Private Const BCRYPT_ALG_HANDLE_HMAC_FLAG   As Long = 8
 Private Const BCRYPT_HASH_REUSABLE_FLAG     As Long = &H20
 '--- for VariantChangeType
 Private Const VT_I8                         As Long = &H14
+'--- for FormatMessage
+Private Const FORMAT_MESSAGE_FROM_SYSTEM    As Long = &H1000
+Private Const FORMAT_MESSAGE_IGNORE_INSERTS As Long = &H200
 
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 Private Declare Function CoCreateGuid Lib "ole32" (pguid As Any) As Long
-Private Declare Function VariantChangeType Lib "oleaut32" (Dest As Variant, src As Variant, ByVal wFlags As Integer, ByVal vt As Long) As Long
 Private Declare Function ArrPtr Lib "msvbvm60" Alias "VarPtr" (Ptr() As Any) As Long
 Private Declare Function BCryptOpenAlgorithmProvider Lib "bcrypt.dll" (phAlgorithm As Long, ByVal pszAlgId As Long, ByVal pszImplementation As Long, ByVal dwFlags As Long) As Long
 Private Declare Function BCryptCloseAlgorithmProvider Lib "bcrypt.dll" (ByVal hAlgorithm As Long, ByVal dwFlags As Long) As Long
@@ -54,6 +58,10 @@ Private Declare Function BCryptCreateHash Lib "bcrypt.dll" (ByVal hAlgorithm As 
 Private Declare Function BCryptDestroyHash Lib "bcrypt.dll" (ByVal hHash As Long) As Long
 Private Declare Function BCryptHashData Lib "bcrypt.dll" (ByVal hHash As Long, pbInput As Any, ByVal cbInput As Long, ByVal dwFlags As Long) As Long
 Private Declare Function BCryptFinishHash Lib "bcrypt.dll" (ByVal hHash As Long, pbOutput As Any, ByVal cbOutput As Long, ByVal dwFlags As Long) As Long
+#If ImplUseShared = 0 Then
+    Private Declare Function VariantChangeType Lib "oleaut32" (Dest As Variant, src As Variant, ByVal wFlags As Integer, ByVal vt As Long) As Long
+    Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageA" (ByVal dwFlags As Long, lpSource As Long, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As String, ByVal nSize As Long, Args As Any) As Long
+#End If
 
 '=========================================================================
 ' Constants and member variables
@@ -81,7 +89,6 @@ Private Type UcsZipCryptoType
     MAX_UINT32          As Variant ' LongLong (VT_I8)
     TradCrc32Table()    As Long
 End Type
-
 
 '=========================================================================
 ' Properties
@@ -315,8 +322,21 @@ Public Function pvCryptoTradCalcCrc32(ByVal lCrc32 As Long, ByVal bytChar As Byt
     pvCryptoTradCalcCrc32 = (((lCrc32 And &HFFFFFF00) \ &H100&) And &HFFFFFF) Xor (m_uCrypto.TradCrc32Table((lCrc32 And &HFF&) Xor bytChar))
 End Function
 
+'= shared ================================================================
+
+#If ImplUseShared = 0 Then
+
 Private Function GetSystemMessage(ByVal lLastDllError As Long) As String
-    GetSystemMessage = "Crypto error " & lLastDllError
+    Dim lSize            As Long
+   
+    GetSystemMessage = Space$(2000)
+    lSize = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM Or FORMAT_MESSAGE_IGNORE_INSERTS, 0&, lLastDllError, 0&, GetSystemMessage, Len(GetSystemMessage), 0&)
+    If lSize > 2 Then
+        If Mid$(GetSystemMessage, lSize - 1, 2) = vbCrLf Then
+            lSize = lSize - 2
+        End If
+    End If
+    GetSystemMessage = Left$(GetSystemMessage, lSize)
 End Function
 
 Private Function CLngLng(vValue As Variant) As Variant
@@ -326,6 +346,8 @@ End Function
 Private Function Peek(ByVal lPtr As Long) As Long
     Call CopyMemory(Peek, ByVal lPtr, 4)
 End Function
+
+#End If ' Not ImplUseShared
 
 '=========================================================================
 ' Base class events
