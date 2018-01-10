@@ -184,6 +184,15 @@ Private Const LNG_VEREXT            As Long = 20
 Private Const LNG_METHOD_DEFLATE    As Long = 8
 Private Const LNG_METHOD_STORE      As Long = 0
 Private Const LNG_IOBUF_SIZE        As Long = 65536
+Private Const LNG_METHOD_AES        As Long = 99
+Private Const LNG_EXTRADATA_AES_HEADER As Integer = &H9901
+Private Const LNG_EXTRADATA_AES_VENDOR As Integer = &H4541 '-- "AE"
+Private Const LNG_EXTRADATA_AES_SIZE As Long = 11
+Private Const LNG_EXTRADATA_AE_2_MAXSIZE As Long = 20
+Private Const LNG_ENC_HEADER_SIZE   As Long = 12
+Private Const LNG_AES_AUTHCODE_SIZE As Long = 10
+Private Const LNG_AES256_SALT_SIZE  As Long = 16
+Private Const LNG_AES256_KEY_SIZE   As Long = 32
 Private Const ERR_USER_CANCEL       As String = "User cancelled"
 Private Const ERR_INIT_COMPRESSOR   As String = "Cannot init deflate compressor"
 Private Const ERR_COMPRESSING       As String = "Error compressing"
@@ -200,18 +209,12 @@ Private Const ERR_ENTRY_INVALID_SIG As String = "Entry %1 has invalid signature"
 Private Const ERR_ENTRY_NO_FILENAME As String = "Entry %1 has no filename"
 Private Const ERR_MISSING_ECD_RECORD As String = "Missing end-of-central-directory record"
 Private Const ERR_UNSUPPORTED_ENCRYPTION As String = "Unsupported encryption"
+Private Const ERR_PASSWORD_REQUIRED As String = "Password required"
+Private Const ERR_INVALID_PASSWORD  As String = "Invalid password"
+Private Const ERR_INVALID_AUTHCODE  As String = "Invalid authentication code"
 Private Const STR_BUFFER            As String = "[buffer]"
 Private Const STR_STREAM            As String = "[stream]"
 Private Const STR_ENTRY             As String = "[entry %1]"
-#If ImplCrypto Then
-    Private Const LNG_METHOD_AES        As Long = 99
-    Private Const LNG_EXTRADATA_AES     As Integer = &H9901
-    Private Const LNG_ENC_HEADER_SIZE   As Long = 12
-    Private Const LNG_AES_AUTHCODE_SIZE As Long = 10
-    Private Const ERR_PASSWORD_REQUIRED As String = "Password required"
-    Private Const ERR_INVALID_PASSWORD  As String = "Invalid password"
-    Private Const ERR_INVALID_AUTHCODE  As String = "Invalid authentication code"
-#End If ' ImplCrypto
 
 Private m_uRtbl                 As UcsZlibRelocTableType
 Private m_sLastError            As String
@@ -226,36 +229,6 @@ Private m_lCurrentFile          As Long
 #If ImplCrypto Then
     Private m_oCrypto           As cZipCrypto
 #End If ' ImplCrypto
-
-#If ImplCrypto Then
-    Private Type UcsAesExtraData
-        HeaderId            As Integer
-        Size                As Integer
-        Version             As Integer
-        VendorId            As Integer
-        Strength            As Byte
-        '--- padding
-        Method              As Integer
-    End Type
-#End If ' ImplCrypto
-
-Private Type UcsFileInfo
-    FileName            As String
-    Attributes          As Long
-    Crc32               As Long
-    Size                As Long
-    CompressedSize      As Long
-    Comment             As String
-    LastModified        As Date
-    Method              As Long
-    Offset              As Long
-    Flags               As Long
-    Extra()             As Byte
-    SourceFile          As Variant
-    #If ImplCrypto Then
-        Aes             As UcsAesExtraData
-    #End If ' ImplCrypto
-End Type
 
 Private Type UcsVfsFileType
     Handle              As Long
@@ -370,12 +343,41 @@ Private Type UcsEndHeaderType
     LenCom          As Integer                  'Length of comment field
 End Type
 
+Private Type UcsAesExtraDataType
+    HeaderId        As Integer
+    Size            As Integer
+    Version         As Integer
+    VendorId        As Integer
+    Strength        As Byte
+    '--- padding
+    Method          As Integer
+End Type
+
+Private Type UcsFileInfo
+    FileName            As String
+    Attributes          As Long
+    Crc32               As Long
+    Size                As Long
+    CompressedSize      As Long
+    Comment             As String
+    LastModified        As Date
+    Method              As Long
+    Offset              As Long
+    Flags               As Long
+    Extra()             As Byte
+    SourceFile          As Variant
+    #If ImplCrypto Then
+        Aes             As UcsAesExtraDataType
+        Password        As String
+    #End If ' ImplCrypto
+End Type
+
 '=========================================================================
 ' Properties
 '=========================================================================
 
 Property Get SemVersion() As String
-    SemVersion = "0.1.6"
+    SemVersion = "0.2"
 End Property
 
 Property Get ThunkBuildDate() As String
@@ -393,7 +395,7 @@ End Property
 Property Get FileInfo(ByVal FileIdx As Long) As Variant
     If FileIdx >= 0 And FileIdx < m_lFileCount Then
         With m_uFiles(FileIdx)
-            FileInfo = Array(.FileName, .Attributes, .Crc32, .Size, .CompressedSize, .Comment, .LastModified, .Method, .Offset)
+            FileInfo = Array(.FileName, .Attributes, .Crc32, .Size, .CompressedSize, .Comment, .LastModified, .Method, .Offset, .Flags)
         End With
     End If
 End Property
@@ -415,7 +417,8 @@ End Property
 Public Function AddFile( _
             File As Variant, _
             Optional Name As String, _
-            Optional Comment As String) As Boolean
+            Optional Comment As String, _
+            Optional Password As String) As Boolean
     Const FUNC_NAME     As String = "AddFile"
     Dim uFile           As UcsVfsFileType
     
@@ -437,7 +440,11 @@ Public Function AddFile( _
         .Attributes = IIf(Right$(.FileName, 1) = "\", vbDirectory, uFile.Data.dwFileAttributes)
         .Comment = Comment
         .LastModified = pvFromFileTime(uFile.Data.ftLastWriteTime)
+        .Extra = vbNullString
         AssignVariant .SourceFile, File
+        #If ImplCrypto Then
+            .Password = Password
+        #End If
     End With
     m_lFileCount = m_lFileCount + 1
     '--- success
@@ -467,6 +474,12 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
     Dim uCentral        As UcsCentralHeaderType
     Dim uEndHdr         As UcsEndHeaderType
     Dim lEntries        As Long
+    #If ImplCrypto Then
+        Dim baSalt()    As Byte
+        Dim nPassVer    As Integer
+        Dim lJdx        As Long
+        Dim uAes        As UcsAesExtraDataType
+    #End If
     
     On Error GoTo EH
     pvSetError
@@ -491,7 +504,29 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.Crc32 = -1
             uLocal.USize = 0
             uLocal.CSize = 0
-            pvOutputLocalHeader uArchiveFile, uLocal, .FileName
+            uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
+            #If ImplCrypto Then
+                If LenB(.Password) <> 0 Then
+                    If m_oCrypto Is Nothing Then
+                        Set m_oCrypto = New cZipCrypto
+                    End If
+                    baSalt = m_oCrypto.CryptoAesRandomSalt(LNG_AES256_SALT_SIZE)
+                    If Not m_oCrypto.CryptoAesInit(ToUtf8Array(.Password), baSalt, LNG_AES256_KEY_SIZE, nPassVer) Then
+                        Err.Raise vbObjectError, , m_oCrypto.LastError
+                    End If
+                    '--- reserve space in extra data for AE-1/2
+                    lJdx = UBound(.Extra) + 1
+                    ReDim Preserve .Extra(0 To lJdx + LNG_EXTRADATA_AES_SIZE - 1) As Byte
+                End If
+            #End If
+            pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
+            #If ImplCrypto Then
+                If LenB(.Password) <> 0 Then
+                    '--- prepend salt and password verification value before file data
+                    pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES256_SALT_SIZE
+                    pvVfsWrite uArchiveFile, VarPtr(nPassVer), 2
+                End If
+            #End If
             lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
             If (.Attributes And vbDirectory + vbVolume) = 0 Then
                 If Level > 0 Then
@@ -499,20 +534,36 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                     If hCtx = 0 Then
                         Err.Raise vbObjectError, , ERR_INIT_COMPRESSOR
                     End If
-                    lSize = pvVfsRead(uFile, VarPtr(baNext(0)), UBound(baNext) + 1)
+                    lSize = pvVfsRead(uFile, VarPtr(baNext(0)), LNG_IOBUF_SIZE)
                     Do
                         Call CopyMemory(baBuffer(0), baNext(0), lSize)
                         uBuf.InBlock = VarPtr(baBuffer(0))
                         uBuf.InLen = lSize
-                        lSize = pvVfsRead(uFile, VarPtr(baNext(0)), UBound(baNext) + 1)
+                        lSize = pvVfsRead(uFile, VarPtr(baNext(0)), LNG_IOBUF_SIZE)
                         uBuf.Final = (lSize = 0)
                         lResult = CallWindowProc(m_uRtbl.CompressBlock, hCtx, VarPtr(uBuf), VarPtr(uLocal.Crc32), Level) '--- level ignored
                         If lResult = 0 Or uBuf.OutBlock = 0 Then
                             Err.Raise vbObjectError, , ERR_COMPRESSING
                         End If
-                        pvVfsWrite uArchiveFile, uBuf.OutBlock, uBuf.OutLen
-                        Call CoTaskMemFree(uBuf.OutBlock)
-                        uBuf.OutBlock = 0
+                        #If ImplCrypto Then
+                            If LenB(.Password) <> 0 Then
+                                If UBound(baBuffer) < uBuf.OutLen Then
+                                    ReDim baBuffer(0 To (uBuf.OutLen And -2048) + 2047) As Byte
+                                End If
+                                Call CopyMemory(baBuffer(0), ByVal uBuf.OutBlock, uBuf.OutLen)
+                                If Not m_oCrypto.CryptoAesEncrypt(baBuffer, Size:=uBuf.OutLen) Then
+                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                End If
+                                pvVfsWrite uArchiveFile, VarPtr(baBuffer(0)), uBuf.OutLen
+                                Call CoTaskMemFree(uBuf.OutBlock)
+                                uBuf.OutBlock = 0
+                            End If
+                        #End If
+                        If uBuf.OutBlock <> 0 Then
+                            pvVfsWrite uArchiveFile, uBuf.OutBlock, uBuf.OutLen
+                            Call CoTaskMemFree(uBuf.OutBlock)
+                            uBuf.OutBlock = 0
+                        End If
                         uLocal.USize = uLocal.USize + uBuf.InLen
                         uLocal.CSize = uLocal.CSize + uBuf.OutLen
                         .CompressedSize = uLocal.CSize
@@ -544,11 +595,18 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                             m_sLastError = ERR_USER_CANCEL
                             GoTo QH
                         End If
-                        lSize = pvVfsRead(uFile, VarPtr(baBuffer(0)), UBound(baBuffer) + 1)
+                        lSize = pvVfsRead(uFile, VarPtr(baBuffer(0)), LNG_IOBUF_SIZE)
                         If lSize = 0 Then
                             Exit Do
                         End If
                         Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), VarPtr(baBuffer(0)), lSize, VarPtr(uLocal.Crc32))
+                        #If ImplCrypto Then
+                            If LenB(.Password) <> 0 Then
+                                If Not m_oCrypto.CryptoAesEncrypt(baBuffer, Size:=lSize) Then
+                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                End If
+                            End If
+                        #End If
                         pvVfsWrite uArchiveFile, VarPtr(baBuffer(0)), lSize
                         uLocal.USize = uLocal.USize + lSize
                         uLocal.CSize = uLocal.CSize + lSize
@@ -557,15 +615,41 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             End If
             pvVfsClose uFile
             uLocal.Crc32 = uLocal.Crc32 Xor -1
+            #If ImplCrypto Then
+                If LenB(.Password) <> 0 Then
+                    '--- append HMAC SHA1 authetication code after file data
+                    baSalt = m_oCrypto.CryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)
+                    pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES_AUTHCODE_SIZE
+                    '--- update AE-1/2 in extra data
+                    uAes.HeaderId = LNG_EXTRADATA_AES_HEADER
+                    uAes.Size = LNG_EXTRADATA_AES_SIZE - 4
+                    uAes.Version = IIf(.Size <= LNG_EXTRADATA_AE_2_MAXSIZE, 2, 1)
+                    uAes.VendorId = LNG_EXTRADATA_AES_VENDOR
+                    uAes.Strength = LNG_AES256_KEY_SIZE / 8 - 1
+                    uAes.Method = uLocal.Method
+                    lJdx = UBound(.Extra) + 1 - LNG_EXTRADATA_AES_SIZE
+                    Debug.Assert VarPtr(uAes.Strength) + 1 - VarPtr(uAes) = 9
+                    Call CopyMemory(.Extra(lJdx), uAes, 9)
+                    Call CopyMemory(.Extra(lJdx + 9), uAes.Method, 2)
+                    '--- update local header
+                    uLocal.Flags = uLocal.Flags Or ucsZcfEncrypted
+                    uLocal.Method = LNG_METHOD_AES
+                    uLocal.CSize = uLocal.CSize + LNG_AES256_SALT_SIZE + 2 + LNG_AES_AUTHCODE_SIZE
+                    If uAes.Version = 2 Then
+                        uLocal.Crc32 = 0
+                    End If
+                End If
+            #End If
             lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
             pvVfsSeek uArchiveFile, .Offset, FILE_BEGIN
-            pvOutputLocalHeader uArchiveFile, uLocal, .FileName
+            pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
             pvVfsSeek uArchiveFile, lBeginOffset, FILE_BEGIN
             .Crc32 = uLocal.Crc32
             Debug.Assert .Size = uLocal.USize
             .Size = uLocal.USize
             .CompressedSize = uLocal.CSize
             .Method = uLocal.Method
+            .Flags = uLocal.Flags
             If False Then
 SkipFile:
                 On Error GoTo EH
@@ -595,8 +679,8 @@ SkipFile:
                 uCentral.USize = .Size
                 uCentral.AttribX = .Attributes
                 uCentral.Offset = .Offset
-                uCentral.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
-                pvOutputCentralHeader uArchiveFile, uCentral, .FileName, .Comment
+                uCentral.Flags = .Flags
+                pvOutputCentralHeader uArchiveFile, uCentral, .FileName, .Extra, .Comment
                 lEntries = lEntries + 1
             End If
         End With
@@ -642,7 +726,8 @@ Public Function AddFromFolder( _
             sFolderAndMask As String, _
             Optional Recursive As Boolean, _
             Optional TargetFolder As String, _
-            Optional IncludeEmptyFolders As Boolean) As Boolean
+            Optional IncludeEmptyFolders As Boolean, _
+            Optional Password As String) As Boolean
     Const FUNC_NAME     As String = "AddFromFolder"
     Dim lIdx            As Long
     Dim sFolder         As String
@@ -670,7 +755,7 @@ Public Function AddFromFolder( _
         cFolders.Remove 1
         lIdx = 0
         For Each vElem In pvEnumFiles(sFolder, sMask, -vbDirectory)
-            If AddFile(vElem, PathCombine(TargetFolder, Mid$(vElem, lRootOffset + 2))) Then
+            If AddFile(vElem, PathCombine(TargetFolder, Mid$(vElem, lRootOffset + 2)), Password:=Password) Then
                 lIdx = lIdx + 1
                 '--- success (entries added)
                 AddFromFolder = True
@@ -679,7 +764,7 @@ Public Function AddFromFolder( _
         If lIdx = 0 And IncludeEmptyFolders Then
             sName = PathCombine(TargetFolder, Mid$(sFolder, lRootOffset + 2))
             If LenB(sName) <> 0 Then
-                If AddFile(sFolder & "\", sName & "\") Then
+                If AddFile(sFolder & "\", sName & "\", Password:=Password) Then
                     '--- success (entries added)
                     AddFromFolder = True
                 End If
@@ -734,12 +819,12 @@ EH:
     Err.Raise Err.Number, Err.Source, Err.Description
 End Function
 
-Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderType, FileName As String)
+Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderType, FileName As String, baExtra() As Byte)
     Dim baFName()       As Byte
     
     baFName = pvToOemString(Replace(FileName, "\", "/"), IIf((uHdr.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, CP_OEMCP))
     uHdr.LenFname = UBound(baFName) + 1
-    uHdr.LenExt = 0
+    uHdr.LenExt = UBound(baExtra) + 1
     Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) + VarPtr(uHdr.LenExt) + 2 - VarPtr(uHdr.Crc32) = LNG_LEN_LOCAL
     Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) = 14
     pvVfsWrite uFile, VarPtr(uHdr.Signature), 14
@@ -749,9 +834,12 @@ Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderT
     If uHdr.LenFname > 0 Then
         pvVfsWrite uFile, VarPtr(baFName(0)), uHdr.LenFname
     End If
+    If uHdr.LenExt > 0 Then
+        pvVfsWrite uFile, VarPtr(baExtra(0)), uHdr.LenExt
+    End If
 End Sub
 
-Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHeaderType, FileName As String, Comment As String)
+Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHeaderType, FileName As String, baExtra() As Byte, Comment As String)
     Dim lCodePage       As Long
     Dim baFName()       As Byte
     Dim baComment()     As Byte
@@ -760,7 +848,7 @@ Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHea
     baFName = pvToOemString(Replace(FileName, "\", "/"), lCodePage)
     baComment = pvToOemString(Comment, lCodePage)
     uHdr.LenFname = UBound(baFName) + 1
-    uHdr.LenExt = 0
+    uHdr.LenExt = UBound(baExtra) + 1
     uHdr.LenCom = UBound(baComment) + 1
     Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) + VarPtr(uHdr.AttribI) + 2 - VarPtr(uHdr.Crc32) + VarPtr(uHdr.Offset) + 4 - VarPtr(uHdr.AttribX) = LNG_LEN_CENTRAL
     Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) = 16
@@ -772,6 +860,9 @@ Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHea
     Debug.Assert uHdr.LenFname > 0
     If uHdr.LenFname > 0 Then
         pvVfsWrite uFile, VarPtr(baFName(0)), uHdr.LenFname
+    End If
+    If uHdr.LenExt > 0 Then
+        pvVfsWrite uFile, VarPtr(baExtra(0)), uHdr.LenExt
     End If
     If uHdr.LenCom > 0 Then
         pvVfsWrite uFile, VarPtr(baComment(0)), uHdr.LenCom
@@ -918,8 +1009,9 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                     Dim lJdx            As Long
                     lJdx = 0
                     Do While lJdx + 10 <= UBound(baExtra)
-                        If PeekInt(VarPtr(baExtra(lJdx))) = LNG_EXTRADATA_AES Then
-                            If PeekInt(VarPtr(baExtra(lJdx + 2))) >= 7 Then
+                        If PeekInt(VarPtr(baExtra(lJdx))) = LNG_EXTRADATA_AES_HEADER Then
+                            If PeekInt(VarPtr(baExtra(lJdx + 2))) >= LNG_EXTRADATA_AES_SIZE - 4 Then
+                                Debug.Assert VarPtr(.Aes.Strength) + 1 - VarPtr(.Aes) = 9
                                 Call CopyMemory(.Aes, baExtra(lJdx), 9)
                                 Call CopyMemory(.Aes.Method, baExtra(lJdx + 9), 2)
                                 .Method = .Aes.Method
@@ -1089,7 +1181,7 @@ Public Function Extract( _
                             If Not m_oCrypto.CryptoTradDecrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE) Then
                                 Err.Raise vbObjectError, , m_oCrypto.LastError
                             End If
-                            If baBuffer(11) <> (PeekInt(VarPtr(.Crc32) + 2) And &HFF00&) \ &H100 Then
+                            If baBuffer(LNG_ENC_HEADER_SIZE - 1) <> (PeekInt(VarPtr(.Crc32) + 2) And &HFF00&) \ &H100 Then
                                 Err.Raise vbObjectError, , ERR_INVALID_PASSWORD
                             End If
                         Else
@@ -1109,8 +1201,10 @@ Public Function Extract( _
                             End If
                             '--- LNG_AES_AUTHCODE_SIZE is at the end of compressed data
                             lRead = lRead + 2 + LNG_AES_AUTHCODE_SIZE
-                            '-- don't calc CRC32, check HMAC SHA1 auth code instead
-                            pCrc32 = 0
+                            '-- don't calc CRC32 for AE-2
+                            If .Aes.Version = 2 Then
+                                pCrc32 = 0
+                            End If
                         End If
                     #Else
                         Err.Raise vbObjectError, , ERR_UNSUPPORTED_ENCRYPTION
@@ -1131,7 +1225,7 @@ Public Function Extract( _
                     If lRead >= .CompressedSize Then
                         Exit Do
                     End If
-                    lSize = UBound(baBuffer) + 1
+                    lSize = LNG_IOBUF_SIZE
                     If lSize > .CompressedSize - lRead Then
                         lSize = .CompressedSize - lRead
                     End If
