@@ -23,8 +23,8 @@ DefObj A-Z
 Private Const MODULE_NAME As String = "cZipArchive"
 
 #Const ImplLogging = DEBUG_MODE
-#Const ImplCompress = ZIP_COMPRESS
-#Const ImplDecompress = ZIP_EXTRACT
+#Const ImplCompress = ZIP_NOCOMPRESS = 0
+#Const ImplDecompress = ZIP_NOEXTRACT = 0
 #Const ImplUseShared = ZIP_USESHARED
 #Const ImplUseApiForBase64 = False
 #Const ImplCrypto = ZIP_CRYPTO
