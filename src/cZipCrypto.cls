@@ -82,12 +82,13 @@ Private Type UcsZipCryptoType
     AesKeyObjData()     As Byte
     AesKeyObjLen        As Long
     Nonce               As Variant ' LongLong (VT_I8)
+    EncrData()          As Byte
     EncrPos             As Long
     TradKey0            As Long
     TradKey1            As Variant ' LongLong (VT_I8)
     TradKey2            As Long
-    MAX_UINT32          As Variant ' LongLong (VT_I8)
     TradCrc32Table()    As Long
+    MAX_UINT32          As Variant ' LongLong (VT_I8)
 End Type
 
 '=========================================================================
@@ -108,6 +109,7 @@ Public Function CryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyLen 
     
     '--- init member vars
     m_uCrypto.Nonce = CLngLng(0)
+    ReDim m_uCrypto.EncrData(0 To CRYPTO_AES_BLOCK_SIZE - 1) As Byte
     m_uCrypto.EncrPos = CRYPTO_AES_BLOCK_SIZE
     '--- generate RFC 2898 based derived key
     If m_uCrypto.hPbkdf2Alg = 0 Then
@@ -209,26 +211,27 @@ Private Function pvCryptoAesProcess( _
         lSize = UBound(baData) + 1 - lOffset
     End If
     ReDim baNonceData(0 To CRYPTO_AES_BLOCK_SIZE - 1) As Byte
-    ReDim baEncrData(0 To CRYPTO_AES_BLOCK_SIZE - 1) As Byte
     If HashBefore Then
         If BCryptHashData(m_uCrypto.hHmacHash, baData(lOffset), lSize, 0) <> 0 Then
             GoTo QH
         End If
     End If
-    lPos = m_uCrypto.EncrPos
-    For lIdx = lOffset To lOffset + lSize - 1
-        If lPos = CRYPTO_AES_BLOCK_SIZE Then
-            m_uCrypto.Nonce = m_uCrypto.Nonce + 1
-            Call CopyMemory(baNonceData(0), ByVal VarPtr(m_uCrypto.Nonce) + 8, 8)
-            If BCryptEncrypt(m_uCrypto.hAesKey, baNonceData(0), CRYPTO_AES_BLOCK_SIZE, 0, 0, 0, baEncrData(0), CRYPTO_AES_BLOCK_SIZE, lResult, 0) <> 0 Then
-                GoTo QH
+    With m_uCrypto
+        lPos = .EncrPos
+        For lIdx = lOffset To lOffset + lSize - 1
+            If lPos = CRYPTO_AES_BLOCK_SIZE Then
+                .Nonce = .Nonce + 1
+                Call CopyMemory(baNonceData(0), ByVal VarPtr(.Nonce) + 8, 8)
+                If BCryptEncrypt(.hAesKey, baNonceData(0), CRYPTO_AES_BLOCK_SIZE, 0, 0, 0, .EncrData(0), CRYPTO_AES_BLOCK_SIZE, lResult, 0) <> 0 Then
+                    GoTo QH
+                End If
+                lPos = 0
             End If
-            lPos = 0
-        End If
-        baData(lIdx) = baData(lIdx) Xor baEncrData(lPos)
-        lPos = lPos + 1
-    Next
-    m_uCrypto.EncrPos = lPos
+            baData(lIdx) = baData(lIdx) Xor .EncrData(lPos)
+            lPos = lPos + 1
+        Next
+        .EncrPos = lPos
+    End With
     If HashAfter Then
         If BCryptHashData(m_uCrypto.hHmacHash, baData(lOffset), lSize, 0) <> 0 Then
             GoTo QH
