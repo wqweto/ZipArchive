@@ -33,6 +33,7 @@ Private Type RelocTable
     vbzlib_crc32        As Long
     vbzlib_memnonce     As Long
     vbzlib_memxor       As Long
+    vbzlib_zipcrypt     As Long
     vbzlib_malloc       As Long
     vbzlib_realloc      As Long
     vbzlib_free         As Long

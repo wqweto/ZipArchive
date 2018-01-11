@@ -46,6 +46,7 @@
 void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *block, int len, unsigned int *pcrc);
 void ZLIB_STDCALL vbzlib_memnonce(unsigned int *block, unsigned int *nonce, int len, int lParam);
 void ZLIB_STDCALL vbzlib_memxor(const unsigned char *block, unsigned char *dest, int len, int lParam);
+void ZLIB_STDCALL vbzlib_zipcrypt(const unsigned int *keys, unsigned char *block, int len, const unsigned int *crc32_table);
 void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam);
 void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int wParam, int lParam);
 int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam);
@@ -102,6 +103,7 @@ struct RelocTable {
     void *vbzlib_crc32;
     void *vbzlib_memnonce;
     void *vbzlib_memxor;
+    void *vbzlib_zipcrypt;
     void *(ZLIB_STDCALL *vbzlib_malloc)(size_t size);
     void *(ZLIB_STDCALL *vbzlib_realloc)(void *ptr, size_t size);
     void (ZLIB_STDCALL *vbzlib_free)(void *ptr);
@@ -1484,6 +1486,7 @@ static struct RelocTable rtable = {
     vbzlib_crc32,
     vbzlib_memnonce,
     vbzlib_memxor,
+    vbzlib_zipcrypt,
     0,
     0,
     0,
@@ -1555,6 +1558,22 @@ void ZLIB_STDCALL vbzlib_memxor(const unsigned char *block, unsigned char *dest,
 {
     while (len--)
         *dest++ ^= *block++;
+}
+
+void ZLIB_STDCALL vbzlib_zipcrypt(unsigned int *keys, unsigned char *block, int len, const unsigned int *crc32_table)
+{
+    #define CRC32(c, b) (((c) >> 8) ^ crc32_table[((c) & 0xff) ^ (b)])
+    unsigned int temp, update = (len > 0);
+    
+    for (len = (len > 0 ? len: -len); len > 0; len--, block++) {
+        if (update) {
+            temp = keys[2] | 2;
+            *block ^= ((temp * (temp ^ 1)) >> 8) & 0xff;
+        }
+        keys[0] = CRC32(keys[0], *block);
+        keys[1] = (keys[1] + (keys[0] & 0xff)) * 134775813L + 1;
+        keys[2] = CRC32(keys[2], (keys[1] >> 24) & 0xff);
+    }
 }
 
 void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam)
