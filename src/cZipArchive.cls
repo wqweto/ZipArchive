@@ -2062,6 +2062,8 @@ Private Sub Class_Initialize()
     m_lCurrentFile = -1
 End Sub
 
-Private Sub Class_Terminate()
-    pvCryptoTerminate
-End Sub
+#If ImplCrypto Then
+    Private Sub Class_Terminate()
+        pvCryptoTerminate
+    End Sub
+#End If
