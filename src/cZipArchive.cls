@@ -22,12 +22,11 @@ Option Explicit
 DefObj A-Z
 Private Const MODULE_NAME As String = "cZipArchive"
 
-#Const ImplLogging = DEBUG_MODE
 #Const ImplCompress = ZIP_NOCOMPRESS = 0
 #Const ImplDecompress = ZIP_NOEXTRACT = 0
-#Const ImplUseShared = ZIP_USESHARED
-#Const ImplUseApiForBase64 = False
 #Const ImplCrypto = ZIP_CRYPTO
+#Const ImplUseShared = ZIP_USESHARED
+#Const ImplLogging = DEBUG_MODE
 
 '=========================================================================
 ' Public events
@@ -135,10 +134,8 @@ Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As L
     Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageA" (ByVal dwFlags As Long, lpSource As Long, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As String, ByVal nSize As Long, Args As Any) As Long
     Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
     Private Declare Function CreateDirectory Lib "kernel32" Alias "CreateDirectoryA" (ByVal lpPathName As String, ByVal lpSecurityAttributes As Long) As Long
-#End If ' Not ImplUseShared
-#If ImplUseApiForBase64 Then
     Private Declare Function CryptStringToBinary Lib "crypt32" Alias "CryptStringToBinaryW" (ByVal pszString As Long, ByVal cchString As Long, ByVal dwFlags As Long, ByVal pbBinary As Long, ByRef pcbBinary As Long, ByRef pdwSkip As Long, ByRef pdwFlags As Long) As Long
-#End If ' ImplUseApiForBase64
+#End If ' Not ImplUseShared
 
 Private Type FILETIME
     dwLowDateTime       As Long
@@ -1355,20 +1352,6 @@ End Function
 
 #End If ' ImplDecompress
 
-Private Function pvArrPtr(vArray As Variant) As Long
-    Const VT_BYREF      As Long = &H4000
-    Dim lPtr            As Long
-    
-    '--- note: unsigned add for LARGEADDRESSAWARE processes
-    lPtr = Peek(((VarPtr(vArray) Xor &H80000000) + 8) Xor &H80000000)
-    If (Peek(VarPtr(vArray)) And VT_BYREF) <> 0 Then
-        lPtr = Peek(lPtr)
-    End If
-    If lPtr <> 0 Then
-        pvArrPtr = Peek(((lPtr Xor &H80000000) + 12) Xor &H80000000)
-    End If
-End Function
-
 '= VFS ===================================================================
 
 Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
@@ -1559,6 +1542,20 @@ Private Sub pvVfsSetEof(uFile As UcsVfsFileType, sMetaData As String)
     End If
 End Sub
 
+Private Function pvArrPtr(vArray As Variant) As Long
+    Const VT_BYREF      As Long = &H4000
+    Dim lPtr            As Long
+    
+    '--- note: unsigned add for LARGEADDRESSAWARE processes
+    lPtr = Peek(((VarPtr(vArray) Xor &H80000000) + 8) Xor &H80000000)
+    If (Peek(VarPtr(vArray)) And VT_BYREF) <> 0 Then
+        lPtr = Peek(lPtr)
+    End If
+    If lPtr <> 0 Then
+        pvArrPtr = Peek(((lPtr Xor &H80000000) + 12) Xor &H80000000)
+    End If
+End Function
+
 '= common ================================================================
 
 Private Function pvFromOemString(baBuffer() As Byte, Optional ByVal lCodePage As Long = CP_OEMCP) As String
@@ -1745,8 +1742,6 @@ Private Function PathCombine(sPath As String, sFile As String) As String
     PathCombine = sPath & IIf(LenB(sPath) <> 0 And Right$(sPath, 1) <> "\" And LenB(sFile) <> 0, "\", vbNullString) & sFile
 End Function
 
-#If ImplUseApiForBase64 Then
-
 Private Function FromBase64Array(sText As String) As Byte()
     Dim lSize           As Long
     Dim dwDummy         As Long
@@ -1757,105 +1752,6 @@ Private Function FromBase64Array(sText As String) As Byte()
     Call CryptStringToBinary(StrPtr(sText), Len(sText), CRYPT_STRING_BASE64, VarPtr(baOutput(0)), lSize, 0, dwDummy)
     FromBase64Array = baOutput
 End Function
-
-#Else
-
-Private Function FromBase64Array(sText As String) As Byte()
-    Const STR_BASE64_CHARS As String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-    Dim laPow2(0 To 30) As Long
-    Dim baInput()       As Byte
-    Dim laTable()       As Long
-    Dim lIdx            As Long
-    Dim lCh             As Long
-    Dim baOutput()      As Byte
-    Dim lPtr            As Long
-    Dim lCarry          As Long
-    
-    On Error GoTo EH
-    '--- init decoding table
-    For lIdx = 0 To UBound(laPow2)
-        laPow2(lIdx) = 2 ^ lIdx
-    Next
-    ReDim laTable(0 To &H3FF) As Long
-    For lIdx = 0 To UBound(laTable)
-        laTable(lIdx) = -1
-    Next
-    baInput = StrConv(STR_BASE64_CHARS, vbFromUnicode)
-    For lIdx = 0 To UBound(baInput)
-        lCh = baInput(lIdx)
-        laTable(lCh) = lIdx * laPow2(2)
-        laTable(&H100 + lCh) = (lIdx And &H30) \ laPow2(4) Or (lIdx And &HF) * laPow2(12)
-        laTable(&H200 + lCh) = (lIdx And &H3) * laPow2(22) Or (lIdx And &H3C) * laPow2(6)
-        laTable(&H300 + lCh) = lIdx * laPow2(16)
-    Next
-    '--- figure out output size
-    baInput = StrConv(Replace(Replace(sText, vbCr, vbNullString), vbLf, vbNullString), vbFromUnicode)
-    If laTable(baInput(UBound(baInput))) >= 0 Then
-        lIdx = 1
-    ElseIf laTable(baInput(UBound(baInput) - 1)) >= 0 Then
-        lIdx = 2
-    Else
-        lIdx = 3
-    End If
-    ReDim baOutput(0 To (Len(sText) \ 4) * 3 - lIdx) As Byte
-    '--- decode loop
-    lPtr = VarPtr(baOutput(0))
-    For lIdx = 0 To UBound(baInput) - 3 Step 4
-        lCh = laTable(baInput(lIdx + 0)) _
-            Or laTable(&H100 + baInput(lIdx + 1)) _
-            Or laTable(&H200 + baInput(lIdx + 2)) _
-            Or laTable(&H300 + baInput(lIdx + 3))
-        If lCh < 0 Then
-            Exit For
-        End If
-        Call CopyMemory(ByVal lPtr, lCh, 3)
-        lPtr = lPtr + 3
-    Next
-    '--- note: unsigned substract for LARGEADDRESSAWARE processes
-    lPtr = ((lPtr Xor &H80000000) - VarPtr(baOutput(0))) Xor &H80000000
-    '-- handle trailing 4 chars (or input error)
-    If lIdx <= UBound(baInput) Then
-        lCh = laTable(baInput(lIdx + 0))
-        Debug.Assert lCh >= 0 '--- input error
-        If lCh < 0 Then
-            GoTo QH
-        End If
-        lCarry = lCh
-        lCh = laTable(baInput(lIdx + 1))
-        Debug.Assert lCh >= 0 '--- input error
-        If lCh < 0 Then
-            GoTo QH
-        End If
-        baOutput(lPtr + 0) = (lCarry Or lCh \ laPow2(6)) And &HFF
-        lCarry = lCh * laPow2(2)
-        lCh = laTable(baInput(lIdx + 2))
-        If lCh < 0 Then
-            lPtr = lPtr + 1
-            GoTo QH
-        End If
-        baOutput(lPtr + 1) = (lCarry Or lCh \ laPow2(4)) And &HFF
-        lCarry = lCh * laPow2(4)
-        lCh = laTable(baInput(lIdx + 3))
-        If lCh < 0 Then
-            lPtr = lPtr + 2
-            GoTo QH
-        End If
-        Debug.Assert lCh < 0 '--- error in decoding tables
-        baOutput(lPtr + 2) = (lCarry Or lCh \ laPow2(2)) And &HFF
-        lPtr = lPtr + 3
-    End If
-QH:
-    '--- will redim only on input error
-    If UBound(baOutput) <> lPtr - 1 Then
-        ReDim Preserve baOutput(0 To lPtr - 1) As Byte
-    End If
-    FromBase64Array = baOutput
-    Exit Function
-EH:
-    Debug.Print Err.Description
-End Function
-
-#End If
 
 Private Function At(vArray As Variant, ByVal lIdx As Long) As Variant
     On Error GoTo QH
