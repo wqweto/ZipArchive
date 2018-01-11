@@ -21,8 +21,8 @@ DefObj A-Z
 Private Const ERR_MISSING_ARCHIVE   As String = "Missing archive"
 Private Const ERR_NO_FILES          As String = "No files specified"
 Private Const ERR_INVALID_LEVEL     As String = "Invalid compression level. Use 0 to 9"
-Private Const STR_LIST_HDR          As String = "Date       Time       Attr       Size Compressed Name"
-Private Const STR_LIST_SEP          As String = "------------------- ------ ---------- ---------- -------------------"
+Private Const STR_LIST_HDR          As String = "Date       Time      Attr       Size Compressed Name"
+Private Const STR_LIST_SEP          As String = "------------------- ----- ---------- ---------- -------------------"
 
 Private WithEvents m_oArchive   As cZipArchive
 Attribute m_oArchive.VB_VarHelpID = -1
@@ -145,7 +145,7 @@ Public Function Init(vArgs As Variant) As Boolean
             Next
             If lCount > 0 Then
                 ConsolePrint STR_LIST_SEP & vbCrLf
-                sText = Space$(26)
+                sText = Space$(25)
                 sText = sText & " " & Right$(Space$(10) & Format$(lTotalSize, "0"), 10)
                 sText = sText & " " & Right$(Space$(10) & Format$(lTotalCompressed, "0"), 10)
                 sText = sText & " " & Format$(lCount, "0") & " file(s)"
@@ -218,15 +218,15 @@ End Function
 
 Private Function FormatAttr(ByVal eAttr As VbFileAttribute, ByVal lFlags As Long) As String
     If eAttr = vbDirectory Then
-        FormatAttr = " [DIR]"
+        FormatAttr = "[DIR]"
     Else
-        FormatAttr = Right$("......" & _
+        FormatAttr = Right$("....." & _
             IIf(eAttr And vbArchive, "A", vbNullString) & _
             IIf(eAttr And vbDirectory, "D", vbNullString) & _
             IIf(eAttr And vbReadOnly, "R", vbNullString) & _
             IIf(eAttr And vbHidden, "H", vbNullString) & _
             IIf(eAttr And vbSystem, "S", vbNullString) & _
-            IIf(lFlags And 1, "E", vbNullString), 6)
+            IIf(lFlags And 1, "E", vbNullString), 5)
     End If
 End Function
     

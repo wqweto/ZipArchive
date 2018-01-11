@@ -4,7 +4,6 @@ Module=mdGlobals; mdGlobals.bas
 Class=cVbZip; cVbZip.cls
 Class=cZipArchive; ..\..\src\cZipArchive.cls
 Class=cDummyStream; cDummyStream.cls
-Class=cZipCrypto; ..\..\src\cZipCrypto.cls
 Startup="Sub Main"
 HelpFile=""
 Title="VbZip"
