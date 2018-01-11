@@ -101,6 +101,18 @@ Private Const FORMAT_MESSAGE_IGNORE_INSERTS As Long = &H200
 Private Const INVALID_SET_FILE_POINTER      As Long = -1
 '--- for CryptStringToBinary
 Private Const CRYPT_STRING_BASE64           As Long = 1
+'--- for CNG
+Private Const MS_PRIMITIVE_PROVIDER         As String = "Microsoft Primitive Provider"
+Private Const BCRYPT_SHA1_ALGORITHM         As String = "SHA1"
+Private Const BCRYPT_AES_ALGORITHM          As String = "AES"
+Private Const BCRYPT_HASH_LENGTH            As String = "HashDigestLength"
+Private Const BCRYPT_OBJECT_LENGTH          As String = "ObjectLength"
+Private Const BCRYPT_CHAINING_MODE          As String = "ChainingMode"
+Private Const BCRYPT_CHAIN_MODE_ECB         As String = "ChainingModeECB"
+Private Const BCRYPT_ALG_HANDLE_HMAC_FLAG   As Long = 8
+Private Const BCRYPT_HASH_REUSABLE_FLAG     As Long = &H20
+'--- for VariantChangeType
+Private Const VT_I8                         As Long = &H14
 
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 Private Declare Function FindFirstFile Lib "kernel32" Alias "FindFirstFileA" (ByVal lpFileName As String, lpFindFileData As WIN32_FIND_DATA) As Long
@@ -130,11 +142,28 @@ Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As L
 #If ImplDecompress Then
     Private Declare Function DosDateTimeToFileTime Lib "kernel32" (ByVal wFatDate As Long, ByVal wFatTime As Long, lpFileTime As FILETIME) As Long
 #End If ' ImplDecompress
+#If ImplCrypto Then
+    Private Declare Function CoCreateGuid Lib "ole32" (pguid As Any) As Long
+    Private Declare Function ArrPtr Lib "msvbvm60" Alias "VarPtr" (Ptr() As Any) As Long
+    Private Declare Function BCryptOpenAlgorithmProvider Lib "bcrypt" (phAlgorithm As Long, ByVal pszAlgId As Long, ByVal pszImplementation As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptCloseAlgorithmProvider Lib "bcrypt" (ByVal hAlgorithm As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptGetProperty Lib "bcrypt" (ByVal hObject As Long, ByVal pszProperty As Long, pbOutput As Any, ByVal cbOutput As Long, cbResult As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptSetProperty Lib "bcrypt" (ByVal hObject As Long, ByVal pszProperty As Long, ByVal pbInput As Long, ByVal cbInput As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptGenerateSymmetricKey Lib "bcrypt" (ByVal hAlgorithm As Long, phKey As Long, pbKeyObject As Any, ByVal cbKeyObject As Long, pbSecret As Any, ByVal cbSecret As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptDestroyKey Lib "bcrypt" (ByVal hKey As Long) As Long
+    Private Declare Function BCryptEncrypt Lib "bcrypt" (ByVal hKey As Long, pbInput As Any, ByVal cbInput As Long, ByVal pPaddingInfo As Long, ByVal pbIV As Long, ByVal cbIV As Long, pbOutput As Any, ByVal cbOutput As Long, pcbResult As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptDeriveKeyPBKDF2 Lib "bcrypt" (ByVal pPrf As Long, pbPassword As Any, ByVal cbPassword As Long, pbSalt As Any, ByVal cbSalt As Long, ByVal cIterations As Long, ByVal dwDummy As Long, pbDerivedKey As Any, ByVal cbDerivedKey As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptCreateHash Lib "bcrypt" (ByVal hAlgorithm As Long, phHash As Long, ByVal pbHashObject As Long, ByVal cbHashObject As Long, pbSecret As Any, ByVal cbSecret As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptDestroyHash Lib "bcrypt" (ByVal hHash As Long) As Long
+    Private Declare Function BCryptHashData Lib "bcrypt" (ByVal hHash As Long, pbInput As Any, ByVal cbInput As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptFinishHash Lib "bcrypt" (ByVal hHash As Long, pbOutput As Any, ByVal cbOutput As Long, ByVal dwFlags As Long) As Long
+#End If ' ImplCrypto
 #If ImplUseShared = 0 Then
     Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageA" (ByVal dwFlags As Long, lpSource As Long, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As String, ByVal nSize As Long, Args As Any) As Long
     Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
     Private Declare Function CreateDirectory Lib "kernel32" Alias "CreateDirectoryA" (ByVal lpPathName As String, ByVal lpSecurityAttributes As Long) As Long
     Private Declare Function CryptStringToBinary Lib "crypt32" Alias "CryptStringToBinaryW" (ByVal pszString As Long, ByVal cchString As Long, ByVal dwFlags As Long, ByVal pbBinary As Long, ByRef pcbBinary As Long, ByRef pdwSkip As Long, ByRef pdwFlags As Long) As Long
+    Private Declare Function VariantChangeType Lib "oleaut32" (Dest As Variant, src As Variant, ByVal wFlags As Integer, ByVal vt As Long) As Long
 #End If ' Not ImplUseShared
 
 Private Type FILETIME
@@ -188,6 +217,7 @@ Private Const LNG_EXTRADATA_AES_SIZE As Long = 11
 Private Const LNG_EXTRADATA_AE_2_MAXSIZE As Long = 20
 Private Const LNG_ENC_HEADER_SIZE   As Long = 12
 Private Const LNG_AES_AUTHCODE_SIZE As Long = 10
+Private Const LNG_AES_BLOCK_SIZE    As Long = 16
 Private Const LNG_AES256_SALT_SIZE  As Long = 16
 Private Const LNG_AES256_KEY_SIZE   As Long = 32
 Private Const ERR_USER_CANCEL       As String = "User cancelled"
@@ -224,7 +254,7 @@ Private m_lCurrentFile          As Long
     Private m_vArchiveFile      As Variant
 #End If ' ImplDecompress
 #If ImplCrypto Then
-    Private m_oCrypto           As cZipCrypto
+    Private m_uCrypto           As UcsZipCryptoType
 #End If ' ImplCrypto
 
 Private Type UcsVfsFileType
@@ -285,69 +315,69 @@ Private Enum UcsRelocIndexesEnum
 End Enum
 
 Private Enum UcsHeaderFlagsEnum
-    ucsZcfEncrypted = 2 ^ 0                     ' If set, indicates that the file is encrypted
-    ucsZcfCompressOptionMask = 2 ^ 1 Or 2 ^ 2   ' 0 - normal, 1 - maximum, 2 - fast, 3 - super fast
-    ucsZcfHasDataDescriptor = 2 ^ 3             ' Values are put in the data descriptor immediately following the compressed data
-    ucsZcfStrongEncrypted = 2 ^ 6               ' Strong encryption
-    ucsZcfUseUtf8 = 2 ^ 11                      ' Language encoding flag (EFS)
+    ucsZcfEncrypted = 2 ^ 0                         ' If set, indicates that the file is encrypted
+    ucsZcfCompressOptionMask = 2 ^ 1 Or 2 ^ 2       ' 0 - normal, 1 - maximum, 2 - fast, 3 - super fast
+    ucsZcfHasDataDescriptor = 2 ^ 3                 ' Values are put in the data descriptor immediately following the compressed data
+    ucsZcfStrongEncrypted = 2 ^ 6                   ' Strong encryption
+    ucsZcfUseUtf8 = 2 ^ 11                          ' Language encoding flag (EFS)
 End Enum
 
 Private Type UcsLocalHeaderType
-    Signature       As Long                     'Signature
-    VerExt          As Integer                  'version needed to extract
-    Flags           As Integer                  'encrypt and compression flags
-    Method          As Integer                  'compression method
-    FTime           As Integer                  'time last modifies, dos format
-    FDate           As Integer                  'date last modifies, dos format
+    Signature           As Long                     ' Signature
+    VerExt              As Integer                  ' version needed to extract
+    Flags               As Integer                  ' encrypt and compression flags
+    Method              As Integer                  ' compression method
+    FTime               As Integer                  ' time last modifies, dos format
+    FDate               As Integer                  ' date last modifies, dos format
     '--- padding
-    Crc32           As Long                     'CRC32 for uncompressed file
-    CSize           As Long                     'compressed size
-    USize           As Long                     'uncompressed size
-    LenFname        As Integer                  'Length filename
-    LenExt          As Integer                  'Length for extra field
+    Crc32               As Long                     ' CRC32 for uncompressed file
+    CSize               As Long                     ' compressed size
+    USize               As Long                     ' uncompressed size
+    LenFname            As Integer                  ' Length filename
+    LenExt              As Integer                  ' Length for extra field
 End Type
 
 Private Type UcsCentralHeaderType
-    Signature       As Long                     'Signature
-    VerMade         As Integer                  'version made by
-    VerExt          As Integer                  'version needed to extract
-    Flags           As Integer                  'encrypt and compression flags
-    Method          As Integer                  'compression method
-    FTime           As Integer                  'time last modifies, dos format
-    FDate           As Integer                  'date last modifies, dos format
+    Signature           As Long                     ' Signature
+    VerMade             As Integer                  ' version made by
+    VerExt              As Integer                  ' version needed to extract
+    Flags               As Integer                  ' encrypt and compression flags
+    Method              As Integer                  ' compression method
+    FTime               As Integer                  ' time last modifies, dos format
+    FDate               As Integer                  ' date last modifies, dos format
     '--- padding
-    Crc32           As Long                     'CRC32 for uncompressed file
-    CSize           As Long                     'compressed size
-    USize           As Long                     'uncompressed size
-    LenFname        As Integer                  'Length filename
-    LenExt          As Integer                  'Length for extra field
-    LenCom          As Integer                  'Length for comment field
-    DiskStart       As Integer                  'start disk number
-    AttribI         As Integer                  'internal file attributes
+    Crc32               As Long                     ' CRC32 for uncompressed file
+    CSize               As Long                     ' compressed size
+    USize               As Long                     ' uncompressed size
+    LenFname            As Integer                  ' Length filename
+    LenExt              As Integer                  ' Length for extra field
+    LenCom              As Integer                  ' Length for comment field
+    DiskStart           As Integer                  ' start disk number
+    AttribI             As Integer                  ' internal file attributes
     '--- padding
-    AttribX         As Long                     'external file attributes
-    Offset          As Long                     'relative offset of local header
+    AttribX             As Long                     ' external file attributes
+    Offset              As Long                     ' relative offset of local header
 End Type
 
 Private Type UcsEndHeaderType
-    Signature       As Long                     'Signature
-    DiskNum         As Integer                  'this disk number
-    DiskStart       As Integer                  'start disk number
-    Entries         As Integer                  'Entries on this disk
-    TotEntr         As Integer                  'Number of total entries
-    CenSize         As Long                     'size of entire cetral directory
-    CenOff          As Long                     'offset of central on starting disk
-    LenCom          As Integer                  'Length of comment field
+    Signature           As Long                     ' Signature
+    DiskNum             As Integer                  ' This disk number
+    DiskStart           As Integer                  ' Start disk number
+    Entries             As Integer                  ' Entries on this disk
+    TotEntr             As Integer                  ' Number of total entries
+    CenSize             As Long                     ' Size of entire cetral directory
+    CenOff              As Long                     ' Offset of central on starting disk
+    LenCom              As Integer                  ' Length of comment field
 End Type
 
 Private Type UcsAesExtraDataType
-    HeaderId        As Integer
-    Size            As Integer
-    Version         As Integer
-    VendorId        As Integer
-    Strength        As Byte
+    HeaderId            As Integer                  ' Extra field header ID (0x9901)
+    Size                As Integer                  ' Data size (currently 7, but subject to possible increase in the future)
+    Version             As Integer                  ' Integer version number specific to the zip vendor
+    VendorId            As Integer                  ' 2-character vendor ID
+    Strength            As Byte                     ' Integer mode value indicating AES encryption strength
     '--- padding
-    Method          As Integer
+    Method              As Integer                  ' The actual compression method used to compress the file
 End Type
 
 Private Type UcsFileInfo
@@ -368,6 +398,27 @@ Private Type UcsFileInfo
         Password        As String
     #End If ' ImplCrypto
 End Type
+
+#If ImplCrypto Then
+Private Type UcsZipCryptoType
+    hPbkdf2Alg          As Long
+    hHmacAlg            As Long
+    hHmacHash           As Long
+    HmacHashLen         As Long
+    hAesAlg             As Long
+    hAesKey             As Long
+    AesKeyObjData()     As Byte
+    AesKeyObjLen        As Long
+    Nonce               As Variant ' LongLong (VT_I8)
+    EncrData()          As Byte
+    EncrPos             As Long
+    TradKey0            As Long
+    TradKey1            As Variant ' LongLong (VT_I8)
+    TradKey2            As Long
+    TradCrc32Table()    As Long
+    MAX_UINT32          As Variant ' LongLong (VT_I8)
+End Type
+#End If ' ImplCrypto
 
 '=========================================================================
 ' Properties
@@ -504,12 +555,9 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
-                    If m_oCrypto Is Nothing Then
-                        Set m_oCrypto = New cZipCrypto
-                    End If
-                    baSalt = m_oCrypto.CryptoAesRandomSalt(LNG_AES256_SALT_SIZE)
-                    If Not m_oCrypto.CryptoAesInit(ToUtf8Array(.Password), baSalt, LNG_AES256_KEY_SIZE, nPassVer) Then
-                        Err.Raise vbObjectError, , m_oCrypto.LastError
+                    baSalt = pvCryptoAesRandomSalt(LNG_AES256_SALT_SIZE)
+                    If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, LNG_AES256_KEY_SIZE, nPassVer) Then
+                        Err.Raise vbObjectError, , LastError
                     End If
                     '--- reserve space in extra data for AE-1/2
                     lJdx = UBound(.Extra) + 1
@@ -548,8 +596,8 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                                     ReDim baBuffer(0 To (uBuf.OutLen And -2048) + 2047) As Byte
                                 End If
                                 Call CopyMemory(baBuffer(0), ByVal uBuf.OutBlock, uBuf.OutLen)
-                                If Not m_oCrypto.CryptoAesEncrypt(baBuffer, Size:=uBuf.OutLen) Then
-                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                If Not pvCryptoAesEncrypt(baBuffer, Size:=uBuf.OutLen) Then
+                                    Err.Raise vbObjectError, , LastError
                                 End If
                                 pvVfsWrite uArchiveFile, VarPtr(baBuffer(0)), uBuf.OutLen
                                 Call CoTaskMemFree(uBuf.OutBlock)
@@ -599,8 +647,8 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                         Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), VarPtr(baBuffer(0)), lSize, VarPtr(uLocal.Crc32))
                         #If ImplCrypto Then
                             If LenB(.Password) <> 0 Then
-                                If Not m_oCrypto.CryptoAesEncrypt(baBuffer, Size:=lSize) Then
-                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                If Not pvCryptoAesEncrypt(baBuffer, Size:=lSize) Then
+                                    Err.Raise vbObjectError, , LastError
                                 End If
                             End If
                         #End If
@@ -615,7 +663,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
                     '--- append HMAC SHA1 authetication code after file data
-                    baSalt = m_oCrypto.CryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)
+                    baSalt = pvCryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)
                     pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES_AUTHCODE_SIZE
                     '--- update AE-1/2 in extra data
                     uAes.HeaderId = LNG_EXTRADATA_AES_HEADER
@@ -1162,21 +1210,18 @@ Public Function Extract( _
                         If LenB(Password) = 0 Then
                             Err.Raise vbObjectError, , ERR_PASSWORD_REQUIRED
                         End If
-                        If m_oCrypto Is Nothing Then
-                            Set m_oCrypto = New cZipCrypto
-                        End If
                         If .Aes.Strength = 0 Then
                             '--- init traditional ZipCrypt
                             lRead = LNG_ENC_HEADER_SIZE
-                            If Not m_oCrypto.CryptoTradInit(ToUtf8Array(Password)) Then
-                                Err.Raise vbObjectError, , m_oCrypto.LastError
+                            If Not pvCryptoTradInit(ToUtf8Array(Password)) Then
+                                Err.Raise vbObjectError, , LastError
                             End If
                             lResult = pvVfsRead(uArchiveFile, VarPtr(baBuffer(0)), LNG_ENC_HEADER_SIZE)
                             If lResult = 0 Then
                                 Err.Raise vbObjectError, , ERR_READING_ARCHIVE
                             End If
-                            If Not m_oCrypto.CryptoTradDecrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE) Then
-                                Err.Raise vbObjectError, , m_oCrypto.LastError
+                            If Not pvCryptoTradDecrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE) Then
+                                Err.Raise vbObjectError, , LastError
                             End If
                             If baBuffer(LNG_ENC_HEADER_SIZE - 1) <> (PeekInt(VarPtr(.Crc32) + 2) And &HFF00&) \ &H100 Then
                                 Err.Raise vbObjectError, , ERR_INVALID_PASSWORD
@@ -1190,8 +1235,8 @@ Public Function Extract( _
                             End If
                             ReDim baSalt(0 To lRead - 1) As Byte
                             Call CopyMemory(baSalt(0), baBuffer(0), UBound(baSalt) + 1)
-                            If Not m_oCrypto.CryptoAesInit(ToUtf8Array(Password), baSalt, lRead * 2, nPassVer) Then
-                                Err.Raise vbObjectError, , m_oCrypto.LastError
+                            If Not pvCryptoAesInit(ToUtf8Array(Password), baSalt, lRead * 2, nPassVer) Then
+                                Err.Raise vbObjectError, , LastError
                             End If
                             If nPassVer <> PeekInt(VarPtr(baBuffer(lRead))) Then
                                 Err.Raise vbObjectError, , ERR_INVALID_PASSWORD
@@ -1233,12 +1278,12 @@ Public Function Extract( _
                     #If ImplCrypto Then
                         If (.Flags And ucsZcfEncrypted) <> 0 Then
                             If .Aes.Strength = 0 Then
-                                If Not m_oCrypto.CryptoTradDecrypt(baBuffer, 0, lResult) Then
-                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                If Not pvCryptoTradDecrypt(baBuffer, 0, lResult) Then
+                                    Err.Raise vbObjectError, , LastError
                                 End If
                             Else
-                                If Not m_oCrypto.CryptoAesDecrypt(baBuffer, 0, lResult) Then
-                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                If Not pvCryptoAesDecrypt(baBuffer, 0, lResult) Then
+                                    Err.Raise vbObjectError, , LastError
                                 End If
                             End If
                         End If
@@ -1270,7 +1315,7 @@ Public Function Extract( _
                         If lResult < LNG_AES_AUTHCODE_SIZE Then
                             Err.Raise vbObjectError, , ERR_READING_ARCHIVE
                         End If
-                        If CStr(baSalt) <> CStr(m_oCrypto.CryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)) Then
+                        If CStr(baSalt) <> CStr(pvCryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)) Then
                             Err.Raise vbObjectError, , ERR_INVALID_AUTHCODE
                         End If
                     End If
@@ -1351,6 +1396,234 @@ Private Function pvToWinFileName(baBuffer() As Byte, ByVal lCodePage As Long) As
 End Function
 
 #End If ' ImplDecompress
+
+'= Crypto ================================================================
+
+#If ImplCrypto Then
+
+Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyLen As Long, nPassVer As Integer) As Boolean
+    Dim baDerivedKey()  As Byte
+    Dim lResult         As Long '--- discarded
+    
+    '--- init member vars
+    m_uCrypto.Nonce = CLngLng(0)
+    ReDim m_uCrypto.EncrData(0 To LNG_AES_BLOCK_SIZE - 1) As Byte
+    m_uCrypto.EncrPos = LNG_AES_BLOCK_SIZE
+    '--- generate RFC 2898 based derived key
+    If m_uCrypto.hPbkdf2Alg = 0 Then
+        If BCryptOpenAlgorithmProvider(m_uCrypto.hPbkdf2Alg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG) <> 0 Then
+            GoTo QH
+        End If
+    End If
+    ReDim baDerivedKey(0 To 2 * lKeyLen + 1) As Byte
+    If BCryptDeriveKeyPBKDF2(m_uCrypto.hPbkdf2Alg, baPass(0), UBound(baPass) + 1, baSalt(0), UBound(baSalt) + 1, 1000, 0, baDerivedKey(0), UBound(baDerivedKey) + 1, 0) <> 0 Then
+        GoTo QH
+    End If
+    '--- extract Password Verification Value from last 2 bytes of derived key
+    Call CopyMemory(nPassVer, baDerivedKey(2 * lKeyLen), 2)
+    '--- init AES w/ ECB from first half of derived key
+    If m_uCrypto.hAesAlg = 0 Then
+        If BCryptOpenAlgorithmProvider(m_uCrypto.hAesAlg, StrPtr(BCRYPT_AES_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), 0) <> 0 Then
+            GoTo QH
+        End If
+        If BCryptGetProperty(m_uCrypto.hAesAlg, StrPtr(BCRYPT_OBJECT_LENGTH), m_uCrypto.AesKeyObjLen, 4, lResult, 0) <> 0 Then
+            GoTo QH
+        End If
+        If BCryptSetProperty(m_uCrypto.hAesAlg, StrPtr(BCRYPT_CHAINING_MODE), StrPtr(BCRYPT_CHAIN_MODE_ECB), LenB(BCRYPT_CHAIN_MODE_ECB), 0) <> 0 Then
+            GoTo QH
+        End If
+    End If
+    If m_uCrypto.hAesKey <> 0 Then
+        Call BCryptDestroyKey(m_uCrypto.hAesKey)
+        m_uCrypto.hAesKey = 0
+    End If
+    ReDim m_uCrypto.AesKeyObjData(0 To m_uCrypto.AesKeyObjLen - 1) As Byte
+    If BCryptGenerateSymmetricKey(m_uCrypto.hAesAlg, m_uCrypto.hAesKey, m_uCrypto.AesKeyObjData(0), m_uCrypto.AesKeyObjLen, baDerivedKey(0), lKeyLen, 0) <> 0 Then
+        GoTo QH
+    End If
+    '-- init HMAC from second half of derived key
+    If m_uCrypto.hHmacAlg = 0 Then
+        If BCryptOpenAlgorithmProvider(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG) <> 0 Then
+            GoTo QH
+        End If
+        If BCryptGetProperty(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_HASH_LENGTH), m_uCrypto.HmacHashLen, 4, lResult, 0) <> 0 Then
+            GoTo QH
+        End If
+    End If
+    If m_uCrypto.hHmacHash <> 0 Then
+        Call BCryptDestroyHash(m_uCrypto.hHmacHash)
+        m_uCrypto.hHmacHash = 0
+    End If
+    If BCryptCreateHash(m_uCrypto.hHmacAlg, m_uCrypto.hHmacHash, 0, 0, baDerivedKey(lKeyLen), lKeyLen, BCRYPT_HASH_REUSABLE_FLAG) <> 0 Then
+        GoTo QH
+    End If
+    '--- success
+    pvCryptoAesInit = True
+    Exit Function
+QH:
+    m_sLastError = GetSystemMessage(Err.LastDllError)
+End Function
+
+Private Sub pvCryptoTerminate()
+    If m_uCrypto.hPbkdf2Alg <> 0 Then
+        Call BCryptCloseAlgorithmProvider(m_uCrypto.hPbkdf2Alg, 0)
+        m_uCrypto.hPbkdf2Alg = 0
+    End If
+    If m_uCrypto.hHmacHash <> 0 Then
+        Call BCryptDestroyHash(m_uCrypto.hHmacHash)
+        m_uCrypto.hHmacHash = 0
+    End If
+    If m_uCrypto.hHmacAlg <> 0 Then
+        Call BCryptCloseAlgorithmProvider(m_uCrypto.hHmacAlg, 0)
+        m_uCrypto.hHmacAlg = 0
+    End If
+    If m_uCrypto.hAesKey <> 0 Then
+        Call BCryptDestroyKey(m_uCrypto.hAesKey)
+        m_uCrypto.hAesKey = 0
+    End If
+    If m_uCrypto.hAesAlg <> 0 Then
+        Call BCryptCloseAlgorithmProvider(m_uCrypto.hAesAlg, 0)
+        m_uCrypto.hAesAlg = 0
+    End If
+End Sub
+
+Private Function pvCryptoAesEncrypt(baData() As Byte, Optional ByVal Offset As Long, Optional ByVal Size As Long = -1) As Boolean
+    pvCryptoAesEncrypt = pvCryptoAesProcess(baData, Offset, Size, HashAfter:=True)
+End Function
+
+Private Function pvCryptoAesDecrypt(baData() As Byte, Optional ByVal Offset As Long, Optional ByVal Size As Long = -1) As Boolean
+    pvCryptoAesDecrypt = pvCryptoAesProcess(baData, Offset, Size, HashBefore:=True)
+End Function
+
+Private Function pvCryptoAesProcess( _
+            baData() As Byte, _
+            ByVal lOffset As Long, _
+            ByVal lSize As Long, _
+            Optional ByVal HashBefore As Boolean, _
+            Optional ByVal HashAfter As Boolean) As Boolean
+    Dim lPos            As Long
+    Dim lIdx            As Long
+    Dim lResult         As Long '--- discarded
+    
+    If lSize < 0 Then
+        lSize = UBound(baData) + 1 - lOffset
+    End If
+    ReDim baNonceData(0 To LNG_AES_BLOCK_SIZE - 1) As Byte
+    If HashBefore Then
+        If BCryptHashData(m_uCrypto.hHmacHash, baData(lOffset), lSize, 0) <> 0 Then
+            GoTo QH
+        End If
+    End If
+    With m_uCrypto
+        lPos = .EncrPos
+        For lIdx = lOffset To lOffset + lSize - 1
+            If lPos = LNG_AES_BLOCK_SIZE Then
+                .Nonce = .Nonce + 1
+                Call CopyMemory(baNonceData(0), ByVal VarPtr(.Nonce) + 8, 8)
+                If BCryptEncrypt(.hAesKey, baNonceData(0), LNG_AES_BLOCK_SIZE, 0, 0, 0, .EncrData(0), LNG_AES_BLOCK_SIZE, lResult, 0) <> 0 Then
+                    GoTo QH
+                End If
+                lPos = 0
+            End If
+            baData(lIdx) = baData(lIdx) Xor .EncrData(lPos)
+            lPos = lPos + 1
+        Next
+        .EncrPos = lPos
+    End With
+    If HashAfter Then
+        If BCryptHashData(m_uCrypto.hHmacHash, baData(lOffset), lSize, 0) <> 0 Then
+            GoTo QH
+        End If
+    End If
+    '--- success
+    pvCryptoAesProcess = True
+    Exit Function
+QH:
+    m_sLastError = GetSystemMessage(Err.LastDllError)
+End Function
+
+Private Function pvCryptoAesGetFinalHash(ByVal lSize As Long) As Byte()
+    Dim baResult()      As Byte
+    
+    ReDim baResult(0 To m_uCrypto.HmacHashLen - 1) As Byte
+    Call BCryptFinishHash(m_uCrypto.hHmacHash, baResult(0), m_uCrypto.HmacHashLen, 0)
+    ReDim Preserve baResult(0 To lSize - 1) As Byte
+    pvCryptoAesGetFinalHash = baResult
+End Function
+
+Private Function pvCryptoAesRandomSalt(ByVal lSize As Long) As Byte()
+    Dim baResult()      As Byte
+    
+    ReDim baResult(0 To 15) As Byte
+    Call CoCreateGuid(baResult(0))
+    ReDim Preserve baResult(0 To lSize - 1) As Byte
+    pvCryptoAesRandomSalt = baResult
+End Function
+
+Private Function pvCryptoTradInit(baPass() As Byte) As Boolean
+    Dim lIdx            As Long
+    Dim lJdx            As Long
+    Dim lValue          As Long
+    
+    With m_uCrypto
+        .TradKey0 = 305419896
+        .TradKey1 = CLngLng(591751049)
+        .TradKey2 = 878082192
+        .MAX_UINT32 = CLngLng(2 ^ 32 - 1)
+        If Peek(ArrPtr(.TradCrc32Table)) = 0 Then
+            ReDim .TradCrc32Table(0 To 255) As Long
+            For lIdx = 0 To 255
+                lValue = lIdx
+                For lJdx = 0 To 7
+                    If (lValue And 1&) <> 0 Then
+                        lValue = (((lValue And &HFFFFFFFE) \ 2&) And &H7FFFFFFF) Xor &HEDB88320
+                    Else
+                        lValue = ((lValue And &HFFFFFFFE) \ 2&) And &H7FFFFFFF
+                    End If
+                Next
+                .TradCrc32Table(lIdx) = lValue
+            Next
+        End If
+    End With
+    For lIdx = 0 To UBound(baPass)
+        pvCryptoTradUpdateKeys baPass(lIdx)
+    Next
+    '--- success
+    pvCryptoTradInit = True
+End Function
+
+Private Function pvCryptoTradDecrypt(baData() As Byte, Optional ByVal Offset As Long, Optional ByVal Size As Long = -1) As Boolean
+    Dim lIdx            As Long
+    Dim lTemp           As Long
+    
+    If Size < 0 Then
+        Size = UBound(baData) + 1 - Offset
+    End If
+    For lIdx = Offset To Offset + Size - 1
+        lTemp = m_uCrypto.TradKey2 Or 2&
+        lTemp = CLng((CLngLng(lTemp) * (lTemp Xor 1&)) And &HFF00&) \ &H100&
+        baData(lIdx) = baData(lIdx) Xor lTemp
+        pvCryptoTradUpdateKeys baData(lIdx)
+    Next
+    '--- success
+    pvCryptoTradDecrypt = True
+End Function
+
+Private Sub pvCryptoTradUpdateKeys(ByVal bytChar As Byte)
+    With m_uCrypto
+        .TradKey0 = pvCryptoTradCalcCrc32(.TradKey0, bytChar)
+        .TradKey1 = (.TradKey1 + (.TradKey0 And &HFF&)) And .MAX_UINT32
+        .TradKey1 = (.TradKey1 * 134775813 + 1&) And .MAX_UINT32
+        bytChar = (.TradKey1 And &HFF000000) \ &H1000000
+        .TradKey2 = pvCryptoTradCalcCrc32(.TradKey2, bytChar)
+    End With
+End Sub
+
+Private Function pvCryptoTradCalcCrc32(ByVal lCrc32 As Long, ByVal bytChar As Byte) As Long
+    pvCryptoTradCalcCrc32 = (((lCrc32 And &HFFFFFF00) \ &H100&) And &HFFFFFF) Xor (m_uCrypto.TradCrc32Table((lCrc32 And &HFF&) Xor bytChar))
+End Function
+
+#End If
 
 '= VFS ===================================================================
 
@@ -1780,7 +2053,7 @@ Private Function PeekInt(ByVal lPtr As Long) As Integer
     Call CopyMemory(PeekInt, ByVal lPtr, 2)
 End Function
 
-Public Function ToUtf8Array(sText As String) As Byte()
+Private Function ToUtf8Array(sText As String) As Byte()
     Dim baRetVal()      As Byte
     Dim lSize           As Long
     
@@ -1794,6 +2067,10 @@ Public Function ToUtf8Array(sText As String) As Byte()
     ToUtf8Array = baRetVal
 End Function
 
+Private Function CLngLng(vValue As Variant) As Variant
+    Call VariantChangeType(CLngLng, vValue, 0, VT_I8)
+End Function
+
 #End If ' Not ImplUseShared
 
 '=========================================================================
@@ -1803,4 +2080,8 @@ End Function
 Private Sub Class_Initialize()
     pvInitRelocTable m_uRtbl
     m_lCurrentFile = -1
+End Sub
+
+Private Sub Class_Terminate()
+    pvCryptoTerminate
 End Sub
