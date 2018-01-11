@@ -44,12 +44,13 @@
 #define ZLIB_STDCALL __stdcall
 
 void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *block, int len, unsigned int *pcrc);
-void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam);
-void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int lParam, int wParam);
-int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam);
-void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam);
-void ZLIB_STDCALL vbzlib_decompress_cleanup(void *handle, int wMsg, int lParam, int wParam);
-int ZLIB_STDCALL vbzlib_decompress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam);
+void ZLIB_STDCALL vbzlib_xor(const unsigned char *block, unsigned char *dest, int len, int lParam);
+void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam);
+void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int wParam, int lParam);
+int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam);
+void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam);
+void ZLIB_STDCALL vbzlib_decompress_cleanup(void *handle, int wMsg, int wParam, int lParam);
+int ZLIB_STDCALL vbzlib_decompress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam);
 static void ZLIB_STDCALL zlib_literal(struct LZ77Context *ectx, unsigned char c);
 static void ZLIB_STDCALL zlib_match(struct LZ77Context *ectx, int distance, int len);
 
@@ -98,6 +99,7 @@ struct RelocTable {
     void *vbzlib_decompress_cleanup;
     void *vbzlib_decompress_block;
     void *vbzlib_crc32;
+    void *vbzlib_xor;
     void *(ZLIB_STDCALL *vbzlib_malloc)(size_t size);
     void *(ZLIB_STDCALL *vbzlib_realloc)(void *ptr, size_t size);
     void (ZLIB_STDCALL *vbzlib_free)(void *ptr);
@@ -1478,6 +1480,7 @@ static struct RelocTable rtable = {
     vbzlib_decompress_cleanup,
     vbzlib_decompress_block,
     vbzlib_crc32,
+    vbzlib_xor,
     0,
     0,
     0,
@@ -1533,29 +1536,41 @@ void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *blo
     *pcrc = remainder;
 }
 
-void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam) {
+void ZLIB_STDCALL vbzlib_xor(const unsigned char *block, unsigned char *dest, int len, int lParam)
+{
+    while (len--)
+        *dest++ ^= *block++;
+}
+
+void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam)
+{
     return zlib_compress_init(rtbl);
 }
 
-void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int lParam, int wParam) {
+void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int wParam, int lParam)
+{
     zlib_compress_cleanup(handle);
 }
 
-int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam) {
+int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam)
+{
     if (pcrc)
         vbzlib_crc32(((struct LZ77Context *)handle)->rtbl, buf->block, buf->len, pcrc);
     return zlib_compress_block(handle, buf->block, buf->len, &buf->outblock, &buf->outlen, buf->final, buf->greedy, buf->maxmatch, buf->nicelen);
 }
 
-void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam) {
+void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam)
+{
     return zlib_decompress_init(rtbl);
 }
 
-void ZLIB_STDCALL vbzlib_decompress_cleanup(void *handle, int wMsg, int lParam, int wParam) {
+void ZLIB_STDCALL vbzlib_decompress_cleanup(void *handle, int wMsg, int wParam, int lParam)
+{
     zlib_decompress_cleanup(handle);
 }
 
-int ZLIB_STDCALL vbzlib_decompress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam) {
+int ZLIB_STDCALL vbzlib_decompress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam)
+{
     int result;
     
     result = zlib_decompress_block(handle, buf->block, buf->len, &buf->outblock, &buf->outlen);            
@@ -1573,7 +1588,8 @@ struct ThunkInfo {
 
 int __stdcall _DllMainCRTStartup(int hInst, int fdwReason, void *lpReserved);
     
-void ZLIB_STDCALL vbzlib_extract_thunk(struct RelocTable *rtbl, struct ThunkInfo *info) {
+void ZLIB_STDCALL vbzlib_extract_thunk(struct RelocTable *rtbl, struct ThunkInfo *info)
+{
     memcpy(rtbl, &rtable, sizeof(rtable));
 #if (_MSC_VER == 1200)
     info->code_start = zlib_compress_init;

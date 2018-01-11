@@ -31,6 +31,7 @@ Private Type RelocTable
     vbzlib_decompress_cleanup As Long
     vbzlib_decompress_block As Long
     vbzlib_crc32        As Long
+    vbzlib_xor          As Long
     vbzlib_malloc       As Long
     vbzlib_realloc      As Long
     vbzlib_free         As Long
