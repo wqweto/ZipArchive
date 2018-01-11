@@ -143,6 +143,7 @@ Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As L
     Private Declare Function DosDateTimeToFileTime Lib "kernel32" (ByVal wFatDate As Long, ByVal wFatTime As Long, lpFileTime As FILETIME) As Long
 #End If ' ImplDecompress
 #If ImplCrypto Then
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (Destination As Any, ByVal Length As Long)
     Private Declare Function CoCreateGuid Lib "ole32" (pguid As Any) As Long
     Private Declare Function ArrPtr Lib "msvbvm60" Alias "VarPtr" (Ptr() As Any) As Long
     Private Declare Function BCryptOpenAlgorithmProvider Lib "bcrypt" (phAlgorithm As Long, ByVal pszAlgId As Long, ByVal pszImplementation As Long, ByVal dwFlags As Long) As Long
@@ -163,7 +164,7 @@ Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As L
     Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
     Private Declare Function CreateDirectory Lib "kernel32" Alias "CreateDirectoryA" (ByVal lpPathName As String, ByVal lpSecurityAttributes As Long) As Long
     Private Declare Function CryptStringToBinary Lib "crypt32" Alias "CryptStringToBinaryW" (ByVal pszString As Long, ByVal cchString As Long, ByVal dwFlags As Long, ByVal pbBinary As Long, ByRef pcbBinary As Long, ByRef pdwSkip As Long, ByRef pdwFlags As Long) As Long
-    Private Declare Function VariantChangeType Lib "oleaut32" (Dest As Variant, src As Variant, ByVal wFlags As Integer, ByVal vt As Long) As Long
+    Private Declare Function VariantChangeType Lib "oleaut32" (Destination As Variant, Source As Variant, ByVal wFlags As Integer, ByVal vt As Long) As Long
 #End If ' Not ImplUseShared
 
 Private Type FILETIME
@@ -634,6 +635,13 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                     uLocal.Crc32 = -1
                     uLocal.USize = 0
                     uLocal.CSize = 0
+                    #If ImplCrypto Then
+                       If LenB(.Password) <> 0 Then
+                           If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, LNG_AES256_KEY_SIZE, nPassVer) Then
+                               Err.Raise vbObjectError, , LastError
+                           End If
+                       End If
+                    #End If
                     Do
                         RaiseEvent Progress(lIdx, uLocal.USize, .Size, m_bCancel)
                         If m_bCancel Then
@@ -1407,7 +1415,7 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     
     '--- init member vars
     m_uCrypto.Nonce = CLngLng(0)
-    ReDim m_uCrypto.EncrData(0 To LNG_AES_BLOCK_SIZE - 1) As Byte
+    m_uCrypto.EncrData = vbNullString
     m_uCrypto.EncrPos = LNG_AES_BLOCK_SIZE
     '--- generate RFC 2898 based derived key
     If m_uCrypto.hPbkdf2Alg = 0 Then
@@ -1508,7 +1516,6 @@ Private Function pvCryptoAesProcess( _
     If lSize < 0 Then
         lSize = UBound(baData) + 1 - lOffset
     End If
-    ReDim baNonceData(0 To LNG_AES_BLOCK_SIZE - 1) As Byte
     If HashBefore Then
         If BCryptHashData(m_uCrypto.hHmacHash, baData(lOffset), lSize, 0) <> 0 Then
             GoTo QH
@@ -1516,18 +1523,37 @@ Private Function pvCryptoAesProcess( _
     End If
     With m_uCrypto
         lPos = .EncrPos
+        '--- reuse EncrData from prev call until next LNG_AES_BLOCK_SIZE boundary
         For lIdx = lOffset To lOffset + lSize - 1
-            If lPos = LNG_AES_BLOCK_SIZE Then
-                .Nonce = .Nonce + 1
-                Call CopyMemory(baNonceData(0), ByVal VarPtr(.Nonce) + 8, 8)
-                If BCryptEncrypt(.hAesKey, baNonceData(0), LNG_AES_BLOCK_SIZE, 0, 0, 0, .EncrData(0), LNG_AES_BLOCK_SIZE, lResult, 0) <> 0 Then
-                    GoTo QH
-                End If
-                lPos = 0
+            If (lPos And (LNG_AES_BLOCK_SIZE - 1)) = 0 Then
+                Exit For
             End If
             baData(lIdx) = baData(lIdx) Xor .EncrData(lPos)
             lPos = lPos + 1
         Next
+        If lIdx < lOffset + lSize Then
+            '--- pad remaining input size to LNG_AES_BLOCK_SIZE
+            lPos = (lOffset + lSize - lIdx + LNG_AES_BLOCK_SIZE - 1) And -LNG_AES_BLOCK_SIZE
+            If UBound(.EncrData) + 1 < lPos Then
+                ReDim .EncrData(0 To lPos - 1) As Byte
+            Else
+                Call ZeroMemory(.EncrData(0), lPos)
+            End If
+            '--- encrypt incremental nonces in EncrData
+            For lPos = 0 To lPos - 1 Step LNG_AES_BLOCK_SIZE
+                .Nonce = .Nonce + 1
+                Call CopyMemory(.EncrData(lPos), ByVal VarPtr(.Nonce) + 8, 8)
+            Next
+            If BCryptEncrypt(.hAesKey, .EncrData(0), lPos, 0, 0, 0, .EncrData(0), lPos, lResult, 0) <> 0 Then
+                GoTo QH
+            End If
+            '--- xor remaining input and on non-multiple input size leave EncrData for reuse
+            lPos = 0
+            For lIdx = lIdx To lOffset + lSize - 1
+                baData(lIdx) = baData(lIdx) Xor .EncrData(lPos)
+                lPos = lPos + 1
+            Next
+        End If
         .EncrPos = lPos
     End With
     If HashAfter Then
@@ -1562,8 +1588,6 @@ End Function
 
 Private Function pvCryptoTradInit(baPass() As Byte) As Boolean
     Dim lIdx            As Long
-    Dim lJdx            As Long
-    Dim lValue          As Long
     
     With m_uCrypto
         .TradKey0 = 305419896
@@ -1572,17 +1596,7 @@ Private Function pvCryptoTradInit(baPass() As Byte) As Boolean
         .MAX_UINT32 = CLngLng(2 ^ 32 - 1)
         If Peek(ArrPtr(.TradCrc32Table)) = 0 Then
             ReDim .TradCrc32Table(0 To 255) As Long
-            For lIdx = 0 To 255
-                lValue = lIdx
-                For lJdx = 0 To 7
-                    If (lValue And 1&) <> 0 Then
-                        lValue = (((lValue And &HFFFFFFFE) \ 2&) And &H7FFFFFFF) Xor &HEDB88320
-                    Else
-                        lValue = ((lValue And &HFFFFFFFE) \ 2&) And &H7FFFFFFF
-                    End If
-                Next
-                .TradCrc32Table(lIdx) = lValue
-            Next
+            Call CopyMemory(.TradCrc32Table(0), ByVal m_uRtbl.Crc32Table, 4 * 256)
         End If
     End With
     For lIdx = 0 To UBound(baPass)
