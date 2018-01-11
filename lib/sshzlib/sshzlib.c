@@ -44,12 +44,15 @@
 #define ZLIB_STDCALL __stdcall
 
 void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *block, int len, unsigned int *pcrc);
-void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam);
-void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int lParam, int wParam);
-int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam);
-void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam);
-void ZLIB_STDCALL vbzlib_decompress_cleanup(void *handle, int wMsg, int lParam, int wParam);
-int ZLIB_STDCALL vbzlib_decompress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam);
+void ZLIB_STDCALL vbzlib_memnonce(unsigned int *block, unsigned int *nonce, int len, int lParam);
+void ZLIB_STDCALL vbzlib_memxor(const unsigned char *block, unsigned char *dest, int len, int lParam);
+void ZLIB_STDCALL vbzlib_zipcrypt(const unsigned int *keys, unsigned char *block, int len, const unsigned int *crc32_table);
+void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam);
+void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int wParam, int lParam);
+int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam);
+void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam);
+void ZLIB_STDCALL vbzlib_decompress_cleanup(void *handle, int wMsg, int wParam, int lParam);
+int ZLIB_STDCALL vbzlib_decompress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam);
 static void ZLIB_STDCALL zlib_literal(struct LZ77Context *ectx, unsigned char c);
 static void ZLIB_STDCALL zlib_match(struct LZ77Context *ectx, int distance, int len);
 
@@ -98,6 +101,9 @@ struct RelocTable {
     void *vbzlib_decompress_cleanup;
     void *vbzlib_decompress_block;
     void *vbzlib_crc32;
+    void *vbzlib_memnonce;
+    void *vbzlib_memxor;
+    void *vbzlib_zipcrypt;
     void *(ZLIB_STDCALL *vbzlib_malloc)(size_t size);
     void *(ZLIB_STDCALL *vbzlib_realloc)(void *ptr, size_t size);
     void (ZLIB_STDCALL *vbzlib_free)(void *ptr);
@@ -1478,6 +1484,9 @@ static struct RelocTable rtable = {
     vbzlib_decompress_cleanup,
     vbzlib_decompress_block,
     vbzlib_crc32,
+    vbzlib_memnonce,
+    vbzlib_memxor,
+    vbzlib_zipcrypt,
     0,
     0,
     0,
@@ -1533,29 +1542,69 @@ void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *blo
     *pcrc = remainder;
 }
 
-void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam) {
+void ZLIB_STDCALL vbzlib_memnonce(unsigned int *block, unsigned int *nonce, int len, int lParam)
+{
+    for (; len > 0; len -= 16) {
+        if (!++nonce[0])
+            ++nonce[1];
+        *block++ = nonce[0];
+        *block++ = nonce[1];
+        *block++ = 0;
+        *block++ = 0;
+    }
+}
+
+void ZLIB_STDCALL vbzlib_memxor(const unsigned char *block, unsigned char *dest, int len, int lParam)
+{
+    while (len--)
+        *dest++ ^= *block++;
+}
+
+void ZLIB_STDCALL vbzlib_zipcrypt(unsigned int *keys, unsigned char *block, int len, const unsigned int *crc32_table)
+{
+    #define CRC32(c, b) (((c) >> 8) ^ crc32_table[((c) & 0xff) ^ (b)])
+    unsigned int temp, update = (len > 0);
+    
+    for (len = (len > 0 ? len: -len); len > 0; len--, block++) {
+        if (update) {
+            temp = keys[2] | 2;
+            *block ^= ((temp * (temp ^ 1)) >> 8) & 0xff;
+        }
+        keys[0] = CRC32(keys[0], *block);
+        keys[1] = (keys[1] + (keys[0] & 0xff)) * 134775813L + 1;
+        keys[2] = CRC32(keys[2], (keys[1] >> 24) & 0xff);
+    }
+}
+
+void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam)
+{
     return zlib_compress_init(rtbl);
 }
 
-void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int lParam, int wParam) {
+void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int wParam, int lParam)
+{
     zlib_compress_cleanup(handle);
 }
 
-int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam) {
+int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam)
+{
     if (pcrc)
         vbzlib_crc32(((struct LZ77Context *)handle)->rtbl, buf->block, buf->len, pcrc);
     return zlib_compress_block(handle, buf->block, buf->len, &buf->outblock, &buf->outlen, buf->final, buf->greedy, buf->maxmatch, buf->nicelen);
 }
 
-void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int lParam, int wParam) {
+void *ZLIB_STDCALL vbzlib_decompress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam)
+{
     return zlib_decompress_init(rtbl);
 }
 
-void ZLIB_STDCALL vbzlib_decompress_cleanup(void *handle, int wMsg, int lParam, int wParam) {
+void ZLIB_STDCALL vbzlib_decompress_cleanup(void *handle, int wMsg, int wParam, int lParam)
+{
     zlib_decompress_cleanup(handle);
 }
 
-int ZLIB_STDCALL vbzlib_decompress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int wParam) {
+int ZLIB_STDCALL vbzlib_decompress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam)
+{
     int result;
     
     result = zlib_decompress_block(handle, buf->block, buf->len, &buf->outblock, &buf->outlen);            
@@ -1573,7 +1622,8 @@ struct ThunkInfo {
 
 int __stdcall _DllMainCRTStartup(int hInst, int fdwReason, void *lpReserved);
     
-void ZLIB_STDCALL vbzlib_extract_thunk(struct RelocTable *rtbl, struct ThunkInfo *info) {
+void ZLIB_STDCALL vbzlib_extract_thunk(struct RelocTable *rtbl, struct ThunkInfo *info)
+{
     memcpy(rtbl, &rtable, sizeof(rtable));
 #if (_MSC_VER == 1200)
     info->code_start = zlib_compress_init;

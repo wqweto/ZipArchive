@@ -43,31 +43,31 @@ Event Error(ByVal FileIdx As Long, Source As String, Description As String, Canc
 ' Thunk data
 '=========================================================================
 
-' Auto-generated on 9.4.2017 19:12:30, CodeSize=6336, DataSize=984, ALIGN_SIZE=16
+' Auto-generated on 11.1.2018 23:36:38, CodeSize=6608, DataSize=984, ALIGN_SIZE=16
 Private Const STR_THUNK1 As String = _
-    "UYtEJAhTi1wkEFWLbCQYVleLeDgD64tEJCSJbCQQiwD2wwN0HDvddBQPthNDD7bIM9HB6AgzBJf2wwN16IlcJByL1cdEJBgAAAAAK9OD4vyNDBqDwgPB6gI7yxvJ99EjyolMJCB0eYvpjaQkAAAAAIsbi8vB6QgPtvGLyMHpCA+2yTPxi8vB6RAPttGLyMHpEIu0twAIAAAPtskz0YvIwekYM7SXAAQAAIvTweoYM9EPtsgPtsOLXCQcM8iDwwQzNJeJXCQcM7SPAAwAAItMJBiLxkGJTCQYO811lItsJBCLzTP2K8s76xvt99Uj6XQWD7YTjVsBD7bIRjPRwegIMwSXO/V16otMJCRfXl2JAVtZwhAAzMzMzMzMzMzMzMzMVot0JAhXagyLRhz/0Iv4V4k36AkJAACLThxqFP/Rx0AQAAAAAMdADAAAAACJRwiLx19ewhAAzMzMzMzMzMzMzFaLdCQIV4s+/3YIi0ck/9D/dgSLRyT/0ItHJFb/0F9e" & _
-    "whAAzMzMzMzMzMzMzMzMzItEJAxWi3QkDFeLfCQMhcB0DVD/dgT/Nv836FH+////dhyNRgz/dhj/dhT/dhBQjUYIUP92BP82V+giCQAAX17CEADMzMzMzMzMzMzMzMzM/3QkBOjnDwAAwhAAzMzMzFaLdCQIi04MjUYMV4s+hcl0DDtOBHQHUFboghEAAItOEI1GEIXJdAw7Tgh0B1BW6GwRAACDfhQAjUYUdAdQVuhcEQAAjUYEUFboUhEAAI1GCFBW6EgRAACLRyRW/9BfXsIQAMzMzMzMzMzMzMzMzMyLRCQIU1WLbCQMVleNWAxTjXgIV/9wBP8wVeghCQAAi0wkHIvwhcl0GIX2dBSLB4XAdAxR/zNQ/3UA6GH9//+Lxl9eXVvCEADMzMzMzMzMzFaLdCQIg8r/i4YEgAQAD7dMxgKNBMZmO8p0CQ+/wWaJFMbrEItABIP4/3QIZomURgiABACLhgSABACLTCQQiUzGBIuGBIAEAGaJVMYCjRRO" & _
-    "i44EgAQAD7eCCIAEAGaJBM6LhgSABAAPvwzGD7fAZomCCIAEAIP5/3QMZouGBIAEAGaJRM4Ci44EgAQAikQkDIiEDgAABACLhgSABABAJf9/AACJhgSABABewgwAzMzMg+wMU1WLbCQgVleLfCQgM/aLfwSJfCQYObcMgAYAD47iAAAAi48MgAYAi8ErxgPFg/gED4ycAAAAi1QkJDvxfQoPtoQ+CIAGAOsIi8YrwQ+2BBCNXgKIRCQUjUP/O8F9Cg+2hD4JgAYA6wmLxivBD7ZEEAGIRCQVO9l9Cg+2hD4KgAYA6wmLxivBD7ZEEAKIRCQWjUMBO8F9Cg+2hD4LgAYA6wmLxivBD7ZEEAOIRCQXi0QkFGnIvac1HsHpEFFQV+iK/v//Rju3DIAGAA+MUf///+sxi847twyABgB9J42XCIAGAOsJjaQkAAAAAIv/ioQPCIAGAI1SAYhC/0E7jwyABgB86im3DIAGAIXtD471AQAA6wqNpCQAAAAAjUkA" & _
-    "i1wkJIP9BA+MWQEAAIuHAAAEADPtiYcAgAQAaQO9pzUewegQD7+URwiABACD+v8PhDEBAACLjwSABACLwivBvgCAAAAl/38AACvwK86B4f9/AACLhDkAAAQAOwN1Dom0rxCABgBFO2wkLH0JD78U14P6/3XAhe0PjukAAACLRCQoOUQkMH4GiUQkMOsEi0QkML4EAAAAO8Z+cY2bAAAAAIoEHjPJM9uIRCQThe1+WJCLlI8QgAYAi8YrwnkYi4cEgAQAK8IDxiX/fwAAioQ4AAAEAOsLi3wkJIoEOIt8JBg4RCQTdQiJlJ8QgAYAQ0E7zXy9g/sBfg+LRCQwRovri1wkJDvwfJmLXCQki2wkKDv1fT2LlxCABgCLzivKjSwahcl5GIuHBIAEACvCA8Yl/38AAIqEOAAABADrA4oEGTgEKXUIRkE7dCQofNSLbCQoVv+3EIAGAP90JCjooA4AAIX2fn3rOItMJCCKAzyPixGLcQgPtsiLQjB3CQ+2RAgw" & _
-    "agjrDQ+2BAhqCY0ERQEAAABQVlLoRxIAAL4BAAAAi2wkKIP9BHwWaQO9pzUewegQUA+2A1BX6HX8///rFYuPDIAGAIoDiIQPCIAGAP+HDIAGAE5DTYX2f8mJbCQoiVwkJIXtD48X/v//X15dW4PEDMIUAMzMzMzMzMzMzMzMzMyD7BRTVYtsJChWV4t8JCgz9ot/BIl8JCA5twyABgAPjuIAAACLjwyABgCLwSvGA8WD+AQPjJwAAACLVCQsO/F9Cg+2hD4IgAYA6wiLxivBD7YEEI1eAohEJBiNQ/87wX0KD7aEPgmABgDrCYvGK8EPtkQQAYhEJBk72X0KD7aEPgqABgDrCYvGK8EPtkQQAohEJBqNQwE7wX0KD7aEPguABgDrCYvGK8EPtkQQA4hEJBuLRCQYaci9pzUewekQUVBX6Gr7//9GO7cMgAYAD4xR////6zGLzju3DIAGAH0njZcIgAYA6wmNpCQAAAAAi/+KhA8IgAYAjVIBiEL/QTuP" & _
-    "DIAGAHzqKbcMgAYAM8AzyYlEJBSJTCQYiUQkHIXtD44JAgAA6wqNpCQAAAAAjUkAi1wkLIP9BA+MwAEAAIuHAAAEADPtiYcAgAQAaQO9pzUewegQD7+URwiABACD+v8PhJgBAACLjwSABACLwivBvgCAAAAl/38AACvwK86B4f9/AACLhDkAAAQAOwN1Dom0rxCABgBFO2wkNH0JD78U14P6/3XAhe0PjkwBAACLVCQwi0QkODvCfgaLwolEJDi+BAAAADvGfneKBB4zyTPbiEQkE4XtfmDrB42kJAAAAACLlI8QgAYAi8YrwnkYi4cEgAQAK8IDxiX/fwAAioQ4AAAEAOsLi3wkLIoEOIt8JCA4RCQTdQiJlJ8QgAYAQ0E7zXy9g/sBfg+LRCQ4Rovri1wkLDvwfJGLXCQsi1QkMDvyfTmLlxCABgCLzivKjSwahcl5GIuHBIAEACvCA8Yl/38AAIqEOAAABADrA4oEGTgEKXUIRkE7dCQwfNSLbCQU" & _
-    "he1+Xo1FATvwfk+LRCQoixCLaAiLRCQcPI8PtsiLQjB3CQ+2RAgwagjrDQ+2BAhqCY0ERQEAAABQVVLoIA8AAA+2A4uPEIAGAIlMJBiJdCQUiUQkHOmQAAAAi0QkGFVQ6yWLhxCABgCJRCQYD7YDiXQkFIlEJBzrcYtMJBiLbCQUhe1+MlVR/3QkMOjwCgAAM8CNdf+JRCQUhfZ/UotsJDCLTCQYhe0PjwP+//9fXl1bg8QUwhQAi0wkKIoDPI+LEYtxCA+2yItCMHcJD7ZECDBqCOsND7YECGoJjQRFAQAAAFBWUuh2DgAAvgEAAACLbCQwg/0EfBZpA72nNR7B6BBQD7YDUFfopPj//+sVi48MgAYAigOIhA8IgAYA/4cMgAYATkNNhfZ/yYlsJDCJXCQs6Wr////MzMzMzMzMzMxWV4t8JAxosI8GAIsHi0Ac/9CL8IX2dQVfXsIEAIl3BI1OAroAgAAAg8j/6wONSQDHQQL/////jUkIZolB+GaJ" & _
-    "QfaD6gF16Y2+CIAEALkAgAAA86tfiZYEgAQAjUIBiZYMgAYAXsIEAMzMzMzMzMzMVleLfCQMuQ8AAAC+AFDYZ7hgKNhn86WLTCQQg8BgX17HAQAQ2GeJQQTHQQigQNhnx0EMeETYZ8IIAMzMzMzMzFOLXCQIVldoAIAAAIs7i3MIi0cc/9CJBjPAOUQkJGoDD5XAx0YIAIAAAIPAAsdGBAAAAABQVlfoNA0AAIN8JCgA/3QkMP90JDD/dCQg/3QkIFN0B+gX+P//6wXoMPv//2oHagBWV+gFDQAAg3wkJAB0GItOEIXJdBG4CAAAACvBUGoAVlfo5gwAAItEJByLDl+JCItEJByLTgReW4kIuAEAAADCJADMzMzMzMzMzMzMUVNVVot0JBRXaACAAACLHolcJByLQxz/0ItsJCCJhqSBAADHhqyBAAAAgAAAx4aogQAAAAAAAIXtfw2DvpwBAAAAD462BQAAg76cAQAAGI2+nAEAAH0qi1QkHOsDjUkA" & _
-    "he1+GQ+2Ak2LD0LT4AmGmAEAAI1BCIkHg/gYfOOJVCQci0YYhcB1CcdGGAEAAADrpoP4AXVzixeD+gMPjF0FAACLhpgBAACDwv3R6IvIiRfB6AKJhpgBAACD4QN1HYvKx0YYCgAAAIPhByvR0+iJF4mGmAEAAOlc////g/kBdRiLRgSJRgyLRgiJRhDHRhgGAAAA6T////+D+QIPhTb///+JThjpLv///4P4AnVuixeD+g4PjOUEAACLjpgBAACLwYPgH8HpBQUBAQAAx0YsAAAAAIlGIIvBg+AfwekFQMdGGAMAAACJRiSLwYPgD8HpBIPABImOmAEAAIlGKI1C8okHM8CJRkSJRkiJRkyJRlBmiUZUiEZW6bv+//+D+AN1bzkHD4x1BAAAi0YsO0YofTGDPwN8LItLNItGLIqWmAEAAIDiBw+2BAGIVDBE/0Ysi0Ysgwf9wa6YAQAAAztGKHzPi0YsO0YoD4Vp/v//ahONRkRQVujGCQAAiUYUx0YY" & _
-    "BAAAAMdGLAAAAADpR/7//4P4BA+F4gAAAItGJItOIAPBOUYsfD9RjUZXUFbojwkAAP92JIlGDItGIIPAVwPGUFboegkAAI1+FIlGEFdW6L0FAADHBwAAAADHRhgGAAAA6fL9////dhSNhpgBAABXUOgbBgAAi8iD+f8PhJ4DAACD+f4PhGIDAACD+RB9D4tGLIhMMFf/Rizpuv3//3UHuAIAAADrDzPAg/kRD5XAjQSFAwAAAIlGMDPAg/kSD5TAjQTFAwAAAIlGNIP5EHUbi0YshcB+FA+2RDBWiUY8x0YYBQAAAOlt/f//M8DHRhgFAAAAiUY86Vz9//+D+AV1XIsfi04wO9kPjBEDAACLhpgBAAC6AQAAANPiK9lKiR8j0NPoA1Y0iYaYAQAAhdJ+HItGJANGIItOLDvIfQ+KRjxKiEQxV/9GLIXSf+SLXCQYx0YYBAAAAOn7/P//g/gGD4WcAAAA/3YMjV4MV42GmAEAAFDoGAUAAIP4/w+EnQIA"
+    "UYtEJAhTi1wkEFWLbCQYVleLeEQD64tEJCSJbCQQiwD2wwN0HDvddBQPthNDD7bIM9HB6AgzBJf2wwN16IlcJByL1cdEJBgAAAAAK9OD4vyNDBqDwgPB6gI7yxvJ99EjyolMJCB0eYvpjaQkAAAAAIsbi8vB6QgPtvGLyMHpCA+2yTPxi8vB6RAPttGLyMHpEIu0twAIAAAPtskz0YvIwekYM7SXAAQAAIvTweoYM9EPtsgPtsOLXCQcM8iDwwQzNJeJXCQcM7SPAAwAAItMJBiLxkGJTCQYO811lItsJBCLzTP2K8s76xvt99Uj6XQWD7YTjVsBD7bIRjPRwegIMwSXO/V16otMJCRfXl2JAVtZwhAAzMzMzMzMzMzMzMzMVot0JBCF9n41i1QkDE6LRCQIwe4ERoMCAYsKdQP/QgSJCItKBIlIBMdACAAAAADHQAwAAAAAg8AQg+4BddhewhAAzMzMzMzMzMzMzMzMzMyLVCQMhdJ0GotEJAhWi3Qk" & _
+    "CCvwigwGjUABMEj/g+oBdfJewhAAzMzMzMzMzMzMzMxVi2wkEIvFV5mL+DP6K/qF/35ti0wkDFNWi3QkGI1JAIXtfhOLUQiDygKLwoPwAQ+vwsHoCDAGD7YGTw+2EUaLXCQgM9CLAcHoCIsUk4tZCDPQD7bCA0EEacAFhAgIiREPttPB6whAiUEED7ZBBzPQi0QkIDMckIlZCIX/f6JeW19dwhAAzMzMzMzMzMzMzMxWi3QkCFdqDItGKP/Qi/hXiTfoCQkAAItOKGoU/9HHQBAAAAAAx0AMAAAAAIlHCIvHX17CEADMzMzMzMzMzMzMVot0JAhXiz7/dgiLRzD/0P92BItHMP/Qi0cwVv/QX17CEADMzMzMzMzMzMzMzMzMi0QkDFaLdCQMV4t8JAyFwHQNUP92BP82/zfoQf3///92HI1GDP92GP92FP92EFCNRghQ/3YE/zZX6CIJAABfXsIQAMzMzMzMzMzMzMzMzMz/dCQE6OcPAADCEADMzMzM" & _
+    "Vot0JAiLTgyNRgxXiz6FyXQMO04EdAdQVuiCEQAAi04QjUYQhcl0DDtOCHQHUFbobBEAAIN+FACNRhR0B1BW6FwRAACNRgRQVuhSEQAAjUYIUFboSBEAAItHMFb/0F9ewhAAzMzMzMzMzMzMzMzMzItEJAhTVYtsJAxWV41YDFONeAhX/3AE/zBV6CEJAACLTCQci/CFyXQYhfZ0FIsHhcB0DFH/M1D/dQDoUfz//4vGX15dW8IQAMzMzMzMzMzMVot0JAiDyv+LhgSABAAPt0zGAo0ExmY7ynQJD7/BZokUxusQi0AEg/j/dAhmiZRGCIAEAIuGBIAEAItMJBCJTMYEi4YEgAQAZolUxgKNFE6LjgSABAAPt4IIgAQAZokEzouGBIAEAA+/DMYPt8BmiYIIgAQAg/n/dAxmi4YEgAQAZolEzgKLjgSABACKRCQMiIQOAAAEAIuGBIAEAEAl/38AAImGBIAEAF7CDADMzMyD7AxTVYtsJCBWV4t8JCAz" & _
+    "9ot/BIl8JBg5twyABgAPjuIAAACLjwyABgCLwSvGA8WD+AQPjJwAAACLVCQkO/F9Cg+2hD4IgAYA6wiLxivBD7YEEI1eAohEJBSNQ/87wX0KD7aEPgmABgDrCYvGK8EPtkQQAYhEJBU72X0KD7aEPgqABgDrCYvGK8EPtkQQAohEJBaNQwE7wX0KD7aEPguABgDrCYvGK8EPtkQQA4hEJBeLRCQUaci9pzUewekQUVBX6Ir+//9GO7cMgAYAD4xR////6zGLzju3DIAGAH0njZcIgAYA6wmNpCQAAAAAi/+KhA8IgAYAjVIBiEL/QTuPDIAGAHzqKbcMgAYAhe0PjvUBAADrCo2kJAAAAACNSQCLXCQkg/0ED4xZAQAAi4cAAAQAM+2JhwCABABpA72nNR7B6BAPv5RHCIAEAIP6/w+EMQEAAIuPBIAEAIvCK8G+AIAAACX/fwAAK/ArzoHh/38AAIuEOQAABAA7A3UOibSvEIAGAEU7bCQsfQkPvxTX" & _
+    "g/r/dcCF7Q+O6QAAAItEJCg5RCQwfgaJRCQw6wSLRCQwvgQAAAA7xn5xjZsAAAAAigQeM8kz24hEJBOF7X5YkIuUjxCABgCLxivCeRiLhwSABAArwgPGJf9/AACKhDgAAAQA6wuLfCQkigQ4i3wkGDhEJBN1CImUnxCABgBDQTvNfL2D+wF+D4tEJDBGi+uLXCQkO/B8mYtcJCSLbCQoO/V9PYuXEIAGAIvOK8qNLBqFyXkYi4cEgAQAK8IDxiX/fwAAioQ4AAAEAOsDigQZOAQpdQhGQTt0JCh81ItsJChW/7cQgAYA/3QkKOigDgAAhfZ+fes4i0wkIIoDPI+LEYtxCA+2yItCPHcJD7ZECDBqCOsND7YECGoJjQRFAQAAAFBWUuhHEgAAvgEAAACLbCQog/0EfBZpA72nNR7B6BBQD7YDUFfodfz//+sVi48MgAYAigOIhA8IgAYA/4cMgAYATkNNhfZ/yYlsJCiJXCQkhe0Pjxf+//9fXl1bg8QM" & _
+    "whQAzMzMzMzMzMzMzMzMzIPsFFNVi2wkKFZXi3wkKDP2i38EiXwkIDm3DIAGAA+O4gAAAIuPDIAGAIvBK8YDxYP4BA+MnAAAAItUJCw78X0KD7aEPgiABgDrCIvGK8EPtgQQjV4CiEQkGI1D/zvBfQoPtoQ+CYAGAOsJi8YrwQ+2RBABiEQkGTvZfQoPtoQ+CoAGAOsJi8YrwQ+2RBACiEQkGo1DATvBfQoPtoQ+C4AGAOsJi8YrwQ+2RBADiEQkG4tEJBhpyL2nNR7B6RBRUFfoavv//0Y7twyABgAPjFH////rMYvOO7cMgAYAfSeNlwiABgDrCY2kJAAAAACL/4qEDwiABgCNUgGIQv9BO48MgAYAfOoptwyABgAzwDPJiUQkFIlMJBiJRCQche0PjgkCAADrCo2kJAAAAACNSQCLXCQsg/0ED4zAAQAAi4cAAAQAM+2JhwCABABpA72nNR7B6BAPv5RHCIAEAIP6/w+EmAEAAIuPBIAEAIvCK8G+" & _
+    "AIAAACX/fwAAK/ArzoHh/38AAIuEOQAABAA7A3UOibSvEIAGAEU7bCQ0fQkPvxTXg/r/dcCF7Q+OTAEAAItUJDCLRCQ4O8J+BovCiUQkOL4EAAAAO8Z+d4oEHjPJM9uIRCQThe1+YOsHjaQkAAAAAIuUjxCABgCLxivCeRiLhwSABAArwgPGJf9/AACKhDgAAAQA6wuLfCQsigQ4i3wkIDhEJBN1CImUnxCABgBDQTvNfL2D+wF+D4tEJDhGi+uLXCQsO/B8kYtcJCyLVCQwO/J9OYuXEIAGAIvOK8qNLBqFyXkYi4cEgAQAK8IDxiX/fwAAioQ4AAAEAOsDigQZOAQpdQhGQTt0JDB81ItsJBSF7X5ejUUBO/B+T4tEJCiLEItoCItEJBw8jw+2yItCPHcJD7ZECDBqCOsND7YECGoJjQRFAQAAAFBVUuggDwAAD7YDi48QgAYAiUwkGIl0JBSJRCQc6ZAAAACLRCQYVVDrJYuHEIAGAIlEJBgPtgOJ" & _
+    "dCQUiUQkHOtxi0wkGItsJBSF7X4yVVH/dCQw6PAKAAAzwI11/4lEJBSF9n9Si2wkMItMJBiF7Q+PA/7//19eXVuDxBTCFACLTCQoigM8j4sRi3EID7bIi0I8dwkPtkQIMGoI6w0PtgQIagmNBEUBAAAAUFZS6HYOAAC+AQAAAItsJDCD/QR8FmkDvac1HsHoEFAPtgNQV+ik+P//6xWLjwyABgCKA4iEDwiABgD/hwyABgBOQ02F9n/JiWwkMIlcJCzpav///8zMzMzMzMzMzFZXi3wkDGiwjwYAiweLQCj/0IvwhfZ1BV9ewgQAiXcEjU4CugCAAACDyP/rA41JAMdBAv////+NSQhmiUH4ZolB9oPqAXXpjb4IgAQAuQCAAADzq1+JlgSABACNQgGJlgyABgBewgQAzMzMzMzMzMxWV4t8JAy5EgAAAL4AUOZVuHAp5lXzpYtMJBCDwGBfXscBABDmVYlBBMdBCKBA5lXHQQx4ROZVwggAzMzMzMzM" & _
+    "U4tcJAhWV2gAgAAAizuLcwiLRyj/0IkGM8A5RCQkagMPlcDHRggAgAAAg8ACx0YEAAAAAFBWV+g0DQAAg3wkKAD/dCQw/3QkMP90JCD/dCQgU3QH6Bf4///rBegw+///agdqAFZX6AUNAACDfCQkAHQYi04Qhcl0EbgIAAAAK8FQagBWV+jmDAAAi0QkHIsOX4kIi0QkHItOBF5biQi4AQAAAMIkAMzMzMzMzMzMzMxRU1VWi3QkFFdoAIAAAIseiVwkHItDKP/Qi2wkIImGpIEAAMeGrIEAAACAAADHhqiBAAAAAAAAhe1/DYO+nAEAAAAPjrYFAACDvpwBAAAYjb6cAQAAfSqLVCQc6wONSQCF7X4ZD7YCTYsPQtPgCYaYAQAAjUEIiQeD+Bh844lUJByLRhiFwHUJx0YYAQAAAOumg/gBdXOLF4P6Aw+MXQUAAIuGmAEAAIPC/dHoi8iJF8HoAomGmAEAAIPhA3Udi8rHRhgKAAAAg+EHK9HT6IkX" & _
+    "iYaYAQAA6Vz///+D+QF1GItGBIlGDItGCIlGEMdGGAYAAADpP////4P5Ag+FNv///4lOGOku////g/gCdW6LF4P6Dg+M5QQAAIuOmAEAAIvBg+AfwekFBQEBAADHRiwAAAAAiUYgi8GD4B/B6QVAx0YYAwAAAIlGJIvBg+APwekEg8AEiY6YAQAAiUYojULyiQczwIlGRIlGSIlGTIlGUGaJRlSIRlbpu/7//4P4A3VvOQcPjHUEAACLRiw7Rih9MYM/A3wsi0tAi0YsipaYAQAAgOIHD7YEAYhUMET/RiyLRiyDB/3BrpgBAAADO0YofM+LRiw7RigPhWn+//9qE41GRFBW6MYJAACJRhTHRhgEAAAAx0YsAAAAAOlH/v//g/gED4XiAAAAi0Yki04gA8E5Rix8P1GNRldQVuiPCQAA/3YkiUYMi0Ygg8BXA8ZQVuh6CQAAjX4UiUYQV1bovQUAAMcHAAAAAMdGGAYAAADp8v3///92FI2GmAEAAFdQ"
 Private Const STR_THUNK2 As String = _
-    "AIP4/g+EXQIAAD0AAQAAfRBQVugIBAAAi1wkGOm2/P//dUCLA8dGGAEAAAA7RgR0DVNW6FgEAADHAwAAAACLRhCNfhCLXCQYO0YID4SG/P//V1boOAQAAMcHAAAAAOl0/P//i1wkGD0eAQAAD41l/P//x0YYBwAAAIlGHOlW/P//g/gHdVSLRhwtAQEAAI0MQItDKI0ciA+/SwI5Dw+M+wEAAIuWmAEAALgBAAAA0+BII8IDQwSJRjgPv0MCKQeKSwKLXCQY0+qJlpgBAADHRhgIAAAA6f37//+D+Ah1Ov92EI2GmAEAAFdQ6CEEAACD+P8PhKYBAACD+P4PhGoBAACD+B4PjWEBAADHRhgJAAAAiUYc6b77//+D+AkPhY8AAACLRhyLF40MQItDLI0EiA+/SAKJRCQgiUwkEDvRD4xaAQAAi4aYAQAAuwEAAAArVCQQ0+OLTCQgSyPYA1kEiReKSQLT6IN+OACJhpgBAADHRhgGAAAAdCyNpCQAAAAA" & _
-    "i4aggQAA/044K8Ml/38AAA+2hDCgAQAAUFbogQIAAIN+OAB12/9OOItcJBjpJvv//4P4CnUxixeD+hAPjN0AAACLjpgBAAAPt8GJRkCNQvDB6RCJB4mOmAEAAMdGGAsAAADp8Pr//4P4C3U/iweD+BAPjKcAAACLjpgBAACDwPAPt9GJB4Hy//8AAItGQMHpEImOmAEAADvCdVD32BvAg+ALQIlGGOms+v//g/gMD4Wj+v//gz8IfGUPtoaYAQAAUFbo2QEAAIMH+MGumAEAAAiDRkD/D4V8+v//x0YYAQAAAOlw+v//i1wkGP+2pIEAAItDJP/Qi0QkJMeGpIEAAAAAAABfXscAAAAAAItEJCBdW8cAAAAAADPAWcIUAItMJCS4AQAAAIuWpIEAAF+JEYuWqIEAAItMJCReXVuJEVnCFADMzMzMzMzMzMzMzMzMgewgAQAAU1aLtCQsAQAAV2iwgQAAi0Yc/9CL2I18JAy4CAgICLkkAAAAaCABAACJ" & _
-    "M/OruAkJCQmNvCSgAAAAuRwAAADzq41EJBDHhCQQAQAABwcHB1BTx4QkHAEAAAcHBwfHhCQgAQAABwcHB8eEJCQBAAAHBwcHx4QkKAEAAAcHBwfHhCQsAQAABwcHB8eEJDABAAAICAgIx4QkNAEAAAgICAjoxwQAAIlDBI1EJAxqIFBTx0QkGAUFBQXHRCQcBQUFBcdEJCAFBQUFx0QkJAUFBQXHRCQoBQUFBcdEJCwFBQUFx0QkMAUFBQXHRCQ0BQUFBeh3BAAAX4lDCIvDXsdDGAAAAADHQxQAAAAAx0MQAAAAAMdDDAAAAADHg5gBAAAAAAAAx4OcAQAAAAAAAMeDoIEAAAAAAABbgcQgAQAAwgQAzMzMzMzMzMzMzMzMU4tcJAxWi3QkDIuGoIEAAIsOiJwwoAEAAIuGoIEAAEAl/38AAImGoIEAAIuGqIEAADuGrIEAAHwaA8BQ/7akgQAAiYasgQAAi0Eg/9CJhqSBAACLhqiBAACLjqSBAACI" & _
-    "HAH/hqiBAABeW8IIAMzMzFOLXCQIVYtsJBCLA4lEJAyF7XUIXYPI/1vCCABXi30Ahf90S1Yz9jk3fCPrA41JAItHBI0E8IPABIM4AHQHUFPou////0Y7N37mi0QkFP93BItAJP/Qi0QkFMdHBAAAAABXi0Ak/9DHRQAAAAAAXl9dM8BbwggAzMzMzMzMzMzMi0QkDFOLXCQMVosIi0AEizNXi3wkEIsXI8qNBMgPtgg7zn8mD7YI0+or8WaDeAL/dSyLQASFwHQaiwiLQAQjyo0EyA+2CDvOftpfXoPI/1vCDABfXrj+////W8IMAIkXiTMPv0ACX15bwgwAzMzMzIPsCItEJAxViyiLQAiJRCQQi0QkGIlsJASFwA+OLQEAAFNWVz0EAQAAfge+AgEAAOsMi/A9AgEAAH4DjXD9K8a7HQAAAIlEJCSDz/+LRSiL6IlEJBSNBDuZK8LR+I0MQDt0jQR9BIvY6+s7dI0IfgSL+Ovhi1wkHI0EQI08hQAA" & _
-    "AAC5FwEAAA+3BC8D/YtsJBBmO8EPv8iLRTB/DA+2hEgA/v//agfrBw+2RAGoaghQU1XoKQMAAA+3RwJmhcB0DSt3BJhQVlNV6BMDAACLRSyDzv+LXCQgvx4AAACL6Iv/jQQ3mSvC0fiNDEA7XI0EfQSL+OvrO1yNCH4Ei/Dr4Yt8JByNBECNNIUAAAAAA/WLbCQQagUPvw6LRTAPtgTIUFdV6LkCAAAPt0YCZoXAdA+YUIvDK0YEUFdV6KECAACLRCQkhcAPj9n+//9fXltdg8QIwgwAzMzMzMzMzMzMzMxTVYtsJAxWV2oIi0Uc/9CLXCQoi/iLy7gBAAAA0+C+AQAAAItMJCxI0+aJRCQojQT1AAAAAFCLRRz/0IlHBDPJjUb/g8r/iQeFwHgjjWQkAItHBGaJVMgCi0cExgTIAItHBMdEyAQAAAAAQTsPfuEz7TlsJCB+aYt0JBzrA41JAA+2BC47w35Ri0QkGIsEqIvII0wkKDtMJCR1PovL0/gj" & _
-    "BzsHfzSLTwRmiWzBAotPBA+2FC4r0400wQ+2DjvKfQKIFot0JBy6AQAAAA+2DC4ry9PiA8I7B37MRTtsJCB8oDP2OTd8Z4tUJCyLbCQci/+LRwSNDPAPtgE7wn5Lg8j/ZolBAotHBI0M8A+2ASvCg/gHfgW4BwAAAFCNBBOIEVCLy4vG0+ALRCQsUP90JCxV/3QkLP90JCzow/7//4tPBItUJCyJRPEERjs3fqOLx19eXVvCHADMzMzMzMzMzMzMgewEBQAAM8Az0lWLrCQUBQAAiVQkBIlEJAyJRCQQiUQkFIlEJBiJRCQciUQkIIlEJCSJRCQoiUQkLIlEJDCJRCQ0iUQkOIlEJDyJRCRAiUQkRFaLtCQUBQAAhe1+GYv/D7YMMP9EjAw70X0Ci9FAO8V87YlUJAgz0jPJ6wONSQCJVAxQA1QMEIPBBAPSg/k8fO5XM/+F7X5JU42cJJQAAAAPtjQ3xwMAAAAAi1S0VI1CAYlEtFSF9nQYM8CNZCQA" & _
-    "i8oDwIPhAdH6C8GD7gF18IkDi7QkHAUAAEeDwwQ7/XzAW4tEJAxfg/gJfAW4CQAAAFBqAGoAVf+0JCQFAACNhCSgAAAAUIuEJCgFAAD/MOiM/f//Xl2BxAQFAADCDADMi0QkDFaLdCQMi04Q0+AJRgyLRCQUA8GJRhCD+Ah8OVeLfCQMi0YIOUYEfA8DwFD/NolGCItHIP/QiQaLVgSLDopGDIgECv9GBMFuDAiDRhD4g34QCH3NX17CEABVi+yLAIBAwCCgYOAQkFDQMLBw8AiISMgoqGjoGJhY2Di4ePgEhETEJKRk5BSUVNQ0tHT0DIxMzCysbOwcnFzcPLx8/AKCQsIiomLiEpJS0jKycvIKikrKKqpq6hqaWto6unr6BoZGxiamZuYWllbWNrZ29g6OTs4urm7uHp5e3j6+fv4BgUHBIaFh4RGRUdExsXHxCYlJySmpaekZmVnZObl5+QWFRcUlpWXlFZVV1TW1dfUNjU3NLa1t7R2dXd09vX39" & _
-    "A4NDwyOjY+MTk1PTM7Nz8wuLS8srq2vrG5tb2zu7e/sHh0fHJ6dn5xeXV9c3t3f3D49Pzy+vb+8fn1/fP79//wEBAAADAAAAAwAAAAIBAAAEAAAABAAAAAMBAAAFAAAABQAAAAQBAAAGAAAABgAAAAUBAAAHAAAABwAAAAYBAAAIAAAACAAAAAcBAAAJAAAACQAAAAgBAAAKAAAACgAAAAkBAQALAAAADAAAAAoBAQANAAAADgAAAAsBAQAPAAAAEAAAAAwBAQARAAAAEgAAAA0BAgATAAAAFgAAAA4BAgAXAAAAGgAAAA8BAgAbAAAAHgAAABABAgAfAAAAIgAAABEBAwAjAAAAKgAAABIBAwArAAAAMgAAABMBAwAzAAAAOgAAABQBAwA7AAAAQgAAABUBBABDAAAAUgAAABYBBABTAAAAYgAAABcBBABjAAAAcgAAABgBBABzAAAAggAAABkBBQCDAAAAogAAABoBBQCjAAAAwgAAABsBBQDDAAAA" & _
-    "4gAAABwBBQDjAAAAAQEAAB0BAAACAQAAAgEAABAREgAIBwkGCgULBAwDDQIOAQ8AAAAAAAEAAAABAAAAAQAAAAIAAAACAAAAAgAAAAMAAAADAAAAAwAAAAQAAAAEAAAABAABAAUAAAAGAAAABQABAAcAAAAIAAAABgACAAkAAAAMAAAABwACAA0AAAAQAAAACAADABEAAAAYAAAACQADABkAAAAgAAAACgAEACEAAAAwAAAACwAEADEAAABAAAAADAAFAEEAAABgAAAADQAFAGEAAACAAAAADgAGAIEAAADAAAAADwAGAMEAAAAAAQAAEAAHAAEBAACAAQAAEQAHAIEBAAAAAgAAEgAIAAECAAAAAwAAEwAIAAEDAAAABAAAFAAJAAEEAAAABgAAFQAJAAEGAAAACAAAFgAKAAEIAAAADAAAFwAKAAEMAAAAEAAAGAALAAEQAAAAGAAAGQALAAEYAAAAIAAAGgAMAAEgAAAAMAAAGwAMAAEwAAAAQAAA" & _
-    "HAANAAFAAAAAYAAAHQANAAFgAAAAgAAA"
-Private Const STR_THUNK_OFFSETS As String = "288|352|400|480|496|608|0|0|0|0|6592|6960|6336|6940"
-Private Const STR_THUNK_BUILDDATE As String = "9.4.2017 19:12:30"
+    "6BsGAACLyIP5/w+EngMAAIP5/g+EYgMAAIP5EH0Pi0YsiEwwV/9GLOm6/f//dQe4AgAAAOsPM8CD+REPlcCNBIUDAAAAiUYwM8CD+RIPlMCNBMUDAAAAiUY0g/kQdRuLRiyFwH4UD7ZEMFaJRjzHRhgFAAAA6W39//8zwMdGGAUAAACJRjzpXP3//4P4BXVcix+LTjA72Q+MEQMAAIuGmAEAALoBAAAA0+Ir2UqJHyPQ0+gDVjSJhpgBAACF0n4ci0YkA0Ygi04sO8h9D4pGPEqIRDFX/0YshdJ/5ItcJBjHRhgEAAAA6fv8//+D+AYPhZwAAAD/dgyNXgxXjYaYAQAAUOgYBQAAg/j/D4SdAgAAg/j+D4RdAgAAPQABAAB9EFBW6AgEAACLXCQY6bb8//91QIsDx0YYAQAAADtGBHQNU1boWAQAAMcDAAAAAItGEI1+EItcJBg7RggPhIb8//9XVug4BAAAxwcAAAAA6XT8//+LXCQYPR4BAAAPjWX8" & _
+    "///HRhgHAAAAiUYc6Vb8//+D+Ad1VItGHC0BAQAAjQxAi0M0jRyID79LAjkPD4z7AQAAi5aYAQAAuAEAAADT4EgjwgNDBIlGOA+/QwIpB4pLAotcJBjT6omWmAEAAMdGGAgAAADp/fv//4P4CHU6/3YQjYaYAQAAV1DoIQQAAIP4/w+EpgEAAIP4/g+EagEAAIP4Hg+NYQEAAMdGGAkAAACJRhzpvvv//4P4CQ+FjwAAAItGHIsXjQxAi0M4jQSID79IAolEJCCJTCQQO9EPjFoBAACLhpgBAAC7AQAAACtUJBDT44tMJCBLI9gDWQSJF4pJAtPog344AImGmAEAAMdGGAYAAAB0LI2kJAAAAACLhqCBAAD/TjgrwyX/fwAAD7aEMKABAABQVuiBAgAAg344AHXb/044i1wkGOkm+///g/gKdTGLF4P6EA+M3QAAAIuOmAEAAA+3wYlGQI1C8MHpEIkHiY6YAQAAx0YYCwAAAOnw+v//g/gLdT+LB4P4" & _
+    "EA+MpwAAAIuOmAEAAIPA8A+30YkHgfL//wAAi0ZAwekQiY6YAQAAO8J1UPfYG8CD4AtAiUYY6az6//+D+AwPhaP6//+DPwh8ZQ+2hpgBAABQVujZAQAAgwf4wa6YAQAACINGQP8PhXz6///HRhgBAAAA6XD6//+LXCQY/7akgQAAi0Mw/9CLRCQkx4akgQAAAAAAAF9exwAAAAAAi0QkIF1bxwAAAAAAM8BZwhQAi0wkJLgBAAAAi5akgQAAX4kRi5aogQAAi0wkJF5dW4kRWcIUAMzMzMzMzMzMzMzMzMyB7CABAABTVou0JCwBAABXaLCBAACLRij/0IvYjXwkDLgICAgIuSQAAABoIAEAAIkz86u4CQkJCY28JKAAAAC5HAAAAPOrjUQkEMeEJBABAAAHBwcHUFPHhCQcAQAABwcHB8eEJCABAAAHBwcHx4QkJAEAAAcHBwfHhCQoAQAABwcHB8eEJCwBAAAHBwcHx4QkMAEAAAgICAjHhCQ0AQAA" & _
+    "CAgICOjHBAAAiUMEjUQkDGogUFPHRCQYBQUFBcdEJBwFBQUFx0QkIAUFBQXHRCQkBQUFBcdEJCgFBQUFx0QkLAUFBQXHRCQwBQUFBcdEJDQFBQUF6HcEAABfiUMIi8Nex0MYAAAAAMdDFAAAAADHQxAAAAAAx0MMAAAAAMeDmAEAAAAAAADHg5wBAAAAAAAAx4OggQAAAAAAAFuBxCABAADCBADMzMzMzMzMzMzMzMxTi1wkDFaLdCQMi4aggQAAiw6InDCgAQAAi4aggQAAQCX/fwAAiYaggQAAi4aogQAAO4asgQAAfBoDwFD/tqSBAACJhqyBAACLQSz/0ImGpIEAAIuGqIEAAIuOpIEAAIgcAf+GqIEAAF5bwggAzMzMU4tcJAhVi2wkEIsDiUQkDIXtdQhdg8j/W8IIAFeLfQCF/3RLVjP2OTd8I+sDjUkAi0cEjQTwg8AEgzgAdAdQU+i7////Rjs3fuaLRCQU/3cEi0Aw/9CLRCQUx0cEAAAA" & _
+    "AFeLQDD/0MdFAAAAAABeX10zwFvCCADMzMzMzMzMzMyLRCQMU4tcJAxWiwiLQASLM1eLfCQQixcjyo0EyA+2CDvOfyYPtgjT6ivxZoN4Av91LItABIXAdBqLCItABCPKjQTID7YIO85+2l9eg8j/W8IMAF9euP7///9bwgwAiReJMw+/QAJfXlvCDADMzMzMg+wIi0QkDFWLKItACIlEJBCLRCQYiWwkBIXAD44tAQAAU1ZXPQQBAAB+B74CAQAA6wyL8D0CAQAAfgONcP0rxrsdAAAAiUQkJIPP/4tFNIvoiUQkFI0EO5krwtH4jQxAO3SNBH0Ei9jr6zt0jQh+BIv46+GLXCQcjQRAjTyFAAAAALkXAQAAD7cELwP9i2wkEGY7wQ+/yItFPH8MD7aESAD+//9qB+sHD7ZEAahqCFBTVegpAwAAD7dHAmaFwHQNK3cEmFBWU1XoEwMAAItFOIPO/4tcJCC/HgAAAIvoi/+NBDeZK8LR+I0MQDtcjQR9" & _
+    "BIv46+s7XI0IfgSL8Ovhi3wkHI0EQI00hQAAAAAD9YtsJBBqBQ+/DotFPA+2BMhQV1XouQIAAA+3RgJmhcB0D5hQi8MrRgRQV1XooQIAAItEJCSFwA+P2f7//19eW12DxAjCDADMzMzMzMzMzMzMzFNVi2wkDFZXagiLRSj/0ItcJCiL+IvLuAEAAADT4L4BAAAAi0wkLEjT5olEJCiNBPUAAAAAUItFKP/QiUcEM8mNRv+Dyv+JB4XAeCONZCQAi0cEZolUyAKLRwTGBMgAi0cEx0TIBAAAAABBOw9+4TPtOWwkIH5pi3QkHOsDjUkAD7YELjvDflGLRCQYiwSoi8gjTCQoO0wkJHU+i8vT+CMHOwd/NItPBGaJbMECi08ED7YULivTjTTBD7YOO8p9AogWi3QkHLoBAAAAD7YMLivL0+IDwjsHfsxFO2wkIHygM/Y5N3xni1QkLItsJByL/4tHBI0M8A+2ATvCfkuDyP9miUECi0cEjQzwD7YBK8KD" & _
+    "+Ad+BbgHAAAAUI0EE4gRUIvLi8bT4AtEJCxQ/3QkLFX/dCQs/3QkLOjD/v//i08Ei1QkLIlE8QRGOzd+o4vHX15dW8IcAMzMzMzMzMzMzMyB7AQFAAAzwDPSVYusJBQFAACJVCQEiUQkDIlEJBCJRCQUiUQkGIlEJByJRCQgiUQkJIlEJCiJRCQsiUQkMIlEJDSJRCQ4iUQkPIlEJECJRCREVou0JBQFAACF7X4Zi/8Ptgww/0SMDDvRfQKL0UA7xXztiVQkCDPSM8nrA41JAIlUDFADVAwQg8EEA9KD+Tx87lcz/4XtfklTjZwklAAAAA+2NDfHAwAAAACLVLRUjUIBiUS0VIX2dBgzwI1kJACLygPAg+EB0foLwYPuAXXwiQOLtCQcBQAAR4PDBDv9fMBbi0QkDF+D+Al8BbgJAAAAUGoAagBV/7QkJAUAAI2EJKAAAABQi4QkKAUAAP8w6Iz9//9eXYHEBAUAAMIMAMyLRCQMVot0JAyLThDT4AlG" & _
+    "DItEJBQDwYlGEIP4CHw5V4t8JAyLRgg5RgR8DwPAUP82iUYIi0cs/9CJBotWBIsOikYMiAQK/0YEwW4MCINGEPiDfhAIfc1fXsIQAFWL7IsAgEDAIKBg4BCQUNAwsHDwCIhIyCioaOgYmFjYOLh4+ASERMQkpGTkFJRU1DS0dPQMjEzMLKxs7BycXNw8vHz8AoJCwiKiYuISklLSMrJy8gqKSsoqqmrqGppa2jq6evoGhkbGJqZm5haWVtY2tnb2Do5Ozi6ubu4enl7ePr5+/gGBQcEhoWHhEZFR0TGxcfEJiUnJKalp6RmZWdk5uXn5BYVFxSWlZeUVlVXVNbV19Q2NTc0trW3tHZ1d3T29ff0Dg0PDI6Nj4xOTU9Mzs3PzC4tLyyura+sbm1vbO7t7+weHR8cnp2fnF5dX1ze3d/cPj0/PL69v7x+fX98/v3//AQEAAAMAAAADAAAAAgEAAAQAAAAEAAAAAwEAAAUAAAAFAAAABAEAAAYAAAAGAAAA" & _
+    "BQEAAAcAAAAHAAAABgEAAAgAAAAIAAAABwEAAAkAAAAJAAAACAEAAAoAAAAKAAAACQEBAAsAAAAMAAAACgEBAA0AAAAOAAAACwEBAA8AAAAQAAAADAEBABEAAAASAAAADQECABMAAAAWAAAADgECABcAAAAaAAAADwECABsAAAAeAAAAEAECAB8AAAAiAAAAEQEDACMAAAAqAAAAEgEDACsAAAAyAAAAEwEDADMAAAA6AAAAFAEDADsAAABCAAAAFQEEAEMAAABSAAAAFgEEAFMAAABiAAAAFwEEAGMAAAByAAAAGAEEAHMAAACCAAAAGQEFAIMAAACiAAAAGgEFAKMAAADCAAAAGwEFAMMAAADiAAAAHAEFAOMAAAABAQAAHQEAAAIBAAACAQAAEBESAAgHCQYKBQsEDAMNAg4BDwAAAAAAAQAAAAEAAAABAAAAAgAAAAIAAAACAAAAAwAAAAMAAAADAAAABAAAAAQAAAAEAAEABQAAAAYAAAAFAAEA" & _
+    "BwAAAAgAAAAGAAIACQAAAAwAAAAHAAIADQAAABAAAAAIAAMAEQAAABgAAAAJAAMAGQAAACAAAAAKAAQAIQAAADAAAAALAAQAMQAAAEAAAAAMAAUAQQAAAGAAAAANAAUAYQAAAIAAAAAOAAYAgQAAAMAAAAAPAAYAwQAAAAABAAAQAAcAAQEAAIABAAARAAcAgQEAAAACAAASAAgAAQIAAAADAAATAAgAAQMAAAAEAAAUAAkAAQQAAAAGAAAVAAkAAQYAAAAIAAAWAAoAAQgAAAAMAAAXAAoAAQwAAAAQAAAYAAsAARAAAAAYAAAZAAsAARgAAAAgAAAaAAwAASAAAAAwAAAbAAwAATAAAABAAAAcAA0AAUAAAABgAAAdAA0AAWAAAACAAAA="
+Private Const STR_THUNK_OFFSETS As String = "560|624|672|752|768|880|0|288|368|416|0|0|0|6864|7232|6608|7212"
+Private Const STR_THUNK_BUILDDATE As String = "11.1.2018 23:36:38"
 ' end of generated code
 
 '=========================================================================
@@ -111,8 +111,6 @@ Private Const BCRYPT_CHAINING_MODE          As String = "ChainingMode"
 Private Const BCRYPT_CHAIN_MODE_ECB         As String = "ChainingModeECB"
 Private Const BCRYPT_ALG_HANDLE_HMAC_FLAG   As Long = 8
 Private Const BCRYPT_HASH_REUSABLE_FLAG     As Long = &H20
-'--- for VariantChangeType
-Private Const VT_I8                         As Long = &H14
 
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 Private Declare Function FindFirstFile Lib "kernel32" Alias "FindFirstFileA" (ByVal lpFileName As String, lpFindFileData As WIN32_FIND_DATA) As Long
@@ -143,9 +141,7 @@ Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As L
     Private Declare Function DosDateTimeToFileTime Lib "kernel32" (ByVal wFatDate As Long, ByVal wFatTime As Long, lpFileTime As FILETIME) As Long
 #End If ' ImplDecompress
 #If ImplCrypto Then
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (Destination As Any, ByVal Length As Long)
     Private Declare Function CoCreateGuid Lib "ole32" (pguid As Any) As Long
-    Private Declare Function ArrPtr Lib "msvbvm60" Alias "VarPtr" (Ptr() As Any) As Long
     Private Declare Function BCryptOpenAlgorithmProvider Lib "bcrypt" (phAlgorithm As Long, ByVal pszAlgId As Long, ByVal pszImplementation As Long, ByVal dwFlags As Long) As Long
     Private Declare Function BCryptCloseAlgorithmProvider Lib "bcrypt" (ByVal hAlgorithm As Long, ByVal dwFlags As Long) As Long
     Private Declare Function BCryptGetProperty Lib "bcrypt" (ByVal hObject As Long, ByVal pszProperty As Long, pbOutput As Any, ByVal cbOutput As Long, cbResult As Long, ByVal dwFlags As Long) As Long
@@ -164,7 +160,6 @@ Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As L
     Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
     Private Declare Function CreateDirectory Lib "kernel32" Alias "CreateDirectoryA" (ByVal lpPathName As String, ByVal lpSecurityAttributes As Long) As Long
     Private Declare Function CryptStringToBinary Lib "crypt32" Alias "CryptStringToBinaryW" (ByVal pszString As Long, ByVal cchString As Long, ByVal dwFlags As Long, ByVal pbBinary As Long, ByRef pcbBinary As Long, ByRef pdwSkip As Long, ByRef pdwFlags As Long) As Long
-    Private Declare Function VariantChangeType Lib "oleaut32" (Destination As Variant, Source As Variant, ByVal wFlags As Integer, ByVal vt As Long) As Long
 #End If ' Not ImplUseShared
 
 Private Type FILETIME
@@ -277,6 +272,9 @@ Private Type UcsZlibRelocTableType
     DecompressCleanup   As Long
     DecompressBlock     As Long
     CalcCrc32           As Long
+    MemNonce            As Long
+    MemXor              As Long
+    ZipCrypt            As Long
     MallocImpl          As Long
     ReallocImpl         As Long
     FreeImpl            As Long
@@ -306,6 +304,9 @@ Private Enum UcsRelocIndexesEnum
     ucsIdx_DecompressCleanup
     ucsIdx_DecompressBlock
     ucsIdx_CalcCrc32
+    ucsIdx_MemNonce
+    ucsIdx_MemXor
+    ucsIdx_ZipCrypt
     ucsIdx_MallocImpl
     ucsIdx_ReallocImpl
     ucsIdx_FreeImpl
@@ -396,6 +397,7 @@ Private Type UcsFileInfo
     SourceFile          As Variant
     #If ImplCrypto Then
         Aes             As UcsAesExtraDataType
+        DecDat          As Byte
         Password        As String
     #End If ' ImplCrypto
 End Type
@@ -410,14 +412,10 @@ Private Type UcsZipCryptoType
     hAesKey             As Long
     AesKeyObjData()     As Byte
     AesKeyObjLen        As Long
-    Nonce               As Variant ' LongLong (VT_I8)
+    Nonce(0 To 1)       As Long
     EncrData()          As Byte
     EncrPos             As Long
-    TradKey0            As Long
-    TradKey1            As Variant ' LongLong (VT_I8)
-    TradKey2            As Long
-    TradCrc32Table()    As Long
-    MAX_UINT32          As Variant ' LongLong (VT_I8)
+    TradKey(0 To 2)     As Long
 End Type
 #End If ' ImplCrypto
 
@@ -1058,22 +1056,30 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                 .Comment = pvFromOemString(baComment, lCodePage)
             End If
             #If ImplCrypto Then
-                If (.Flags And ucsZcfEncrypted) <> 0 And .Method = LNG_METHOD_AES Then
-                    Dim lJdx            As Long
-                    lJdx = 0
-                    Do While lJdx + 10 <= UBound(baExtra)
-                        If PeekInt(VarPtr(baExtra(lJdx))) = LNG_EXTRADATA_AES_HEADER Then
-                            If PeekInt(VarPtr(baExtra(lJdx + 2))) >= LNG_EXTRADATA_AES_SIZE - 4 Then
-                                Debug.Assert VarPtr(.Aes.Strength) + 1 - VarPtr(.Aes) = 9
-                                Call CopyMemory(.Aes, baExtra(lJdx), 9)
-                                Call CopyMemory(.Aes.Method, baExtra(lJdx + 9), 2)
-                                .Method = .Aes.Method
+                If (.Flags And ucsZcfEncrypted) <> 0 Then
+                    If .Method = LNG_METHOD_AES Then
+                        Dim lJdx            As Long
+                        lJdx = 0
+                        Do While lJdx + 10 <= UBound(baExtra)
+                            If PeekInt(VarPtr(baExtra(lJdx))) = LNG_EXTRADATA_AES_HEADER Then
+                                If PeekInt(VarPtr(baExtra(lJdx + 2))) >= LNG_EXTRADATA_AES_SIZE - 4 Then
+                                    Debug.Assert VarPtr(.Aes.Strength) + 1 - VarPtr(.Aes) = 9
+                                    Call CopyMemory(.Aes, baExtra(lJdx), 9)
+                                    Call CopyMemory(.Aes.Method, baExtra(lJdx + 9), 2)
+                                    .Method = .Aes.Method
+                                End If
+                                Exit Do
+                            Else
+                                lJdx = lJdx + PeekInt(VarPtr(baExtra(lJdx + 2))) + 4
                             End If
-                            Exit Do
-                        Else
-                            lJdx = lJdx + PeekInt(VarPtr(baExtra(lJdx + 2))) + 4
-                        End If
-                    Loop
+                        Loop
+                    End If
+                    '--- store for traditional ZipCrypt password check
+                    If (.Flags And ucsZcfHasDataDescriptor) <> 0 Then
+                        Call CopyMemory(.DecDat, ByVal VarPtr(uCentral.FDate) - 1, 1)
+                    Else
+                        Call CopyMemory(.DecDat, ByVal VarPtr(uCentral.CSize) - 1, 1)
+                    End If
                 End If
             #End If ' ImplCrypto
         End With
@@ -1231,7 +1237,7 @@ Public Function Extract( _
                             If Not pvCryptoTradDecrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE) Then
                                 Err.Raise vbObjectError, , LastError
                             End If
-                            If baBuffer(LNG_ENC_HEADER_SIZE - 1) <> (PeekInt(VarPtr(.Crc32) + 2) And &HFF00&) \ &H100 Then
+                            If baBuffer(LNG_ENC_HEADER_SIZE - 1) <> .DecDat Then
                                 Err.Raise vbObjectError, , ERR_INVALID_PASSWORD
                             End If
                         Else
@@ -1414,7 +1420,8 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     Dim lResult         As Long '--- discarded
     
     '--- init member vars
-    m_uCrypto.Nonce = CLngLng(0)
+    m_uCrypto.Nonce(0) = 0
+    m_uCrypto.Nonce(1) = 0
     m_uCrypto.EncrData = vbNullString
     m_uCrypto.EncrPos = LNG_AES_BLOCK_SIZE
     '--- generate RFC 2898 based derived key
@@ -1536,23 +1543,14 @@ Private Function pvCryptoAesProcess( _
             lPos = (lOffset + lSize - lIdx + LNG_AES_BLOCK_SIZE - 1) And -LNG_AES_BLOCK_SIZE
             If UBound(.EncrData) + 1 < lPos Then
                 ReDim .EncrData(0 To lPos - 1) As Byte
-            Else
-                Call ZeroMemory(.EncrData(0), lPos)
             End If
             '--- encrypt incremental nonces in EncrData
-            For lPos = 0 To lPos - 1 Step LNG_AES_BLOCK_SIZE
-                .Nonce = .Nonce + 1
-                Call CopyMemory(.EncrData(lPos), ByVal VarPtr(.Nonce) + 8, 8)
-            Next
+            Call CallWindowProc(m_uRtbl.MemNonce, VarPtr(.EncrData(0)), VarPtr(.Nonce(0)), lPos)
             If BCryptEncrypt(.hAesKey, .EncrData(0), lPos, 0, 0, 0, .EncrData(0), lPos, lResult, 0) <> 0 Then
                 GoTo QH
             End If
-            '--- xor remaining input and on non-multiple input size leave EncrData for reuse
-            lPos = 0
-            For lIdx = lIdx To lOffset + lSize - 1
-                baData(lIdx) = baData(lIdx) Xor .EncrData(lPos)
-                lPos = lPos + 1
-            Next
+            '--- xor remaining input and leave anything extra of EncrData for reuse
+            Call CallWindowProc(m_uRtbl.MemXor, VarPtr(.EncrData(0)), VarPtr(baData(lIdx)), lOffset + lSize - lIdx)
         End If
         .EncrPos = lPos
     End With
@@ -1587,54 +1585,23 @@ Private Function pvCryptoAesRandomSalt(ByVal lSize As Long) As Byte()
 End Function
 
 Private Function pvCryptoTradInit(baPass() As Byte) As Boolean
-    Dim lIdx            As Long
-    
     With m_uCrypto
-        .TradKey0 = 305419896
-        .TradKey1 = CLngLng(591751049)
-        .TradKey2 = 878082192
-        .MAX_UINT32 = CLngLng(2 ^ 32 - 1)
-        If Peek(ArrPtr(.TradCrc32Table)) = 0 Then
-            ReDim .TradCrc32Table(0 To 255) As Long
-            Call CopyMemory(.TradCrc32Table(0), ByVal m_uRtbl.Crc32Table, 4 * 256)
-        End If
+        .TradKey(0) = &H12345678
+        .TradKey(1) = &H23456789
+        .TradKey(2) = &H34567890
+        Call CallWindowProc(m_uRtbl.ZipCrypt, VarPtr(.TradKey(0)), VarPtr(baPass(0)), -(UBound(baPass) + 1), m_uRtbl.Crc32Table)
     End With
-    For lIdx = 0 To UBound(baPass)
-        pvCryptoTradUpdateKeys baPass(lIdx)
-    Next
     '--- success
     pvCryptoTradInit = True
 End Function
 
 Private Function pvCryptoTradDecrypt(baData() As Byte, Optional ByVal Offset As Long, Optional ByVal Size As Long = -1) As Boolean
-    Dim lIdx            As Long
-    Dim lTemp           As Long
-    
     If Size < 0 Then
         Size = UBound(baData) + 1 - Offset
     End If
-    For lIdx = Offset To Offset + Size - 1
-        lTemp = m_uCrypto.TradKey2 Or 2&
-        lTemp = CLng((CLngLng(lTemp) * (lTemp Xor 1&)) And &HFF00&) \ &H100&
-        baData(lIdx) = baData(lIdx) Xor lTemp
-        pvCryptoTradUpdateKeys baData(lIdx)
-    Next
+    Call CallWindowProc(m_uRtbl.ZipCrypt, VarPtr(m_uCrypto.TradKey(0)), VarPtr(baData(Offset)), Size, m_uRtbl.Crc32Table)
     '--- success
     pvCryptoTradDecrypt = True
-End Function
-
-Private Sub pvCryptoTradUpdateKeys(ByVal bytChar As Byte)
-    With m_uCrypto
-        .TradKey0 = pvCryptoTradCalcCrc32(.TradKey0, bytChar)
-        .TradKey1 = (.TradKey1 + (.TradKey0 And &HFF&)) And .MAX_UINT32
-        .TradKey1 = (.TradKey1 * 134775813 + 1&) And .MAX_UINT32
-        bytChar = (.TradKey1 And &HFF000000) \ &H1000000
-        .TradKey2 = pvCryptoTradCalcCrc32(.TradKey2, bytChar)
-    End With
-End Sub
-
-Private Function pvCryptoTradCalcCrc32(ByVal lCrc32 As Long, ByVal bytChar As Byte) As Long
-    pvCryptoTradCalcCrc32 = (((lCrc32 And &HFFFFFF00) \ &H100&) And &HFFFFFF) Xor (m_uCrypto.TradCrc32Table((lCrc32 And &HFF&) Xor bytChar))
 End Function
 
 #End If
@@ -1921,6 +1888,9 @@ Private Function pvInitRelocTable(uRtbl As UcsZlibRelocTableType) As Long
         .DecompressCleanup = lpThunk + vSplit(ucsIdx_DecompressCleanup)
         .DecompressBlock = lpThunk + vSplit(ucsIdx_DecompressBlock)
         .CalcCrc32 = lpThunk + vSplit(ucsIdx_CalcCrc32)
+        .MemNonce = lpThunk + vSplit(ucsIdx_MemNonce)
+        .MemXor = lpThunk + vSplit(ucsIdx_MemXor)
+        .ZipCrypt = lpThunk + vSplit(ucsIdx_ZipCrypt)
         .MallocImpl = GetProcAddress(GetModuleHandle("ole32.dll"), "CoTaskMemAlloc")
         .ReallocImpl = GetProcAddress(GetModuleHandle("ole32.dll"), "CoTaskMemRealloc")
         .FreeImpl = GetProcAddress(GetModuleHandle("ole32.dll"), "CoTaskMemFree")
@@ -2079,10 +2049,6 @@ Private Function ToUtf8Array(sText As String) As Byte()
         baRetVal = vbNullString
     End If
     ToUtf8Array = baRetVal
-End Function
-
-Private Function CLngLng(vValue As Variant) As Variant
-    Call VariantChangeType(CLngLng, vValue, 0, VT_I8)
 End Function
 
 #End If ' Not ImplUseShared
