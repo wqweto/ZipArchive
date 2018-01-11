@@ -414,7 +414,7 @@ Private Type UcsZipCryptoType
     hAesKey             As Long
     AesKeyObjData()     As Byte
     AesKeyObjLen        As Long
-    Nonce               As Variant ' LongLong (VT_I8)
+    Nonce(0 To 1)       As Long
     EncrData()          As Byte
     EncrPos             As Long
     TradKey0            As Long
@@ -1426,7 +1426,8 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     Dim lResult         As Long '--- discarded
     
     '--- init member vars
-    m_uCrypto.Nonce = CLngLng(0)
+    m_uCrypto.Nonce(0) = 0
+    m_uCrypto.Nonce(1) = 0
     m_uCrypto.EncrData = vbNullString
     m_uCrypto.EncrPos = LNG_AES_BLOCK_SIZE
     '--- generate RFC 2898 based derived key
@@ -1550,7 +1551,7 @@ Private Function pvCryptoAesProcess( _
                 ReDim .EncrData(0 To lPos - 1) As Byte
             End If
             '--- encrypt incremental nonces in EncrData
-            Call CallWindowProc(m_uRtbl.MemNonce, VarPtr(.EncrData(0)), VarPtr(.Nonce) + 8, lPos)
+            Call CallWindowProc(m_uRtbl.MemNonce, VarPtr(.EncrData(0)), VarPtr(.Nonce(0)), lPos)
             If BCryptEncrypt(.hAesKey, .EncrData(0), lPos, 0, 0, 0, .EncrData(0), lPos, lResult, 0) <> 0 Then
                 GoTo QH
             End If
