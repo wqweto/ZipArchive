@@ -44,7 +44,8 @@
 #define ZLIB_STDCALL __stdcall
 
 void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *block, int len, unsigned int *pcrc);
-void ZLIB_STDCALL vbzlib_xor(const unsigned char *block, unsigned char *dest, int len, int lParam);
+void ZLIB_STDCALL vbzlib_memnonce(unsigned int *block, unsigned int *nonce, int len, int lParam);
+void ZLIB_STDCALL vbzlib_memxor(const unsigned char *block, unsigned char *dest, int len, int lParam);
 void *ZLIB_STDCALL vbzlib_compress_init(struct RelocTable *rtbl, int wMsg, int wParam, int lParam);
 void ZLIB_STDCALL vbzlib_compress_cleanup(void *handle, int wMsg, int wParam, int lParam);
 int ZLIB_STDCALL vbzlib_compress_block(void *handle, struct IoBuffers *buf, unsigned int *pcrc, int lParam);
@@ -99,7 +100,8 @@ struct RelocTable {
     void *vbzlib_decompress_cleanup;
     void *vbzlib_decompress_block;
     void *vbzlib_crc32;
-    void *vbzlib_xor;
+    void *vbzlib_memnonce;
+    void *vbzlib_memxor;
     void *(ZLIB_STDCALL *vbzlib_malloc)(size_t size);
     void *(ZLIB_STDCALL *vbzlib_realloc)(void *ptr, size_t size);
     void (ZLIB_STDCALL *vbzlib_free)(void *ptr);
@@ -1480,7 +1482,8 @@ static struct RelocTable rtable = {
     vbzlib_decompress_cleanup,
     vbzlib_decompress_block,
     vbzlib_crc32,
-    vbzlib_xor,
+    vbzlib_memnonce,
+    vbzlib_memxor,
     0,
     0,
     0,
@@ -1536,7 +1539,19 @@ void ZLIB_STDCALL vbzlib_crc32(struct RelocTable *rtbl, const unsigned char *blo
     *pcrc = remainder;
 }
 
-void ZLIB_STDCALL vbzlib_xor(const unsigned char *block, unsigned char *dest, int len, int lParam)
+void ZLIB_STDCALL vbzlib_memnonce(unsigned int *block, unsigned int *nonce, int len, int lParam)
+{
+    for (; len > 0; len -= 16) {
+        if (!++nonce[0])
+            ++nonce[1];
+        *block++ = nonce[0];
+        *block++ = nonce[1];
+        *block++ = 0;
+        *block++ = 0;
+    }
+}
+
+void ZLIB_STDCALL vbzlib_memxor(const unsigned char *block, unsigned char *dest, int len, int lParam)
 {
     while (len--)
         *dest++ ^= *block++;
