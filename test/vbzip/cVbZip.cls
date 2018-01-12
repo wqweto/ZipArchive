@@ -21,6 +21,7 @@ DefObj A-Z
 Private Const ERR_MISSING_ARCHIVE   As String = "Missing archive"
 Private Const ERR_NO_FILES          As String = "No files specified"
 Private Const ERR_INVALID_LEVEL     As String = "Invalid compression level. Use 0 to 9"
+Private Const ERR_INVALID_STRENGTH  As String = "Invalid encryption method/strength. Use 0 to 3"
 Private Const STR_LIST_HDR          As String = "Date       Time      Attr       Size Compressed Name"
 Private Const STR_LIST_SEP          As String = "------------------- ----- ---------- ---------- -------------------"
 
@@ -56,7 +57,6 @@ Public Function Init(vArgs As Variant) As Boolean
     Dim lTotalSize      As Long
     Dim lTotalCompressed As Long
     Dim lCount          As Long
-    Dim lLevel          As Long
 
     On Error GoTo EH
     Set m_oArchive = New cZipArchive
@@ -78,16 +78,13 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsolePrint ERR_NO_FILES & vbCrLf
                 GoTo QH
             End If
-            If IsEmpty(.Item("-m")) Then
-                lLevel = 6
-            ElseIf .Item("-m") = "0" Then
-                lLevel = 0
-            Else
-                lLevel = Val(.Item("-m"))
-                If lLevel < 1 Or lLevel > 9 Then
-                    ConsolePrint ERR_INVALID_LEVEL & vbCrLf
-                    GoTo QH
-                End If
+            If Not pvLimitNumericOption("-m", 6, 0, 9) Then
+                ConsolePrint ERR_INVALID_LEVEL & vbCrLf
+                GoTo QH
+            End If
+            If Not pvLimitNumericOption("-mem", 0, 0, 4) Then
+                ConsolePrint ERR_INVALID_STRENGTH & vbCrLf
+                GoTo QH
             End If
             For lIdx = 1 To .Item("numfiles")
                 sFile = .Item("file" & lIdx)
@@ -98,20 +95,20 @@ Public Function Init(vArgs As Variant) As Boolean
                         .Item("-e") = True
                     End If
                     m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r"), _
-                        IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p")
+                        IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
                 ElseIf (FileAttr(sFile) And vbDirectory) <> 0 Then
                     If .Item("-r") Then
                         sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
                         .Item("-e") = True
                     End If
-                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), _
-                        IncludeEmptyFolders:=.Item("-e"), TargetFolder:=sMask, Password:=.Item("-p")
+                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), TargetFolder:=sMask, _
+                        IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
                 Else
-                    m_oArchive.AddFile sFile, Password:=.Item("-p")
+                    m_oArchive.AddFile sFile, Password:=.Item("-p"), EncrStrength:=.Item("-mem")
                 End If
             Next
             m_sAction = "Compressing "
-            If Not m_oArchive.CompressArchive(.Item("zip"), Level:=lLevel) Then
+            If Not m_oArchive.CompressArchive(.Item("zip"), Level:=.Item("-m")) Then
                 GoTo QH
             End If
         Case "l"
@@ -216,6 +213,25 @@ EH:
     ConsolePrint "unhandled error: " & Err.Description & vbCrLf
 End Function
 
+Private Function pvLimitNumericOption(sOpt As String, dblDefault As Double, dblMin As Double, dblMax As Double) As Boolean
+    Dim dblTemp         As Double
+    
+    With m_oOpt
+        If IsEmpty(.Item(sOpt)) Then
+            .Item(sOpt) = dblDefault
+        ElseIf .Item(sOpt) = "0" Then
+            .Item(sOpt) = 0#
+        Else
+            dblTemp = Val(.Item(sOpt))
+            If dblTemp = 0 Or dblTemp < dblMin Or dblTemp > dblMax Then
+                GoTo QH
+            End If
+        End If
+    End With
+    pvLimitNumericOption = True
+QH:
+End Function
+
 Private Function FormatAttr(ByVal eAttr As VbFileAttribute, ByVal lFlags As Long) As String
     If eAttr = vbDirectory Then
         FormatAttr = "[DIR]"
@@ -241,20 +257,30 @@ Private Function ParseOpt(vArgs As Variant) As Object
         For lIdx = 0 To UBound(vArgs)
             Select Case Left$(vArgs(lIdx), 1 + bNoMoreOpt)
             Case "-", "/"
-                Select Case Mid$(vArgs(lIdx), 2, 1)
-                Case "o", "m", "p"
-                    If Len(vArgs(lIdx)) > 2 Then
-                        .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = Mid$(vArgs(lIdx), 3)
+                Select Case Mid$(vArgs(lIdx), 2, 3)
+                Case "mem"
+                    If Len(vArgs(lIdx)) > 4 Then
+                        .Item("-" & Mid$(vArgs(lIdx), 2, 3)) = Mid$(vArgs(lIdx), 5)
                     ElseIf LenB(vArgs(lIdx + 1)) <> 0 Then
-                        .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = vArgs(lIdx + 1)
+                        .Item("-" & Mid$(vArgs(lIdx), 2, 3)) = vArgs(lIdx + 1)
                         lIdx = lIdx + 1
                     End If
-                Case "-"
-                    If Len(vArgs(lIdx)) = 2 Then
-                        bNoMoreOpt = True
-                    End If
                 Case Else
-                    .Item("-" & Mid$(vArgs(lIdx), 2)) = True
+                    Select Case Mid$(vArgs(lIdx), 2, 1)
+                    Case "o", "m", "p"
+                        If Len(vArgs(lIdx)) > 2 Then
+                            .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = Mid$(vArgs(lIdx), 3)
+                        ElseIf LenB(vArgs(lIdx + 1)) <> 0 Then
+                            .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = vArgs(lIdx + 1)
+                            lIdx = lIdx + 1
+                        End If
+                    Case "-"
+                        If Len(vArgs(lIdx)) = 2 Then
+                            bNoMoreOpt = True
+                        End If
+                    Case Else
+                        .Item("-" & Mid$(vArgs(lIdx), 2)) = True
+                    End Select
                 End Select
             Case Else
                 If LenB(.Item("command")) = 0 Then
