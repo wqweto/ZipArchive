@@ -215,7 +215,7 @@ Private Const LNG_EXTRADATA_AE_2_MAXSIZE As Long = 20
 Private Const LNG_ENC_HEADER_SIZE   As Long = 12
 Private Const LNG_AES_AUTHCODE_SIZE As Long = 10
 Private Const LNG_AES_BLOCK_SIZE    As Long = 16
-Private Const LNG_DEF_ENCR_STRENGTH As Long = 3
+Private Const LNG_DEF_ENCR_STRENGTH As Long = 0
 Private Const ERR_USER_CANCEL       As String = "User cancelled"
 Private Const ERR_INIT_COMPRESSOR   As String = "Cannot init deflate compressor"
 Private Const ERR_COMPRESSING       As String = "Error compressing"
@@ -422,7 +422,7 @@ End Type
 '=========================================================================
 
 Property Get SemVersion() As String
-    SemVersion = "0.2.1"
+    SemVersion = "0.2.2"
 End Property
 
 Property Get ThunkBuildDate() As String
