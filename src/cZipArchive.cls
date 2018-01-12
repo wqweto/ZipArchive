@@ -1076,9 +1076,9 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                     End If
                     '--- store for traditional ZipCrypt password check
                     If (.Flags And ucsZcfHasDataDescriptor) <> 0 Then
-                        Call CopyMemory(.DecDat, ByVal VarPtr(uCentral.FDate) - 1, 1)
+                        Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.FDate), -1), 1)
                     Else
-                        Call CopyMemory(.DecDat, ByVal VarPtr(uCentral.CSize) - 1, 1)
+                        Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.CSize), -1), 1)
                     End If
                 End If
             #End If ' ImplCrypto
@@ -1423,7 +1423,7 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     m_uCrypto.Nonce(0) = 0
     m_uCrypto.Nonce(1) = 0
     m_uCrypto.EncrData = vbNullString
-    m_uCrypto.EncrPos = LNG_AES_BLOCK_SIZE
+    m_uCrypto.EncrPos = 0
     '--- generate RFC 2898 based derived key
     If m_uCrypto.hPbkdf2Alg = 0 Then
         If BCryptOpenAlgorithmProvider(m_uCrypto.hPbkdf2Alg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG) <> 0 Then
@@ -1800,13 +1800,12 @@ Private Function pvArrPtr(vArray As Variant) As Long
     Const VT_BYREF      As Long = &H4000
     Dim lPtr            As Long
     
-    '--- note: unsigned add for LARGEADDRESSAWARE processes
-    lPtr = Peek(((VarPtr(vArray) Xor &H80000000) + 8) Xor &H80000000)
+    lPtr = Peek(UnsignedAdd(VarPtr(vArray), 8))
     If (Peek(VarPtr(vArray)) And VT_BYREF) <> 0 Then
         lPtr = Peek(lPtr)
     End If
     If lPtr <> 0 Then
-        pvArrPtr = Peek(((lPtr Xor &H80000000) + 12) Xor &H80000000)
+        pvArrPtr = Peek(UnsignedAdd(lPtr, 12))
     End If
 End Function
 
@@ -2049,6 +2048,11 @@ Private Function ToUtf8Array(sText As String) As Byte()
         baRetVal = vbNullString
     End If
     ToUtf8Array = baRetVal
+End Function
+
+Public Function UnsignedAdd(ByVal lUnsignedPtr As Long, ByVal lSignedOffset As Long) As Long
+    '--- note: safely add *signed* offset to *unsigned* ptr for *unsigned* retval w/o overflow in LARGEADDRESSAWARE processes
+    UnsignedAdd = ((lUnsignedPtr Xor &H80000000) + lSignedOffset) Xor &H80000000
 End Function
 
 #End If ' Not ImplUseShared
