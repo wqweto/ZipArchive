@@ -43,31 +43,31 @@ Event Error(ByVal FileIdx As Long, Source As String, Description As String, Canc
 ' Thunk data
 '=========================================================================
 
-' Auto-generated on 11.1.2018 23:36:38, CodeSize=6608, DataSize=984, ALIGN_SIZE=16
+' Auto-generated on 12.1.2018 17:15:52, CodeSize=6640, DataSize=984, ALIGN_SIZE=16
 Private Const STR_THUNK1 As String = _
     "UYtEJAhTi1wkEFWLbCQYVleLeEQD64tEJCSJbCQQiwD2wwN0HDvddBQPthNDD7bIM9HB6AgzBJf2wwN16IlcJByL1cdEJBgAAAAAK9OD4vyNDBqDwgPB6gI7yxvJ99EjyolMJCB0eYvpjaQkAAAAAIsbi8vB6QgPtvGLyMHpCA+2yTPxi8vB6RAPttGLyMHpEIu0twAIAAAPtskz0YvIwekYM7SXAAQAAIvTweoYM9EPtsgPtsOLXCQcM8iDwwQzNJeJXCQcM7SPAAwAAItMJBiLxkGJTCQYO811lItsJBCLzTP2K8s76xvt99Uj6XQWD7YTjVsBD7bIRjPRwegIMwSXO/V16otMJCRfXl2JAVtZwhAAzMzMzMzMzMzMzMzMVot0JBCF9n41i1QkDE6LRCQIwe4ERoMCAYsKdQP/QgSJCItKBIlIBMdACAAAAADHQAwAAAAAg8AQg+4BddhewhAAzMzMzMzMzMzMzMzMzMyLVCQMhdJ0GotEJAhWi3Qk" & _
-    "CCvwigwGjUABMEj/g+oBdfJewhAAzMzMzMzMzMzMzMxVi2wkEIvFV5mL+DP6K/qF/35ti0wkDFNWi3QkGI1JAIXtfhOLUQiDygKLwoPwAQ+vwsHoCDAGD7YGTw+2EUaLXCQgM9CLAcHoCIsUk4tZCDPQD7bCA0EEacAFhAgIiREPttPB6whAiUEED7ZBBzPQi0QkIDMckIlZCIX/f6JeW19dwhAAzMzMzMzMzMzMzMxWi3QkCFdqDItGKP/Qi/hXiTfoCQkAAItOKGoU/9HHQBAAAAAAx0AMAAAAAIlHCIvHX17CEADMzMzMzMzMzMzMVot0JAhXiz7/dgiLRzD/0P92BItHMP/Qi0cwVv/QX17CEADMzMzMzMzMzMzMzMzMi0QkDFaLdCQMV4t8JAyFwHQNUP92BP82/zfoQf3///92HI1GDP92GP92FP92EFCNRghQ/3YE/zZX6CIJAABfXsIQAMzMzMzMzMzMzMzMzMz/dCQE6OcPAADCEADMzMzM" & _
-    "Vot0JAiLTgyNRgxXiz6FyXQMO04EdAdQVuiCEQAAi04QjUYQhcl0DDtOCHQHUFbobBEAAIN+FACNRhR0B1BW6FwRAACNRgRQVuhSEQAAjUYIUFboSBEAAItHMFb/0F9ewhAAzMzMzMzMzMzMzMzMzItEJAhTVYtsJAxWV41YDFONeAhX/3AE/zBV6CEJAACLTCQci/CFyXQYhfZ0FIsHhcB0DFH/M1D/dQDoUfz//4vGX15dW8IQAMzMzMzMzMzMVot0JAiDyv+LhgSABAAPt0zGAo0ExmY7ynQJD7/BZokUxusQi0AEg/j/dAhmiZRGCIAEAIuGBIAEAItMJBCJTMYEi4YEgAQAZolUxgKNFE6LjgSABAAPt4IIgAQAZokEzouGBIAEAA+/DMYPt8BmiYIIgAQAg/n/dAxmi4YEgAQAZolEzgKLjgSABACKRCQMiIQOAAAEAIuGBIAEAEAl/38AAImGBIAEAF7CDADMzMyD7AxTVYtsJCBWV4t8JCAz" & _
-    "9ot/BIl8JBg5twyABgAPjuIAAACLjwyABgCLwSvGA8WD+AQPjJwAAACLVCQkO/F9Cg+2hD4IgAYA6wiLxivBD7YEEI1eAohEJBSNQ/87wX0KD7aEPgmABgDrCYvGK8EPtkQQAYhEJBU72X0KD7aEPgqABgDrCYvGK8EPtkQQAohEJBaNQwE7wX0KD7aEPguABgDrCYvGK8EPtkQQA4hEJBeLRCQUaci9pzUewekQUVBX6Ir+//9GO7cMgAYAD4xR////6zGLzju3DIAGAH0njZcIgAYA6wmNpCQAAAAAi/+KhA8IgAYAjVIBiEL/QTuPDIAGAHzqKbcMgAYAhe0PjvUBAADrCo2kJAAAAACNSQCLXCQkg/0ED4xZAQAAi4cAAAQAM+2JhwCABABpA72nNR7B6BAPv5RHCIAEAIP6/w+EMQEAAIuPBIAEAIvCK8G+AIAAACX/fwAAK/ArzoHh/38AAIuEOQAABAA7A3UOibSvEIAGAEU7bCQsfQkPvxTX" & _
-    "g/r/dcCF7Q+O6QAAAItEJCg5RCQwfgaJRCQw6wSLRCQwvgQAAAA7xn5xjZsAAAAAigQeM8kz24hEJBOF7X5YkIuUjxCABgCLxivCeRiLhwSABAArwgPGJf9/AACKhDgAAAQA6wuLfCQkigQ4i3wkGDhEJBN1CImUnxCABgBDQTvNfL2D+wF+D4tEJDBGi+uLXCQkO/B8mYtcJCSLbCQoO/V9PYuXEIAGAIvOK8qNLBqFyXkYi4cEgAQAK8IDxiX/fwAAioQ4AAAEAOsDigQZOAQpdQhGQTt0JCh81ItsJChW/7cQgAYA/3QkKOigDgAAhfZ+fes4i0wkIIoDPI+LEYtxCA+2yItCPHcJD7ZECDBqCOsND7YECGoJjQRFAQAAAFBWUuhHEgAAvgEAAACLbCQog/0EfBZpA72nNR7B6BBQD7YDUFfodfz//+sVi48MgAYAigOIhA8IgAYA/4cMgAYATkNNhfZ/yYlsJCiJXCQkhe0Pjxf+//9fXl1bg8QM" & _
-    "whQAzMzMzMzMzMzMzMzMzIPsFFNVi2wkKFZXi3wkKDP2i38EiXwkIDm3DIAGAA+O4gAAAIuPDIAGAIvBK8YDxYP4BA+MnAAAAItUJCw78X0KD7aEPgiABgDrCIvGK8EPtgQQjV4CiEQkGI1D/zvBfQoPtoQ+CYAGAOsJi8YrwQ+2RBABiEQkGTvZfQoPtoQ+CoAGAOsJi8YrwQ+2RBACiEQkGo1DATvBfQoPtoQ+C4AGAOsJi8YrwQ+2RBADiEQkG4tEJBhpyL2nNR7B6RBRUFfoavv//0Y7twyABgAPjFH////rMYvOO7cMgAYAfSeNlwiABgDrCY2kJAAAAACL/4qEDwiABgCNUgGIQv9BO48MgAYAfOoptwyABgAzwDPJiUQkFIlMJBiJRCQche0PjgkCAADrCo2kJAAAAACNSQCLXCQsg/0ED4zAAQAAi4cAAAQAM+2JhwCABABpA72nNR7B6BAPv5RHCIAEAIP6/w+EmAEAAIuPBIAEAIvCK8G+" & _
-    "AIAAACX/fwAAK/ArzoHh/38AAIuEOQAABAA7A3UOibSvEIAGAEU7bCQ0fQkPvxTXg/r/dcCF7Q+OTAEAAItUJDCLRCQ4O8J+BovCiUQkOL4EAAAAO8Z+d4oEHjPJM9uIRCQThe1+YOsHjaQkAAAAAIuUjxCABgCLxivCeRiLhwSABAArwgPGJf9/AACKhDgAAAQA6wuLfCQsigQ4i3wkIDhEJBN1CImUnxCABgBDQTvNfL2D+wF+D4tEJDhGi+uLXCQsO/B8kYtcJCyLVCQwO/J9OYuXEIAGAIvOK8qNLBqFyXkYi4cEgAQAK8IDxiX/fwAAioQ4AAAEAOsDigQZOAQpdQhGQTt0JDB81ItsJBSF7X5ejUUBO/B+T4tEJCiLEItoCItEJBw8jw+2yItCPHcJD7ZECDBqCOsND7YECGoJjQRFAQAAAFBVUuggDwAAD7YDi48QgAYAiUwkGIl0JBSJRCQc6ZAAAACLRCQYVVDrJYuHEIAGAIlEJBgPtgOJ" & _
-    "dCQUiUQkHOtxi0wkGItsJBSF7X4yVVH/dCQw6PAKAAAzwI11/4lEJBSF9n9Si2wkMItMJBiF7Q+PA/7//19eXVuDxBTCFACLTCQoigM8j4sRi3EID7bIi0I8dwkPtkQIMGoI6w0PtgQIagmNBEUBAAAAUFZS6HYOAAC+AQAAAItsJDCD/QR8FmkDvac1HsHoEFAPtgNQV+ik+P//6xWLjwyABgCKA4iEDwiABgD/hwyABgBOQ02F9n/JiWwkMIlcJCzpav///8zMzMzMzMzMzFZXi3wkDGiwjwYAiweLQCj/0IvwhfZ1BV9ewgQAiXcEjU4CugCAAACDyP/rA41JAMdBAv////+NSQhmiUH4ZolB9oPqAXXpjb4IgAQAuQCAAADzq1+JlgSABACNQgGJlgyABgBewgQAzMzMzMzMzMxWV4t8JAy5EgAAAL4AUOZVuHAp5lXzpYtMJBCDwGBfXscBABDmVYlBBMdBCKBA5lXHQQx4ROZVwggAzMzMzMzM" & _
-    "U4tcJAhWV2gAgAAAizuLcwiLRyj/0IkGM8A5RCQkagMPlcDHRggAgAAAg8ACx0YEAAAAAFBWV+g0DQAAg3wkKAD/dCQw/3QkMP90JCD/dCQgU3QH6Bf4///rBegw+///agdqAFZX6AUNAACDfCQkAHQYi04Qhcl0EbgIAAAAK8FQagBWV+jmDAAAi0QkHIsOX4kIi0QkHItOBF5biQi4AQAAAMIkAMzMzMzMzMzMzMxRU1VWi3QkFFdoAIAAAIseiVwkHItDKP/Qi2wkIImGpIEAAMeGrIEAAACAAADHhqiBAAAAAAAAhe1/DYO+nAEAAAAPjrYFAACDvpwBAAAYjb6cAQAAfSqLVCQc6wONSQCF7X4ZD7YCTYsPQtPgCYaYAQAAjUEIiQeD+Bh844lUJByLRhiFwHUJx0YYAQAAAOumg/gBdXOLF4P6Aw+MXQUAAIuGmAEAAIPC/dHoi8iJF8HoAomGmAEAAIPhA3Udi8rHRhgKAAAAg+EHK9HT6IkX" & _
-    "iYaYAQAA6Vz///+D+QF1GItGBIlGDItGCIlGEMdGGAYAAADpP////4P5Ag+FNv///4lOGOku////g/gCdW6LF4P6Dg+M5QQAAIuOmAEAAIvBg+AfwekFBQEBAADHRiwAAAAAiUYgi8GD4B/B6QVAx0YYAwAAAIlGJIvBg+APwekEg8AEiY6YAQAAiUYojULyiQczwIlGRIlGSIlGTIlGUGaJRlSIRlbpu/7//4P4A3VvOQcPjHUEAACLRiw7Rih9MYM/A3wsi0tAi0YsipaYAQAAgOIHD7YEAYhUMET/RiyLRiyDB/3BrpgBAAADO0YofM+LRiw7RigPhWn+//9qE41GRFBW6MYJAACJRhTHRhgEAAAAx0YsAAAAAOlH/v//g/gED4XiAAAAi0Yki04gA8E5Rix8P1GNRldQVuiPCQAA/3YkiUYMi0Ygg8BXA8ZQVuh6CQAAjX4UiUYQV1bovQUAAMcHAAAAAMdGGAYAAADp8v3///92FI2GmAEAAFdQ"
+    "CCvwigwGjUABMEj/g+oBdfJewhAAzMzMzMzMzMzMzMyDfCQMAItEJASLSAyJTCQED46OAAAAU1VWi3QkFFeLfCQgi++D5QGD5wKNmwAAAACKHoXtdBWLSAiDyQKL0YPyAQ+v0cHqCDLTiBaF/3QCih4PthBGD7bLi1wkFDPRiwjB6QiLFJOLWAgz0Q+2ygNIBGnJBYQICIkQD7bTwesIQYlIBA+2SAcz0YtMJBQzHJGLTCQcSYlYCIlMJByFyX+QX15dW8IQAMzMzMzMzMzMzFaLdCQIV2oMi0Yo/9CL+FeJN+gJCQAAi04oahT/0cdAEAAAAADHQAwAAAAAiUcIi8dfXsIQAMzMzMzMzMzMzMxWi3QkCFeLPv92CItHMP/Q/3YEi0cw/9CLRzBW/9BfXsIQAMzMzMzMzMzMzMzMzMyLRCQMVot0JAxXi3wkDIXAdA1Q/3YE/zb/N+gh/f///3YcjUYM/3YY/3YU/3YQUI1GCFD/dgT/NlfoIgkAAF9e" & _
+    "whAAzMzMzMzMzMzMzMzMzP90JATo5w8AAMIQAMzMzMxWi3QkCItODI1GDFeLPoXJdAw7TgR0B1BW6IIRAACLThCNRhCFyXQMO04IdAdQVuhsEQAAg34UAI1GFHQHUFboXBEAAI1GBFBW6FIRAACNRghQVuhIEQAAi0cwVv/QX17CEADMzMzMzMzMzMzMzMzMi0QkCFNVi2wkDFZXjVgMU414CFf/cAT/MFXoIQkAAItMJByL8IXJdBiF9nQUiweFwHQMUf8zUP91AOgx/P//i8ZfXl1bwhAAzMzMzMzMzMxWi3QkCIPK/4uGBIAEAA+3TMYCjQTGZjvKdAkPv8FmiRTG6xCLQASD+P90CGaJlEYIgAQAi4YEgAQAi0wkEIlMxgSLhgSABABmiVTGAo0UTouOBIAEAA+3ggiABABmiQTOi4YEgAQAD78Mxg+3wGaJggiABACD+f90DGaLhgSABABmiUTOAouOBIAEAIpEJAyIhA4AAAQAi4YEgAQAQCX/" & _
+    "fwAAiYYEgAQAXsIMAMzMzIPsDFNVi2wkIFZXi3wkIDP2i38EiXwkGDm3DIAGAA+O4gAAAIuPDIAGAIvBK8YDxYP4BA+MnAAAAItUJCQ78X0KD7aEPgiABgDrCIvGK8EPtgQQjV4CiEQkFI1D/zvBfQoPtoQ+CYAGAOsJi8YrwQ+2RBABiEQkFTvZfQoPtoQ+CoAGAOsJi8YrwQ+2RBACiEQkFo1DATvBfQoPtoQ+C4AGAOsJi8YrwQ+2RBADiEQkF4tEJBRpyL2nNR7B6RBRUFfoiv7//0Y7twyABgAPjFH////rMYvOO7cMgAYAfSeNlwiABgDrCY2kJAAAAACL/4qEDwiABgCNUgGIQv9BO48MgAYAfOoptwyABgCF7Q+O9QEAAOsKjaQkAAAAAI1JAItcJCSD/QQPjFkBAACLhwAABAAz7YmHAIAEAGkDvac1HsHoEA+/lEcIgAQAg/r/D4QxAQAAi48EgAQAi8Irwb4AgAAAJf9/AAAr8CvOgeH/" & _
+    "fwAAi4Q5AAAEADsDdQ6JtK8QgAYARTtsJCx9CQ+/FNeD+v91wIXtD47pAAAAi0QkKDlEJDB+BolEJDDrBItEJDC+BAAAADvGfnGNmwAAAACKBB4zyTPbiEQkE4XtfliQi5SPEIAGAIvGK8J5GIuHBIAEACvCA8Yl/38AAIqEOAAABADrC4t8JCSKBDiLfCQYOEQkE3UIiZSfEIAGAENBO818vYP7AX4Pi0QkMEaL64tcJCQ78HyZi1wkJItsJCg79X09i5cQgAYAi84ryo0sGoXJeRiLhwSABAArwgPGJf9/AACKhDgAAAQA6wOKBBk4BCl1CEZBO3QkKHzUi2wkKFb/txCABgD/dCQo6KAOAACF9n596ziLTCQgigM8j4sRi3EID7bIi0I8dwkPtkQIMGoI6w0PtgQIagmNBEUBAAAAUFZS6EcSAAC+AQAAAItsJCiD/QR8FmkDvac1HsHoEFAPtgNQV+h1/P//6xWLjwyABgCKA4iEDwiABgD/hwyA" & _
+    "BgBOQ02F9n/JiWwkKIlcJCSF7Q+PF/7//19eXVuDxAzCFADMzMzMzMzMzMzMzMzMg+wUU1WLbCQoVleLfCQoM/aLfwSJfCQgObcMgAYAD47iAAAAi48MgAYAi8ErxgPFg/gED4ycAAAAi1QkLDvxfQoPtoQ+CIAGAOsIi8YrwQ+2BBCNXgKIRCQYjUP/O8F9Cg+2hD4JgAYA6wmLxivBD7ZEEAGIRCQZO9l9Cg+2hD4KgAYA6wmLxivBD7ZEEAKIRCQajUMBO8F9Cg+2hD4LgAYA6wmLxivBD7ZEEAOIRCQbi0QkGGnIvac1HsHpEFFQV+hq+///Rju3DIAGAA+MUf///+sxi847twyABgB9J42XCIAGAOsJjaQkAAAAAIv/ioQPCIAGAI1SAYhC/0E7jwyABgB86im3DIAGADPAM8mJRCQUiUwkGIlEJByF7Q+OCQIAAOsKjaQkAAAAAI1JAItcJCyD/QQPjMABAACLhwAABAAz7YmHAIAEAGkDvac1" & _
+    "HsHoEA+/lEcIgAQAg/r/D4SYAQAAi48EgAQAi8Irwb4AgAAAJf9/AAAr8CvOgeH/fwAAi4Q5AAAEADsDdQ6JtK8QgAYARTtsJDR9CQ+/FNeD+v91wIXtD45MAQAAi1QkMItEJDg7wn4Gi8KJRCQ4vgQAAAA7xn53igQeM8kz24hEJBOF7X5g6weNpCQAAAAAi5SPEIAGAIvGK8J5GIuHBIAEACvCA8Yl/38AAIqEOAAABADrC4t8JCyKBDiLfCQgOEQkE3UIiZSfEIAGAENBO818vYP7AX4Pi0QkOEaL64tcJCw78HyRi1wkLItUJDA78n05i5cQgAYAi84ryo0sGoXJeRiLhwSABAArwgPGJf9/AACKhDgAAAQA6wOKBBk4BCl1CEZBO3QkMHzUi2wkFIXtfl6NRQE78H5Pi0QkKIsQi2gIi0QkHDyPD7bIi0I8dwkPtkQIMGoI6w0PtgQIagmNBEUBAAAAUFVS6CAPAAAPtgOLjxCABgCJTCQYiXQk" & _
+    "FIlEJBzpkAAAAItEJBhVUOsli4cQgAYAiUQkGA+2A4l0JBSJRCQc63GLTCQYi2wkFIXtfjJVUf90JDDo8AoAADPAjXX/iUQkFIX2f1KLbCQwi0wkGIXtD48D/v//X15dW4PEFMIUAItMJCiKAzyPixGLcQgPtsiLQjx3CQ+2RAgwagjrDQ+2BAhqCY0ERQEAAABQVlLodg4AAL4BAAAAi2wkMIP9BHwWaQO9pzUewegQUA+2A1BX6KT4///rFYuPDIAGAIoDiIQPCIAGAP+HDIAGAE5DTYX2f8mJbCQwiVwkLOlq////zMzMzMzMzMzMVleLfCQMaLCPBgCLB4tAKP/Qi/CF9nUFX17CBACJdwSNTgK6AIAAAIPI/+sDjUkAx0EC/////41JCGaJQfhmiUH2g+oBdemNvgiABAC5AIAAAPOrX4mWBIAEAI1CAYmWDIAGAF7CBADMzMzMzMzMzFZXi3wkDLkSAAAAvgBQ51W4kCnnVfOli0wkEIPAYF9e" & _
+    "xwEAEOdViUEEx0EIoEDnVcdBDHhE51XCCADMzMzMzMxTi1wkCFZXaACAAACLO4tzCItHKP/QiQYzwDlEJCRqAw+VwMdGCACAAACDwALHRgQAAAAAUFZX6DQNAACDfCQoAP90JDD/dCQw/3QkIP90JCBTdAfoF/j//+sF6DD7//9qB2oAVlfoBQ0AAIN8JCQAdBiLThCFyXQRuAgAAAArwVBqAFZX6OYMAACLRCQciw5fiQiLRCQci04EXluJCLgBAAAAwiQAzMzMzMzMzMzMzFFTVVaLdCQUV2gAgAAAix6JXCQci0Mo/9CLbCQgiYakgQAAx4asgQAAAIAAAMeGqIEAAAAAAACF7X8Ng76cAQAAAA+OtgUAAIO+nAEAABiNvpwBAAB9KotUJBzrA41JAIXtfhkPtgJNiw9C0+AJhpgBAACNQQiJB4P4GHzjiVQkHItGGIXAdQnHRhgBAAAA66aD+AF1c4sXg/oDD4xdBQAAi4aYAQAAg8L90eiLyIkX" & _
+    "wegCiYaYAQAAg+EDdR2LysdGGAoAAACD4Qcr0dPoiReJhpgBAADpXP///4P5AXUYi0YEiUYMi0YIiUYQx0YYBgAAAOk/////g/kCD4U2////iU4Y6S7///+D+AJ1bosXg/oOD4zlBAAAi46YAQAAi8GD4B/B6QUFAQEAAMdGLAAAAACJRiCLwYPgH8HpBUDHRhgDAAAAiUYki8GD4A/B6QSDwASJjpgBAACJRiiNQvKJBzPAiUZEiUZIiUZMiUZQZolGVIhGVum7/v//g/gDdW85Bw+MdQQAAItGLDtGKH0xgz8DfCyLS0CLRiyKlpgBAACA4gcPtgQBiFQwRP9GLItGLIMH/cGumAEAAAM7Rih8z4tGLDtGKA+Faf7//2oTjUZEUFboxgkAAIlGFMdGGAQAAADHRiwAAAAA6Uf+//+D+AQPheIAAACLRiSLTiADwTlGLHw/UY1GV1BW6I8JAAD/diSJRgyLRiCDwFcDxlBW6HoJAACNfhSJRhBXVui9"
 Private Const STR_THUNK2 As String = _
-    "6BsGAACLyIP5/w+EngMAAIP5/g+EYgMAAIP5EH0Pi0YsiEwwV/9GLOm6/f//dQe4AgAAAOsPM8CD+REPlcCNBIUDAAAAiUYwM8CD+RIPlMCNBMUDAAAAiUY0g/kQdRuLRiyFwH4UD7ZEMFaJRjzHRhgFAAAA6W39//8zwMdGGAUAAACJRjzpXP3//4P4BXVcix+LTjA72Q+MEQMAAIuGmAEAALoBAAAA0+Ir2UqJHyPQ0+gDVjSJhpgBAACF0n4ci0YkA0Ygi04sO8h9D4pGPEqIRDFX/0YshdJ/5ItcJBjHRhgEAAAA6fv8//+D+AYPhZwAAAD/dgyNXgxXjYaYAQAAUOgYBQAAg/j/D4SdAgAAg/j+D4RdAgAAPQABAAB9EFBW6AgEAACLXCQY6bb8//91QIsDx0YYAQAAADtGBHQNU1boWAQAAMcDAAAAAItGEI1+EItcJBg7RggPhIb8//9XVug4BAAAxwcAAAAA6XT8//+LXCQYPR4BAAAPjWX8" & _
-    "///HRhgHAAAAiUYc6Vb8//+D+Ad1VItGHC0BAQAAjQxAi0M0jRyID79LAjkPD4z7AQAAi5aYAQAAuAEAAADT4EgjwgNDBIlGOA+/QwIpB4pLAotcJBjT6omWmAEAAMdGGAgAAADp/fv//4P4CHU6/3YQjYaYAQAAV1DoIQQAAIP4/w+EpgEAAIP4/g+EagEAAIP4Hg+NYQEAAMdGGAkAAACJRhzpvvv//4P4CQ+FjwAAAItGHIsXjQxAi0M4jQSID79IAolEJCCJTCQQO9EPjFoBAACLhpgBAAC7AQAAACtUJBDT44tMJCBLI9gDWQSJF4pJAtPog344AImGmAEAAMdGGAYAAAB0LI2kJAAAAACLhqCBAAD/TjgrwyX/fwAAD7aEMKABAABQVuiBAgAAg344AHXb/044i1wkGOkm+///g/gKdTGLF4P6EA+M3QAAAIuOmAEAAA+3wYlGQI1C8MHpEIkHiY6YAQAAx0YYCwAAAOnw+v//g/gLdT+LB4P4" & _
-    "EA+MpwAAAIuOmAEAAIPA8A+30YkHgfL//wAAi0ZAwekQiY6YAQAAO8J1UPfYG8CD4AtAiUYY6az6//+D+AwPhaP6//+DPwh8ZQ+2hpgBAABQVujZAQAAgwf4wa6YAQAACINGQP8PhXz6///HRhgBAAAA6XD6//+LXCQY/7akgQAAi0Mw/9CLRCQkx4akgQAAAAAAAF9exwAAAAAAi0QkIF1bxwAAAAAAM8BZwhQAi0wkJLgBAAAAi5akgQAAX4kRi5aogQAAi0wkJF5dW4kRWcIUAMzMzMzMzMzMzMzMzMyB7CABAABTVou0JCwBAABXaLCBAACLRij/0IvYjXwkDLgICAgIuSQAAABoIAEAAIkz86u4CQkJCY28JKAAAAC5HAAAAPOrjUQkEMeEJBABAAAHBwcHUFPHhCQcAQAABwcHB8eEJCABAAAHBwcHx4QkJAEAAAcHBwfHhCQoAQAABwcHB8eEJCwBAAAHBwcHx4QkMAEAAAgICAjHhCQ0AQAA" & _
-    "CAgICOjHBAAAiUMEjUQkDGogUFPHRCQYBQUFBcdEJBwFBQUFx0QkIAUFBQXHRCQkBQUFBcdEJCgFBQUFx0QkLAUFBQXHRCQwBQUFBcdEJDQFBQUF6HcEAABfiUMIi8Nex0MYAAAAAMdDFAAAAADHQxAAAAAAx0MMAAAAAMeDmAEAAAAAAADHg5wBAAAAAAAAx4OggQAAAAAAAFuBxCABAADCBADMzMzMzMzMzMzMzMxTi1wkDFaLdCQMi4aggQAAiw6InDCgAQAAi4aggQAAQCX/fwAAiYaggQAAi4aogQAAO4asgQAAfBoDwFD/tqSBAACJhqyBAACLQSz/0ImGpIEAAIuGqIEAAIuOpIEAAIgcAf+GqIEAAF5bwggAzMzMU4tcJAhVi2wkEIsDiUQkDIXtdQhdg8j/W8IIAFeLfQCF/3RLVjP2OTd8I+sDjUkAi0cEjQTwg8AEgzgAdAdQU+i7////Rjs3fuaLRCQU/3cEi0Aw/9CLRCQUx0cEAAAA" & _
-    "AFeLQDD/0MdFAAAAAABeX10zwFvCCADMzMzMzMzMzMyLRCQMU4tcJAxWiwiLQASLM1eLfCQQixcjyo0EyA+2CDvOfyYPtgjT6ivxZoN4Av91LItABIXAdBqLCItABCPKjQTID7YIO85+2l9eg8j/W8IMAF9euP7///9bwgwAiReJMw+/QAJfXlvCDADMzMzMg+wIi0QkDFWLKItACIlEJBCLRCQYiWwkBIXAD44tAQAAU1ZXPQQBAAB+B74CAQAA6wyL8D0CAQAAfgONcP0rxrsdAAAAiUQkJIPP/4tFNIvoiUQkFI0EO5krwtH4jQxAO3SNBH0Ei9jr6zt0jQh+BIv46+GLXCQcjQRAjTyFAAAAALkXAQAAD7cELwP9i2wkEGY7wQ+/yItFPH8MD7aESAD+//9qB+sHD7ZEAahqCFBTVegpAwAAD7dHAmaFwHQNK3cEmFBWU1XoEwMAAItFOIPO/4tcJCC/HgAAAIvoi/+NBDeZK8LR+I0MQDtcjQR9" & _
-    "BIv46+s7XI0IfgSL8Ovhi3wkHI0EQI00hQAAAAAD9YtsJBBqBQ+/DotFPA+2BMhQV1XouQIAAA+3RgJmhcB0D5hQi8MrRgRQV1XooQIAAItEJCSFwA+P2f7//19eW12DxAjCDADMzMzMzMzMzMzMzFNVi2wkDFZXagiLRSj/0ItcJCiL+IvLuAEAAADT4L4BAAAAi0wkLEjT5olEJCiNBPUAAAAAUItFKP/QiUcEM8mNRv+Dyv+JB4XAeCONZCQAi0cEZolUyAKLRwTGBMgAi0cEx0TIBAAAAABBOw9+4TPtOWwkIH5pi3QkHOsDjUkAD7YELjvDflGLRCQYiwSoi8gjTCQoO0wkJHU+i8vT+CMHOwd/NItPBGaJbMECi08ED7YULivTjTTBD7YOO8p9AogWi3QkHLoBAAAAD7YMLivL0+IDwjsHfsxFO2wkIHygM/Y5N3xni1QkLItsJByL/4tHBI0M8A+2ATvCfkuDyP9miUECi0cEjQzwD7YBK8KD" & _
-    "+Ad+BbgHAAAAUI0EE4gRUIvLi8bT4AtEJCxQ/3QkLFX/dCQs/3QkLOjD/v//i08Ei1QkLIlE8QRGOzd+o4vHX15dW8IcAMzMzMzMzMzMzMyB7AQFAAAzwDPSVYusJBQFAACJVCQEiUQkDIlEJBCJRCQUiUQkGIlEJByJRCQgiUQkJIlEJCiJRCQsiUQkMIlEJDSJRCQ4iUQkPIlEJECJRCREVou0JBQFAACF7X4Zi/8Ptgww/0SMDDvRfQKL0UA7xXztiVQkCDPSM8nrA41JAIlUDFADVAwQg8EEA9KD+Tx87lcz/4XtfklTjZwklAAAAA+2NDfHAwAAAACLVLRUjUIBiUS0VIX2dBgzwI1kJACLygPAg+EB0foLwYPuAXXwiQOLtCQcBQAAR4PDBDv9fMBbi0QkDF+D+Al8BbgJAAAAUGoAagBV/7QkJAUAAI2EJKAAAABQi4QkKAUAAP8w6Iz9//9eXYHEBAUAAMIMAMyLRCQMVot0JAyLThDT4AlG" & _
-    "DItEJBQDwYlGEIP4CHw5V4t8JAyLRgg5RgR8DwPAUP82iUYIi0cs/9CJBotWBIsOikYMiAQK/0YEwW4MCINGEPiDfhAIfc1fXsIQAFWL7IsAgEDAIKBg4BCQUNAwsHDwCIhIyCioaOgYmFjYOLh4+ASERMQkpGTkFJRU1DS0dPQMjEzMLKxs7BycXNw8vHz8AoJCwiKiYuISklLSMrJy8gqKSsoqqmrqGppa2jq6evoGhkbGJqZm5haWVtY2tnb2Do5Ozi6ubu4enl7ePr5+/gGBQcEhoWHhEZFR0TGxcfEJiUnJKalp6RmZWdk5uXn5BYVFxSWlZeUVlVXVNbV19Q2NTc0trW3tHZ1d3T29ff0Dg0PDI6Nj4xOTU9Mzs3PzC4tLyyura+sbm1vbO7t7+weHR8cnp2fnF5dX1ze3d/cPj0/PL69v7x+fX98/v3//AQEAAAMAAAADAAAAAgEAAAQAAAAEAAAAAwEAAAUAAAAFAAAABAEAAAYAAAAGAAAA" & _
-    "BQEAAAcAAAAHAAAABgEAAAgAAAAIAAAABwEAAAkAAAAJAAAACAEAAAoAAAAKAAAACQEBAAsAAAAMAAAACgEBAA0AAAAOAAAACwEBAA8AAAAQAAAADAEBABEAAAASAAAADQECABMAAAAWAAAADgECABcAAAAaAAAADwECABsAAAAeAAAAEAECAB8AAAAiAAAAEQEDACMAAAAqAAAAEgEDACsAAAAyAAAAEwEDADMAAAA6AAAAFAEDADsAAABCAAAAFQEEAEMAAABSAAAAFgEEAFMAAABiAAAAFwEEAGMAAAByAAAAGAEEAHMAAACCAAAAGQEFAIMAAACiAAAAGgEFAKMAAADCAAAAGwEFAMMAAADiAAAAHAEFAOMAAAABAQAAHQEAAAIBAAACAQAAEBESAAgHCQYKBQsEDAMNAg4BDwAAAAAAAQAAAAEAAAABAAAAAgAAAAIAAAACAAAAAwAAAAMAAAADAAAABAAAAAQAAAAEAAEABQAAAAYAAAAFAAEA" & _
-    "BwAAAAgAAAAGAAIACQAAAAwAAAAHAAIADQAAABAAAAAIAAMAEQAAABgAAAAJAAMAGQAAACAAAAAKAAQAIQAAADAAAAALAAQAMQAAAEAAAAAMAAUAQQAAAGAAAAANAAUAYQAAAIAAAAAOAAYAgQAAAMAAAAAPAAYAwQAAAAABAAAQAAcAAQEAAIABAAARAAcAgQEAAAACAAASAAgAAQIAAAADAAATAAgAAQMAAAAEAAAUAAkAAQQAAAAGAAAVAAkAAQYAAAAIAAAWAAoAAQgAAAAMAAAXAAoAAQwAAAAQAAAYAAsAARAAAAAYAAAZAAsAARgAAAAgAAAaAAwAASAAAAAwAAAbAAwAATAAAABAAAAcAA0AAUAAAABgAAAdAA0AAWAAAACAAAA="
-Private Const STR_THUNK_OFFSETS As String = "560|624|672|752|768|880|0|288|368|416|0|0|0|6864|7232|6608|7212"
-Private Const STR_THUNK_BUILDDATE As String = "11.1.2018 23:36:38"
+    "BQAAxwcAAAAAx0YYBgAAAOny/f///3YUjYaYAQAAV1DoGwYAAIvIg/n/D4SeAwAAg/n+D4RiAwAAg/kQfQ+LRiyITDBX/0Ys6br9//91B7gCAAAA6w8zwIP5EQ+VwI0EhQMAAACJRjAzwIP5Eg+UwI0ExQMAAACJRjSD+RB1G4tGLIXAfhQPtkQwVolGPMdGGAUAAADpbf3//zPAx0YYBQAAAIlGPOlc/f//g/gFdVyLH4tOMDvZD4wRAwAAi4aYAQAAugEAAADT4ivZSokfI9DT6ANWNImGmAEAAIXSfhyLRiQDRiCLTiw7yH0PikY8SohEMVf/RiyF0n/ki1wkGMdGGAQAAADp+/z//4P4Bg+FnAAAAP92DI1eDFeNhpgBAABQ6BgFAACD+P8PhJ0CAACD+P4PhF0CAAA9AAEAAH0QUFboCAQAAItcJBjptvz//3VAiwPHRhgBAAAAO0YEdA1TVuhYBAAAxwMAAAAAi0YQjX4Qi1wkGDtGCA+Ehvz/" & _
+    "/1dW6DgEAADHBwAAAADpdPz//4tcJBg9HgEAAA+NZfz//8dGGAcAAACJRhzpVvz//4P4B3VUi0YcLQEBAACNDECLQzSNHIgPv0sCOQ8PjPsBAACLlpgBAAC4AQAAANPgSCPCA0MEiUY4D79DAikHiksCi1wkGNPqiZaYAQAAx0YYCAAAAOn9+///g/gIdTr/dhCNhpgBAABXUOghBAAAg/j/D4SmAQAAg/j+D4RqAQAAg/geD41hAQAAx0YYCQAAAIlGHOm++///g/gJD4WPAAAAi0YcixeNDECLQziNBIgPv0gCiUQkIIlMJBA70Q+MWgEAAIuGmAEAALsBAAAAK1QkENPji0wkIEsj2ANZBIkXikkC0+iDfjgAiYaYAQAAx0YYBgAAAHQsjaQkAAAAAIuGoIEAAP9OOCvDJf9/AAAPtoQwoAEAAFBW6IECAACDfjgAddv/TjiLXCQY6Sb7//+D+Ap1MYsXg/oQD4zdAAAAi46YAQAAD7fBiUZAjULw" & _
+    "wekQiQeJjpgBAADHRhgLAAAA6fD6//+D+At1P4sHg/gQD4ynAAAAi46YAQAAg8DwD7fRiQeB8v//AACLRkDB6RCJjpgBAAA7wnVQ99gbwIPgC0CJRhjprPr//4P4DA+Fo/r//4M/CHxlD7aGmAEAAFBW6NkBAACDB/jBrpgBAAAIg0ZA/w+FfPr//8dGGAEAAADpcPr//4tcJBj/tqSBAACLQzD/0ItEJCTHhqSBAAAAAAAAX17HAAAAAACLRCQgXVvHAAAAAAAzwFnCFACLTCQkuAEAAACLlqSBAABfiRGLlqiBAACLTCQkXl1biRFZwhQAzMzMzMzMzMzMzMzMzIHsIAEAAFNWi7QkLAEAAFdosIEAAItGKP/Qi9iNfCQMuAgICAi5JAAAAGggAQAAiTPzq7gJCQkJjbwkoAAAALkcAAAA86uNRCQQx4QkEAEAAAcHBwdQU8eEJBwBAAAHBwcHx4QkIAEAAAcHBwfHhCQkAQAABwcHB8eEJCgBAAAH" & _
+    "BwcHx4QkLAEAAAcHBwfHhCQwAQAACAgICMeEJDQBAAAICAgI6McEAACJQwSNRCQMaiBQU8dEJBgFBQUFx0QkHAUFBQXHRCQgBQUFBcdEJCQFBQUFx0QkKAUFBQXHRCQsBQUFBcdEJDAFBQUFx0QkNAUFBQXodwQAAF+JQwiLw17HQxgAAAAAx0MUAAAAAMdDEAAAAADHQwwAAAAAx4OYAQAAAAAAAMeDnAEAAAAAAADHg6CBAAAAAAAAW4HEIAEAAMIEAMzMzMzMzMzMzMzMzFOLXCQMVot0JAyLhqCBAACLDoicMKABAACLhqCBAABAJf9/AACJhqCBAACLhqiBAAA7hqyBAAB8GgPAUP+2pIEAAImGrIEAAItBLP/QiYakgQAAi4aogQAAi46kgQAAiBwB/4aogQAAXlvCCADMzMxTi1wkCFWLbCQQiwOJRCQMhe11CF2DyP9bwggAV4t9AIX/dEtWM/Y5N3wj6wONSQCLRwSNBPCDwASDOAB0B1BT" & _
+    "6Lv///9GOzd+5otEJBT/dwSLQDD/0ItEJBTHRwQAAAAAV4tAMP/Qx0UAAAAAAF5fXTPAW8IIAMzMzMzMzMzMzItEJAxTi1wkDFaLCItABIszV4t8JBCLFyPKjQTID7YIO85/Jg+2CNPqK/Fmg3gC/3Usi0AEhcB0GosIi0AEI8qNBMgPtgg7zn7aX16DyP9bwgwAX164/v///1vCDACJF4kzD79AAl9eW8IMAMzMzMyD7AiLRCQMVYsoi0AIiUQkEItEJBiJbCQEhcAPji0BAABTVlc9BAEAAH4HvgIBAADrDIvwPQIBAAB+A41w/SvGux0AAACJRCQkg8//i0U0i+iJRCQUjQQ7mSvC0fiNDEA7dI0EfQSL2OvrO3SNCH4Ei/jr4YtcJByNBECNPIUAAAAAuRcBAAAPtwQvA/2LbCQQZjvBD7/Ii0U8fwwPtoRIAP7//2oH6wcPtkQBqGoIUFNV6CkDAAAPt0cCZoXAdA0rdwSYUFZTVegTAwAAi0U4" & _
+    "g87/i1wkIL8eAAAAi+iL/40EN5krwtH4jQxAO1yNBH0Ei/jr6ztcjQh+BIvw6+GLfCQcjQRAjTSFAAAAAAP1i2wkEGoFD78Oi0U8D7YEyFBXVei5AgAAD7dGAmaFwHQPmFCLwytGBFBXVeihAgAAi0QkJIXAD4/Z/v//X15bXYPECMIMAMzMzMzMzMzMzMzMU1WLbCQMVldqCItFKP/Qi1wkKIv4i8u4AQAAANPgvgEAAACLTCQsSNPmiUQkKI0E9QAAAABQi0Uo/9CJRwQzyY1G/4PK/4kHhcB4I41kJACLRwRmiVTIAotHBMYEyACLRwTHRMgEAAAAAEE7D37hM+05bCQgfmmLdCQc6wONSQAPtgQuO8N+UYtEJBiLBKiLyCNMJCg7TCQkdT6Ly9P4Iwc7B380i08EZolswQKLTwQPthQuK9ONNMEPtg47yn0CiBaLdCQcugEAAAAPtgwuK8vT4gPCOwd+zEU7bCQgfKAz9jk3fGeLVCQsi2wkHIv/" & _
+    "i0cEjQzwD7YBO8J+S4PI/2aJQQKLRwSNDPAPtgErwoP4B34FuAcAAABQjQQTiBFQi8uLxtPgC0QkLFD/dCQsVf90JCz/dCQs6MP+//+LTwSLVCQsiUTxBEY7N36ji8dfXl1bwhwAzMzMzMzMzMzMzIHsBAUAADPAM9JVi6wkFAUAAIlUJASJRCQMiUQkEIlEJBSJRCQYiUQkHIlEJCCJRCQkiUQkKIlEJCyJRCQwiUQkNIlEJDiJRCQ8iUQkQIlEJERWi7QkFAUAAIXtfhmL/w+2DDD/RIwMO9F9AovRQDvFfO2JVCQIM9IzyesDjUkAiVQMUANUDBCDwQQD0oP5PHzuVzP/he1+SVONnCSUAAAAD7Y0N8cDAAAAAItUtFSNQgGJRLRUhfZ0GDPAjWQkAIvKA8CD4QHR+gvBg+4BdfCJA4u0JBwFAABHg8MEO/18wFuLRCQMX4P4CXwFuAkAAABQagBqAFX/tCQkBQAAjYQkoAAAAFCLhCQoBQAA/zDo" & _
+    "jP3//15dgcQEBQAAwgwAzItEJAxWi3QkDItOENPgCUYMi0QkFAPBiUYQg/gIfDlXi3wkDItGCDlGBHwPA8BQ/zaJRgiLRyz/0IkGi1YEiw6KRgyIBAr/RgTBbgwIg0YQ+IN+EAh9zV9ewhAAVYvsiwCAQMAgoGDgEJBQ0DCwcPAIiEjIKKho6BiYWNg4uHj4BIRExCSkZOQUlFTUNLR09AyMTMwsrGzsHJxc3Dy8fPwCgkLCIqJi4hKSUtIysnLyCopKyiqqauoamlraOrp6+gaGRsYmpmbmFpZW1ja2dvYOjk7OLq5u7h6eXt4+vn7+AYFBwSGhYeERkVHRMbFx8QmJSckpqWnpGZlZ2Tm5efkFhUXFJaVl5RWVVdU1tXX1DY1NzS2tbe0dnV3dPb19/QODQ8Mjo2PjE5NT0zOzc/MLi0vLK6tr6xubW9s7u3v7B4dHxyenZ+cXl1fXN7d39w+PT88vr2/vH59f3z+/f/8BAQAAAwAAAAMAAAACAQAA" & _
+    "BAAAAAQAAAADAQAABQAAAAUAAAAEAQAABgAAAAYAAAAFAQAABwAAAAcAAAAGAQAACAAAAAgAAAAHAQAACQAAAAkAAAAIAQAACgAAAAoAAAAJAQEACwAAAAwAAAAKAQEADQAAAA4AAAALAQEADwAAABAAAAAMAQEAEQAAABIAAAANAQIAEwAAABYAAAAOAQIAFwAAABoAAAAPAQIAGwAAAB4AAAAQAQIAHwAAACIAAAARAQMAIwAAACoAAAASAQMAKwAAADIAAAATAQMAMwAAADoAAAAUAQMAOwAAAEIAAAAVAQQAQwAAAFIAAAAWAQQAUwAAAGIAAAAXAQQAYwAAAHIAAAAYAQQAcwAAAIIAAAAZAQUAgwAAAKIAAAAaAQUAowAAAMIAAAAbAQUAwwAAAOIAAAAcAQUA4wAAAAEBAAAdAQAAAgEAAAIBAAAQERIACAcJBgoFCwQMAw0CDgEPAAAAAAABAAAAAQAAAAEAAAACAAAAAgAAAAIAAAADAAAA" & _
+    "AwAAAAMAAAAEAAAABAAAAAQAAQAFAAAABgAAAAUAAQAHAAAACAAAAAYAAgAJAAAADAAAAAcAAgANAAAAEAAAAAgAAwARAAAAGAAAAAkAAwAZAAAAIAAAAAoABAAhAAAAMAAAAAsABAAxAAAAQAAAAAwABQBBAAAAYAAAAA0ABQBhAAAAgAAAAA4ABgCBAAAAwAAAAA8ABgDBAAAAAAEAABAABwABAQAAgAEAABEABwCBAQAAAAIAABIACAABAgAAAAMAABMACAABAwAAAAQAABQACQABBAAAAAYAABUACQABBgAAAAgAABYACgABCAAAAAwAABcACgABDAAAABAAABgACwABEAAAABgAABkACwABGAAAACAAABoADAABIAAAADAAABsADAABMAAAAEAAABwADQABQAAAAGAAAB0ADQABYAAAAIAAAA=="
+Private Const STR_THUNK_OFFSETS As String = "592|656|704|784|800|912|0|288|368|416|0|0|0|6896|7264|6640|7244"
+Private Const STR_THUNK_BUILDDATE As String = "12.1.2018 17:15:52"
 ' end of generated code
 
 '=========================================================================
@@ -198,6 +198,7 @@ End Type
 Private Const LNG_SIG_LOCAL         As Long = &H4034B50
 Private Const LNG_SIG_CENTRAL       As Long = &H2014B50
 Private Const LNG_SIG_END           As Long = &H6054B50
+Private Const LNG_SIG_DATADESC      As Long = &H7064B50
 Private Const LNG_LEN_LOCAL         As Long = 30
 Private Const LNG_LEN_CENTRAL       As Long = 46
 Private Const LNG_LEN_END           As Long = 22
@@ -214,8 +215,7 @@ Private Const LNG_EXTRADATA_AE_2_MAXSIZE As Long = 20
 Private Const LNG_ENC_HEADER_SIZE   As Long = 12
 Private Const LNG_AES_AUTHCODE_SIZE As Long = 10
 Private Const LNG_AES_BLOCK_SIZE    As Long = 16
-Private Const LNG_AES256_SALT_SIZE  As Long = 16
-Private Const LNG_AES256_KEY_SIZE   As Long = 32
+Private Const LNG_DEF_ENCR_STRENGTH As Long = 3
 Private Const ERR_USER_CANCEL       As String = "User cancelled"
 Private Const ERR_INIT_COMPRESSOR   As String = "Cannot init deflate compressor"
 Private Const ERR_COMPRESSING       As String = "Error compressing"
@@ -402,7 +402,6 @@ Private Type UcsFileInfo
     #End If ' ImplCrypto
 End Type
 
-#If ImplCrypto Then
 Private Type UcsZipCryptoType
     hPbkdf2Alg          As Long
     hHmacAlg            As Long
@@ -415,9 +414,8 @@ Private Type UcsZipCryptoType
     Nonce(0 To 1)       As Long
     EncrData()          As Byte
     EncrPos             As Long
-    TradKey(0 To 2)     As Long
+    TradKey(0 To 3)     As Long
 End Type
-#End If ' ImplCrypto
 
 '=========================================================================
 ' Properties
@@ -465,7 +463,8 @@ Public Function AddFile( _
             File As Variant, _
             Optional Name As String, _
             Optional Comment As String, _
-            Optional Password As String) As Boolean
+            Optional Password As String, _
+            Optional EncrStrength As Long = LNG_DEF_ENCR_STRENGTH) As Boolean
     Const FUNC_NAME     As String = "AddFile"
     Dim uFile           As UcsVfsFileType
     
@@ -491,6 +490,7 @@ Public Function AddFile( _
         AssignVariant .SourceFile, File
         #If ImplCrypto Then
             .Password = Password
+            .Aes.Strength = EncrStrength
         #End If
     End With
     m_lFileCount = m_lFileCount + 1
@@ -522,6 +522,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
     Dim uEndHdr         As UcsEndHeaderType
     Dim lEntries        As Long
     #If ImplCrypto Then
+        Dim lSaltSize   As Long
         Dim baSalt()    As Byte
         Dim nPassVer    As Integer
         Dim lJdx        As Long
@@ -554,21 +555,39 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
-                    baSalt = pvCryptoAesGetRandomSalt(LNG_AES256_SALT_SIZE)
-                    If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, LNG_AES256_KEY_SIZE, nPassVer) Then
-                        Err.Raise vbObjectError, , LastError
+                    uLocal.Flags = uLocal.Flags Or ucsZcfEncrypted
+                    If .Aes.Strength = 0 Then
+                        uLocal.Flags = uLocal.Flags Or ucsZcfHasDataDescriptor
+                        If Not pvCryptoTradInit(ToUtf8Array(.Password)) Then
+                            Err.Raise vbObjectError, , m_sLastError
+                        End If
+                        '--- encrypt 12-byte random header w/ last byte used for password check
+                        baSalt = pvCryptoAesGetRandomSalt(LNG_ENC_HEADER_SIZE)
+                        Call CopyMemory(baSalt(LNG_ENC_HEADER_SIZE - 1), ByVal UnsignedAdd(VarPtr(uLocal.FDate), -1), 1)
+                        If Not pvCryptoTradCrypt(baSalt) Then
+                            Err.Raise vbObjectError, , m_sLastError
+                        End If
+                    Else
+                        lSaltSize = (.Aes.Strength + 1) * 4
+                        baSalt = pvCryptoAesGetRandomSalt(lSaltSize)
+                        If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, lSaltSize * 2, nPassVer) Then
+                            Err.Raise vbObjectError, , m_sLastError
+                        End If
+                        '--- reserve space in extra data for AE-1/2
+                        lJdx = UBound(.Extra) + 1
+                        ReDim Preserve .Extra(0 To lJdx + LNG_EXTRADATA_AES_SIZE - 1) As Byte
                     End If
-                    '--- reserve space in extra data for AE-1/2
-                    lJdx = UBound(.Extra) + 1
-                    ReDim Preserve .Extra(0 To lJdx + LNG_EXTRADATA_AES_SIZE - 1) As Byte
                 End If
             #End If
             pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
-                    '--- prepend salt and password verification value before file data
-                    pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES256_SALT_SIZE
-                    pvVfsWrite uArchiveFile, VarPtr(nPassVer), 2
+                    '--- prepend salt/enc_header before file data
+                    pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), UBound(baSalt) + 1
+                    If .Aes.Strength > 0 Then
+                        '--- prepend Password Verification Value for AES
+                        pvVfsWrite uArchiveFile, VarPtr(nPassVer), 2
+                    End If
                 End If
             #End If
             lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
@@ -595,8 +614,14 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                                     ReDim baBuffer(0 To (uBuf.OutLen And -2048) + 2047) As Byte
                                 End If
                                 Call CopyMemory(baBuffer(0), ByVal uBuf.OutBlock, uBuf.OutLen)
-                                If Not pvCryptoAesCrypt(baBuffer, Size:=uBuf.OutLen, HashAfter:=True) Then
-                                    Err.Raise vbObjectError, , LastError
+                                If .Aes.Strength = 0 Then
+                                    If Not pvCryptoTradCrypt(baBuffer, Size:=uBuf.OutLen) Then
+                                        Err.Raise vbObjectError, , m_sLastError
+                                    End If
+                                Else
+                                    If Not pvCryptoAesCrypt(baBuffer, Size:=uBuf.OutLen, HashAfter:=True) Then
+                                        Err.Raise vbObjectError, , m_sLastError
+                                    End If
                                 End If
                                 pvVfsWrite uArchiveFile, VarPtr(baBuffer(0)), uBuf.OutLen
                                 Call CoTaskMemFree(uBuf.OutBlock)
@@ -634,11 +659,17 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                     uLocal.USize = 0
                     uLocal.CSize = 0
                     #If ImplCrypto Then
-                       If LenB(.Password) <> 0 Then
-                           If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, LNG_AES256_KEY_SIZE, nPassVer) Then
-                               Err.Raise vbObjectError, , LastError
-                           End If
-                       End If
+                        If LenB(.Password) <> 0 Then
+                            If .Aes.Strength = 0 Then
+                                If Not pvCryptoTradInit(ToUtf8Array(.Password)) Then
+                                    Err.Raise vbObjectError, , m_sLastError
+                                End If
+                            Else
+                                If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, lSaltSize * 2, nPassVer) Then
+                                    Err.Raise vbObjectError, , m_sLastError
+                                End If
+                            End If
+                        End If
                     #End If
                     Do
                         RaiseEvent Progress(lIdx, uLocal.USize, .Size, m_bCancel)
@@ -653,8 +684,14 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                         Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), VarPtr(baBuffer(0)), lSize, VarPtr(uLocal.Crc32))
                         #If ImplCrypto Then
                             If LenB(.Password) <> 0 Then
-                                If Not pvCryptoAesCrypt(baBuffer, Size:=lSize, HashAfter:=True) Then
-                                    Err.Raise vbObjectError, , LastError
+                                If .Aes.Strength = 0 Then
+                                    If Not pvCryptoTradCrypt(baBuffer, Size:=lSize) Then
+                                        Err.Raise vbObjectError, , m_sLastError
+                                    End If
+                                Else
+                                    If Not pvCryptoAesCrypt(baBuffer, Size:=lSize, HashAfter:=True) Then
+                                        Err.Raise vbObjectError, , m_sLastError
+                                    End If
                                 End If
                             End If
                         #End If
@@ -668,39 +705,50 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.Crc32 = uLocal.Crc32 Xor -1
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
-                    '--- append HMAC SHA1 authetication code after file data
-                    baSalt = pvCryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)
-                    pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES_AUTHCODE_SIZE
-                    '--- update AE-1/2 in extra data
-                    uAes.HeaderId = LNG_EXTRADATA_AES_HEADER
-                    uAes.Size = LNG_EXTRADATA_AES_SIZE - 4
-                    uAes.Version = IIf(.Size <= LNG_EXTRADATA_AE_2_MAXSIZE, 2, 1)
-                    uAes.VendorId = LNG_EXTRADATA_AES_VENDOR
-                    uAes.Strength = LNG_AES256_KEY_SIZE / 8 - 1
-                    uAes.Method = uLocal.Method
-                    lJdx = UBound(.Extra) + 1 - LNG_EXTRADATA_AES_SIZE
-                    Debug.Assert VarPtr(uAes.Strength) + 1 - VarPtr(uAes) = 9
-                    Call CopyMemory(.Extra(lJdx), uAes, 9)
-                    Call CopyMemory(.Extra(lJdx + 9), uAes.Method, 2)
-                    '--- update local header
-                    uLocal.Flags = uLocal.Flags Or ucsZcfEncrypted
-                    uLocal.Method = LNG_METHOD_AES
-                    uLocal.CSize = uLocal.CSize + LNG_AES256_SALT_SIZE + 2 + LNG_AES_AUTHCODE_SIZE
-                    If uAes.Version = 2 Then
-                        uLocal.Crc32 = 0
+                    If .Aes.Strength = 0 Then
+                        uLocal.CSize = uLocal.CSize + LNG_ENC_HEADER_SIZE
+                    Else
+                        '--- append HMAC SHA1 authetication code after file data
+                        baSalt = pvCryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)
+                        pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES_AUTHCODE_SIZE
+                        '--- update AE-1/2 in extra data
+                        uAes.HeaderId = LNG_EXTRADATA_AES_HEADER
+                        uAes.Size = LNG_EXTRADATA_AES_SIZE - 4
+                        uAes.Version = IIf(.Size <= LNG_EXTRADATA_AE_2_MAXSIZE, 2, 1)
+                        uAes.VendorId = LNG_EXTRADATA_AES_VENDOR
+                        uAes.Strength = lSaltSize / 4 - 1
+                        uAes.Method = uLocal.Method
+                        lJdx = UBound(.Extra) + 1 - LNG_EXTRADATA_AES_SIZE
+                        Debug.Assert VarPtr(uAes.Strength) + 1 - VarPtr(uAes) = 9
+                        Call CopyMemory(.Extra(lJdx), uAes, 9)
+                        Call CopyMemory(.Extra(lJdx + 9), uAes.Method, 2)
+                        '--- update local header
+                        uLocal.Method = LNG_METHOD_AES
+                        uLocal.CSize = uLocal.CSize + lSaltSize + 2 + LNG_AES_AUTHCODE_SIZE
+                        If uAes.Version = 2 Then
+                            uLocal.Crc32 = 0
+                        End If
                     End If
                 End If
             #End If
-            lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
-            pvVfsSeek uArchiveFile, .Offset, FILE_BEGIN
-            pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
-            pvVfsSeek uArchiveFile, lBeginOffset, FILE_BEGIN
             .Crc32 = uLocal.Crc32
             Debug.Assert .Size = uLocal.USize
             .Size = uLocal.USize
             .CompressedSize = uLocal.CSize
             .Method = uLocal.Method
             .Flags = uLocal.Flags
+            If (uLocal.Flags And ucsZcfHasDataDescriptor) <> 0 Then
+                lBeginOffset = LNG_SIG_DATADESC
+                pvVfsWrite uArchiveFile, VarPtr(lBeginOffset), 4
+                pvVfsWrite uArchiveFile, VarPtr(uLocal.Crc32), 12
+                uLocal.Crc32 = 0
+                uLocal.CSize = 0
+                uLocal.USize = 0
+            End If
+            lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
+            pvVfsSeek uArchiveFile, .Offset, FILE_BEGIN
+            pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
+            pvVfsSeek uArchiveFile, lBeginOffset, FILE_BEGIN
             If False Then
 SkipFile:
                 On Error GoTo EH
@@ -778,7 +826,8 @@ Public Function AddFromFolder( _
             Optional Recursive As Boolean, _
             Optional TargetFolder As String, _
             Optional IncludeEmptyFolders As Boolean, _
-            Optional Password As String) As Boolean
+            Optional Password As String, _
+            Optional EncrStrength As Long = LNG_DEF_ENCR_STRENGTH) As Boolean
     Const FUNC_NAME     As String = "AddFromFolder"
     Dim lIdx            As Long
     Dim sFolder         As String
@@ -806,7 +855,7 @@ Public Function AddFromFolder( _
         cFolders.Remove 1
         lIdx = 0
         For Each vElem In pvEnumFiles(sFolder, sMask, -vbDirectory)
-            If AddFile(vElem, PathCombine(TargetFolder, Mid$(vElem, lRootOffset + 2)), Password:=Password) Then
+            If AddFile(vElem, PathCombine(TargetFolder, Mid$(vElem, lRootOffset + 2)), Password:=Password, EncrStrength:=EncrStrength) Then
                 lIdx = lIdx + 1
                 '--- success (entries added)
                 AddFromFolder = True
@@ -815,7 +864,7 @@ Public Function AddFromFolder( _
         If lIdx = 0 And IncludeEmptyFolders Then
             sName = PathCombine(TargetFolder, Mid$(sFolder, lRootOffset + 2))
             If LenB(sName) <> 0 Then
-                If AddFile(sFolder & "\", sName & "\", Password:=Password) Then
+                If AddFile(sFolder & "\", sName & "\", Password:=Password, EncrStrength:=EncrStrength) Then
                     '--- success (entries added)
                     AddFromFolder = True
                 End If
@@ -1122,6 +1171,7 @@ Public Function Extract( _
     Dim bSkip           As Boolean
     Dim sFilter         As String
     #If ImplCrypto Then
+        Dim lSaltSize   As Long
         Dim baSalt()    As Byte
         Dim nPassVer    As Integer
     #End If ' ImplCrypto
@@ -1217,6 +1267,11 @@ Public Function Extract( _
                 pCrc32 = VarPtr(lCrc32)
                 lRead = 0
                 If (.Flags And ucsZcfEncrypted) <> 0 Then
+                    RaiseEvent Progress(lIdx, lRead, .CompressedSize, m_bCancel)
+                    If m_bCancel Then
+                        m_sLastError = ERR_USER_CANCEL
+                        GoTo QH
+                    End If
                     #If ImplCrypto Then
                         If (.Flags And ucsZcfStrongEncrypted) <> 0 Then
                             Err.Raise vbObjectError, , ERR_UNSUPPORTED_ENCRYPTION
@@ -1226,41 +1281,41 @@ Public Function Extract( _
                         End If
                         If .Aes.Strength = 0 Then
                             '--- init traditional ZipCrypt
-                            lRead = LNG_ENC_HEADER_SIZE
                             If Not pvCryptoTradInit(ToUtf8Array(Password)) Then
-                                Err.Raise vbObjectError, , LastError
+                                Err.Raise vbObjectError, , m_sLastError
                             End If
                             lResult = pvVfsRead(uArchiveFile, VarPtr(baBuffer(0)), LNG_ENC_HEADER_SIZE)
                             If lResult = 0 Then
                                 Err.Raise vbObjectError, , ERR_READING_ARCHIVE
                             End If
-                            If Not pvCryptoTradCrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE) Then
-                                Err.Raise vbObjectError, , LastError
+                            If Not pvCryptoTradCrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE, UseAfter:=True) Then
+                                Err.Raise vbObjectError, , m_sLastError
                             End If
                             If baBuffer(LNG_ENC_HEADER_SIZE - 1) <> .DecDat Then
                                 Err.Raise vbObjectError, , ERR_INVALID_PASSWORD
                             End If
+                            lRead = LNG_ENC_HEADER_SIZE
                         Else
                             '--- init WinZip AES w/ ECB
-                            lRead = 4 + 4 * .Aes.Strength
-                            lResult = pvVfsRead(uArchiveFile, VarPtr(baBuffer(0)), lRead + 2)
-                            If lResult < lRead + 2 Then
+                            lSaltSize = (.Aes.Strength + 1) * 4
+                            lResult = pvVfsRead(uArchiveFile, VarPtr(baBuffer(0)), lSaltSize + 2)
+                            If lResult < lSaltSize + 2 Then
                                 Err.Raise vbObjectError, , ERR_READING_ARCHIVE
                             End If
-                            ReDim baSalt(0 To lRead - 1) As Byte
+                            ReDim baSalt(0 To lSaltSize - 1) As Byte
                             Call CopyMemory(baSalt(0), baBuffer(0), UBound(baSalt) + 1)
-                            If Not pvCryptoAesInit(ToUtf8Array(Password), baSalt, lRead * 2, nPassVer) Then
-                                Err.Raise vbObjectError, , LastError
+                            If Not pvCryptoAesInit(ToUtf8Array(Password), baSalt, lSaltSize * 2, nPassVer) Then
+                                Err.Raise vbObjectError, , m_sLastError
                             End If
-                            If nPassVer <> PeekInt(VarPtr(baBuffer(lRead))) Then
+                            If nPassVer <> PeekInt(VarPtr(baBuffer(lSaltSize))) Then
                                 Err.Raise vbObjectError, , ERR_INVALID_PASSWORD
                             End If
-                            '--- LNG_AES_AUTHCODE_SIZE is at the end of compressed data
-                            lRead = lRead + 2 + LNG_AES_AUTHCODE_SIZE
                             '-- don't calc CRC32 for AE-2
                             If .Aes.Version = 2 Then
                                 pCrc32 = 0
                             End If
+                            '--- note: LNG_AES_AUTHCODE_SIZE chunk comes after file data
+                            lRead = lSaltSize + 2 + LNG_AES_AUTHCODE_SIZE
                         End If
                     #Else
                         Err.Raise vbObjectError, , ERR_UNSUPPORTED_ENCRYPTION
@@ -1292,12 +1347,12 @@ Public Function Extract( _
                     #If ImplCrypto Then
                         If (.Flags And ucsZcfEncrypted) <> 0 Then
                             If .Aes.Strength = 0 Then
-                                If Not pvCryptoTradCrypt(baBuffer, 0, lResult) Then
-                                    Err.Raise vbObjectError, , LastError
+                                If Not pvCryptoTradCrypt(baBuffer, 0, lResult, UseAfter:=True) Then
+                                    Err.Raise vbObjectError, , m_sLastError
                                 End If
                             Else
                                 If Not pvCryptoAesCrypt(baBuffer, 0, lResult, HashBefore:=True) Then
-                                    Err.Raise vbObjectError, , LastError
+                                    Err.Raise vbObjectError, , m_sLastError
                                 End If
                             End If
                         End If
@@ -1426,14 +1481,20 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     m_uCrypto.EncrPos = 0
     '--- generate RFC 2898 based derived key
     If m_uCrypto.hPbkdf2Alg = 0 Then
+        '--- CNG API missing on XP
+        On Error GoTo EH_Unsupported
         If BCryptOpenAlgorithmProvider(m_uCrypto.hPbkdf2Alg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG) <> 0 Then
             GoTo QH
         End If
+        On Error GoTo 0
     End If
     ReDim baDerivedKey(0 To 2 * lKeyLen + 1) As Byte
+    '--- PBKDF2 API missing on Vista
+    On Error GoTo EH_Unsupported
     If BCryptDeriveKeyPBKDF2(m_uCrypto.hPbkdf2Alg, baPass(0), UBound(baPass) + 1, baSalt(0), UBound(baSalt) + 1, 1000, 0, baDerivedKey(0), UBound(baDerivedKey) + 1, 0) <> 0 Then
         GoTo QH
     End If
+    On Error GoTo 0
     '--- extract Password Verification Value from last 2 bytes of derived key
     Call CopyMemory(nPassVer, baDerivedKey(2 * lKeyLen), 2)
     '--- init AES w/ ECB from first half of derived key
@@ -1477,6 +1538,9 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     Exit Function
 QH:
     m_sLastError = GetSystemMessage(Err.LastDllError)
+    Exit Function
+EH_Unsupported:
+    m_sLastError = ERR_UNSUPPORTED_ENCRYPTION
 End Function
 
 Private Sub pvCryptoTerminate()
@@ -1580,17 +1644,22 @@ Private Function pvCryptoTradInit(baPass() As Byte) As Boolean
         .TradKey(0) = &H12345678
         .TradKey(1) = &H23456789
         .TradKey(2) = &H34567890
-        Call CallWindowProc(m_uRtbl.ZipCrypt, VarPtr(.TradKey(0)), VarPtr(baPass(0)), -(UBound(baPass) + 1), m_uRtbl.Crc32Table)
+        .TradKey(3) = m_uRtbl.Crc32Table
+        Call CallWindowProc(m_uRtbl.ZipCrypt, VarPtr(.TradKey(0)), VarPtr(baPass(0)), UBound(baPass) + 1)
     End With
     '--- success
     pvCryptoTradInit = True
 End Function
 
-Private Function pvCryptoTradCrypt(baData() As Byte, Optional ByVal Offset As Long, Optional ByVal Size As Long = -1) As Boolean
+Private Function pvCryptoTradCrypt( _
+            baData() As Byte, _
+            Optional ByVal Offset As Long, _
+            Optional ByVal Size As Long = -1, _
+            Optional ByVal UseAfter As Boolean) As Boolean
     If Size < 0 Then
         Size = UBound(baData) + 1 - Offset
     End If
-    Call CallWindowProc(m_uRtbl.ZipCrypt, VarPtr(m_uCrypto.TradKey(0)), VarPtr(baData(Offset)), Size, m_uRtbl.Crc32Table)
+    Call CallWindowProc(m_uRtbl.ZipCrypt, VarPtr(m_uCrypto.TradKey(0)), VarPtr(baData(Offset)), Size, IIf(UseAfter, 3, 1))
     '--- success
     pvCryptoTradCrypt = True
 End Function

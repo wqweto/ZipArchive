@@ -1560,17 +1560,22 @@ void ZLIB_STDCALL vbzlib_memxor(const unsigned char *block, unsigned char *dest,
         *dest++ ^= *block++;
 }
 
-void ZLIB_STDCALL vbzlib_zipcrypt(unsigned int *keys, unsigned char *block, int len, const unsigned int *crc32_table)
+void ZLIB_STDCALL vbzlib_zipcrypt(unsigned int *keys, unsigned char *block, int len, const int flags)
 {
     #define CRC32(c, b) (((c) >> 8) ^ crc32_table[((c) & 0xff) ^ (b)])
-    unsigned int temp, update = (len > 0);
+    const unsigned int *crc32_table = (const unsigned int *)keys[3];
+    unsigned int temp;
+    unsigned char t;
     
-    for (len = (len > 0 ? len: -len); len > 0; len--, block++) {
-        if (update) {
+    for (; len > 0; len--, block++) {
+        t = *block;
+        if (flags & 1) {
             temp = keys[2] | 2;
             *block ^= ((temp * (temp ^ 1)) >> 8) & 0xff;
         }
-        keys[0] = CRC32(keys[0], *block);
+        if (flags & 2)
+            t = *block;
+        keys[0] = CRC32(keys[0], t);
         keys[1] = (keys[1] + (keys[0] & 0xff)) * 134775813L + 1;
         keys[2] = CRC32(keys[2], (keys[1] >> 24) & 0xff);
     }
