@@ -554,7 +554,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
-                    baSalt = pvCryptoAesRandomSalt(LNG_AES256_SALT_SIZE)
+                    baSalt = pvCryptoAesGetRandomSalt(LNG_AES256_SALT_SIZE)
                     If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, LNG_AES256_KEY_SIZE, nPassVer) Then
                         Err.Raise vbObjectError, , LastError
                     End If
@@ -595,7 +595,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                                     ReDim baBuffer(0 To (uBuf.OutLen And -2048) + 2047) As Byte
                                 End If
                                 Call CopyMemory(baBuffer(0), ByVal uBuf.OutBlock, uBuf.OutLen)
-                                If Not pvCryptoAesEncrypt(baBuffer, Size:=uBuf.OutLen) Then
+                                If Not pvCryptoAesCrypt(baBuffer, Size:=uBuf.OutLen, HashAfter:=True) Then
                                     Err.Raise vbObjectError, , LastError
                                 End If
                                 pvVfsWrite uArchiveFile, VarPtr(baBuffer(0)), uBuf.OutLen
@@ -653,7 +653,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                         Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), VarPtr(baBuffer(0)), lSize, VarPtr(uLocal.Crc32))
                         #If ImplCrypto Then
                             If LenB(.Password) <> 0 Then
-                                If Not pvCryptoAesEncrypt(baBuffer, Size:=lSize) Then
+                                If Not pvCryptoAesCrypt(baBuffer, Size:=lSize, HashAfter:=True) Then
                                     Err.Raise vbObjectError, , LastError
                                 End If
                             End If
@@ -1234,7 +1234,7 @@ Public Function Extract( _
                             If lResult = 0 Then
                                 Err.Raise vbObjectError, , ERR_READING_ARCHIVE
                             End If
-                            If Not pvCryptoTradDecrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE) Then
+                            If Not pvCryptoTradCrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE) Then
                                 Err.Raise vbObjectError, , LastError
                             End If
                             If baBuffer(LNG_ENC_HEADER_SIZE - 1) <> .DecDat Then
@@ -1292,11 +1292,11 @@ Public Function Extract( _
                     #If ImplCrypto Then
                         If (.Flags And ucsZcfEncrypted) <> 0 Then
                             If .Aes.Strength = 0 Then
-                                If Not pvCryptoTradDecrypt(baBuffer, 0, lResult) Then
+                                If Not pvCryptoTradCrypt(baBuffer, 0, lResult) Then
                                     Err.Raise vbObjectError, , LastError
                                 End If
                             Else
-                                If Not pvCryptoAesDecrypt(baBuffer, 0, lResult) Then
+                                If Not pvCryptoAesCrypt(baBuffer, 0, lResult, HashBefore:=True) Then
                                     Err.Raise vbObjectError, , LastError
                                 End If
                             End If
@@ -1502,65 +1502,56 @@ Private Sub pvCryptoTerminate()
     End If
 End Sub
 
-Private Function pvCryptoAesEncrypt(baData() As Byte, Optional ByVal Offset As Long, Optional ByVal Size As Long = -1) As Boolean
-    pvCryptoAesEncrypt = pvCryptoAesProcess(baData, Offset, Size, HashAfter:=True)
-End Function
-
-Private Function pvCryptoAesDecrypt(baData() As Byte, Optional ByVal Offset As Long, Optional ByVal Size As Long = -1) As Boolean
-    pvCryptoAesDecrypt = pvCryptoAesProcess(baData, Offset, Size, HashBefore:=True)
-End Function
-
-Private Function pvCryptoAesProcess( _
+Private Function pvCryptoAesCrypt( _
             baData() As Byte, _
-            ByVal lOffset As Long, _
-            ByVal lSize As Long, _
+            Optional ByVal Offset As Long, _
+            Optional ByVal Size As Long, _
             Optional ByVal HashBefore As Boolean, _
             Optional ByVal HashAfter As Boolean) As Boolean
-    Dim lPos            As Long
     Dim lIdx            As Long
+    Dim lPadSize        As Long
     Dim lResult         As Long '--- discarded
     
-    If lSize < 0 Then
-        lSize = UBound(baData) + 1 - lOffset
+    If Size < 0 Then
+        Size = UBound(baData) + 1 - Offset
     End If
     If HashBefore Then
-        If BCryptHashData(m_uCrypto.hHmacHash, baData(lOffset), lSize, 0) <> 0 Then
+        If BCryptHashData(m_uCrypto.hHmacHash, baData(Offset), Size, 0) <> 0 Then
             GoTo QH
         End If
     End If
     With m_uCrypto
-        lPos = .EncrPos
         '--- reuse EncrData from prev call until next LNG_AES_BLOCK_SIZE boundary
-        For lIdx = lOffset To lOffset + lSize - 1
-            If (lPos And (LNG_AES_BLOCK_SIZE - 1)) = 0 Then
+        For lIdx = Offset To Offset + Size - 1
+            If (.EncrPos And (LNG_AES_BLOCK_SIZE - 1)) = 0 Then
                 Exit For
             End If
-            baData(lIdx) = baData(lIdx) Xor .EncrData(lPos)
-            lPos = lPos + 1
+            baData(lIdx) = baData(lIdx) Xor .EncrData(.EncrPos)
+            .EncrPos = .EncrPos + 1
         Next
-        If lIdx < lOffset + lSize Then
+        If lIdx < Offset + Size Then
             '--- pad remaining input size to LNG_AES_BLOCK_SIZE
-            lPos = (lOffset + lSize - lIdx + LNG_AES_BLOCK_SIZE - 1) And -LNG_AES_BLOCK_SIZE
-            If UBound(.EncrData) + 1 < lPos Then
-                ReDim .EncrData(0 To lPos - 1) As Byte
+            lPadSize = (Offset + Size - lIdx + LNG_AES_BLOCK_SIZE - 1) And -LNG_AES_BLOCK_SIZE
+            If UBound(.EncrData) + 1 < lPadSize Then
+                ReDim .EncrData(0 To lPadSize - 1) As Byte
             End If
             '--- encrypt incremental nonces in EncrData
-            Call CallWindowProc(m_uRtbl.MemNonce, VarPtr(.EncrData(0)), VarPtr(.Nonce(0)), lPos)
-            If BCryptEncrypt(.hAesKey, .EncrData(0), lPos, 0, 0, 0, .EncrData(0), lPos, lResult, 0) <> 0 Then
+            Call CallWindowProc(m_uRtbl.MemNonce, VarPtr(.EncrData(0)), VarPtr(.Nonce(0)), lPadSize)
+            If BCryptEncrypt(.hAesKey, .EncrData(0), lPadSize, 0, 0, 0, .EncrData(0), lPadSize, lResult, 0) <> 0 Then
                 GoTo QH
             End If
             '--- xor remaining input and leave anything extra of EncrData for reuse
-            Call CallWindowProc(m_uRtbl.MemXor, VarPtr(.EncrData(0)), VarPtr(baData(lIdx)), lOffset + lSize - lIdx)
+            .EncrPos = Offset + Size - lIdx
+            Call CallWindowProc(m_uRtbl.MemXor, VarPtr(.EncrData(0)), VarPtr(baData(lIdx)), .EncrPos)
         End If
-        .EncrPos = lPos
     End With
     If HashAfter Then
-        If BCryptHashData(m_uCrypto.hHmacHash, baData(lOffset), lSize, 0) <> 0 Then
+        If BCryptHashData(m_uCrypto.hHmacHash, baData(Offset), Size, 0) <> 0 Then
             GoTo QH
         End If
     End If
     '--- success
-    pvCryptoAesProcess = True
+    pvCryptoAesCrypt = True
     Exit Function
 QH:
     m_sLastError = GetSystemMessage(Err.LastDllError)
@@ -1575,13 +1566,13 @@ Private Function pvCryptoAesGetFinalHash(ByVal lSize As Long) As Byte()
     pvCryptoAesGetFinalHash = baResult
 End Function
 
-Private Function pvCryptoAesRandomSalt(ByVal lSize As Long) As Byte()
+Private Function pvCryptoAesGetRandomSalt(ByVal lSize As Long) As Byte()
     Dim baResult()      As Byte
     
     ReDim baResult(0 To 15) As Byte
     Call CoCreateGuid(baResult(0))
     ReDim Preserve baResult(0 To lSize - 1) As Byte
-    pvCryptoAesRandomSalt = baResult
+    pvCryptoAesGetRandomSalt = baResult
 End Function
 
 Private Function pvCryptoTradInit(baPass() As Byte) As Boolean
@@ -1595,13 +1586,13 @@ Private Function pvCryptoTradInit(baPass() As Byte) As Boolean
     pvCryptoTradInit = True
 End Function
 
-Private Function pvCryptoTradDecrypt(baData() As Byte, Optional ByVal Offset As Long, Optional ByVal Size As Long = -1) As Boolean
+Private Function pvCryptoTradCrypt(baData() As Byte, Optional ByVal Offset As Long, Optional ByVal Size As Long = -1) As Boolean
     If Size < 0 Then
         Size = UBound(baData) + 1 - Offset
     End If
     Call CallWindowProc(m_uRtbl.ZipCrypt, VarPtr(m_uCrypto.TradKey(0)), VarPtr(baData(Offset)), Size, m_uRtbl.Crc32Table)
     '--- success
-    pvCryptoTradDecrypt = True
+    pvCryptoTradCrypt = True
 End Function
 
 #End If
