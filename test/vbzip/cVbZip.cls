@@ -224,7 +224,7 @@ Public Function Init(vArgs As Variant) As Boolean
 QH:
     Exit Function
 EH:
-    ConsoleError "unhandled error: " & Err.Description & vbCrLf
+    ConsoleError "Unhandled error: " & Err.Description & vbCrLf
 End Function
 
 Private Function pvLimitNumericOption(sOpt As String, dblDefault As Double, dblMin As Double, dblMax As Double) As Boolean
@@ -274,7 +274,7 @@ Private Sub m_oArchive_Error(ByVal FileIdx As Long, Source As String, Descriptio
     If LenB(m_sLastRow) <> 0 Then
         ConsoleError vbCrLf
     End If
-    ConsoleError "Error: " & Description & vbCrLf
+    ConsoleError "Error: " & Description & IIf(m_oOpt.Item("-v"), vbCrLf & "Call-stack: " & Source, vbNullString) & vbCrLf
     m_sLastRow = vbNullString
     If Not Cancel And Not m_oOpt.Item("-y") Then
         Do
