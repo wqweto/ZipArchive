@@ -60,30 +60,39 @@ Public Function Init(vArgs As Variant) As Boolean
 
     On Error GoTo EH
     Set m_oArchive = New cZipArchive
-    Set m_oOpt = ParseOpt(vArgs)
+    Set m_oOpt = GetOpts(vArgs, "rem:o:iyp:(mem):(so)(nologo)")
     With m_oOpt
+        .Item("command") = .Item("__arg__.array").Item(0)
+        .Item("zip") = .Item("__arg__.array").Item(1)
+        .Item("numfiles") = .Item("__arg__.array").Count - 2
+        For lIdx = 1 To .Item("numfiles")
+            .Item("file" & lIdx) = .Item("__arg__.array").Item(lIdx + 1)
+        Next
         If Not .Item("nologo") Then
-            ConsolePrint "VbZip " & m_oArchive.SemVersion & " (c) 2017-2018 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
+            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2018 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
+        End If
+        If .Exists("__unknown__") Then
+            ConsoleError "Unknown option: -" & .Item("__unknown__") & vbCrLf & vbCrLf
         End If
         If LenB(.Item("zip")) <> 0 Then
-            ConsolePrint "Archive: " & .Item("zip") & vbCrLf
+            ConsoleError "Archive: " & .Item("zip") & vbCrLf
         End If
         Select Case LCase$(.Item("command"))
         Case "a"
             If LenB(.Item("zip")) = 0 Then
-                ConsolePrint ERR_MISSING_ARCHIVE & vbCrLf
+                ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
                 GoTo QH
             End If
-            If .Item("numfiles") = 0 Then
-                ConsolePrint ERR_NO_FILES & vbCrLf
+            If .Item("numfiles") <= 0 Then
+                ConsoleError ERR_NO_FILES & vbCrLf
                 GoTo QH
             End If
-            If Not pvLimitNumericOption("-m", 6, 0, 9) Then
-                ConsolePrint ERR_INVALID_LEVEL & vbCrLf
+            If Not pvLimitNumericOption("m", 6, 0, 9) Then
+                ConsoleError ERR_INVALID_LEVEL & vbCrLf
                 GoTo QH
             End If
-            If Not pvLimitNumericOption("-mem", 0, 0, 4) Then
-                ConsolePrint ERR_INVALID_STRENGTH & vbCrLf
+            If Not pvLimitNumericOption("mem", 0, 0, 4) Then
+                ConsoleError ERR_INVALID_STRENGTH & vbCrLf
                 GoTo QH
             End If
             For lIdx = 1 To .Item("numfiles")
@@ -92,28 +101,28 @@ Public Function Init(vArgs As Variant) As Boolean
                     '--- for *.* default to include empty folders
                     sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
                     If sMask = "*" Or sMask = "*.*" Then
-                        .Item("-e") = True
+                        .Item("e") = True
                     End If
-                    m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r"), _
-                        IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
+                    m_oArchive.AddFromFolder sFile, Recursive:=.Item("r"), _
+                        IncludeEmptyFolders:=.Item("e"), Password:=.Item("p"), EncrStrength:=.Item("mem")
                 ElseIf (FileAttr(sFile) And vbDirectory) <> 0 Then
-                    If .Item("-r") Then
+                    If .Item("r") Then
                         sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
-                        .Item("-e") = True
+                        .Item("e") = True
                     End If
-                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), TargetFolder:=sMask, _
-                        IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
+                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("r"), TargetFolder:=sMask, _
+                        IncludeEmptyFolders:=.Item("e"), Password:=.Item("p"), EncrStrength:=.Item("mem")
                 Else
-                    m_oArchive.AddFile sFile, Password:=.Item("-p"), EncrStrength:=.Item("-mem")
+                    m_oArchive.AddFile sFile, Password:=.Item("p"), EncrStrength:=.Item("mem")
                 End If
             Next
             m_sAction = "Compressing "
-            If Not m_oArchive.CompressArchive(.Item("zip"), Level:=.Item("-m")) Then
+            If Not m_oArchive.CompressArchive(.Item("zip"), Level:=.Item("m")) Then
                 GoTo QH
             End If
         Case "l"
             If LenB(.Item("zip")) = 0 Then
-                ConsolePrint ERR_MISSING_ARCHIVE & vbCrLf
+                ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
                 GoTo QH
             End If
             If Not m_oArchive.OpenArchive(.Item("zip")) Then
@@ -126,35 +135,35 @@ Public Function Init(vArgs As Variant) As Boolean
                 If sFile Like sMask And InStr(sMask, "\") > 0 _
                         Or Mid$(sFile, InStrRev(sFile, "\") + 1) Like sMask And InStr(sMask, "\") = 0 Then
                     If lCount = 0 Then
-                        ConsolePrint STR_LIST_HDR & vbCrLf
-                        ConsolePrint STR_LIST_SEP & vbCrLf
+                        ConsoleError STR_LIST_HDR & vbCrLf
+                        ConsoleError STR_LIST_SEP & vbCrLf
                     End If
                     sText = Format$(At(vInfo, ucsIdxLastModified), "yyyy\-MM\-dd hh\:mm\:ss")
                     sText = sText & " " & FormatAttr(At(vInfo, ucsIdxAttributes), At(vInfo, ucsIdxFlags))
                     sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, ucsIdxSize), "0"), 10)
                     sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, ucsIdxCompressedSize), "0"), 10)
                     sText = sText & " " & At(vInfo, ucsIdxFileName)
-                    ConsolePrint sText & vbCrLf
+                    ConsoleError sText & vbCrLf
                     lTotalSize = lTotalSize + At(vInfo, ucsIdxSize)
                     lTotalCompressed = lTotalCompressed + At(vInfo, ucsIdxCompressedSize)
                     lCount = lCount + 1
                 End If
             Next
             If lCount > 0 Then
-                ConsolePrint STR_LIST_SEP & vbCrLf
+                ConsoleError STR_LIST_SEP & vbCrLf
                 sText = Space$(25)
                 sText = sText & " " & Right$(Space$(10) & Format$(lTotalSize, "0"), 10)
                 sText = sText & " " & Right$(Space$(10) & Format$(lTotalCompressed, "0"), 10)
                 sText = sText & " " & Format$(lCount, "0") & " file(s)"
-                ConsolePrint sText & vbCrLf
+                ConsoleError sText & vbCrLf
             ElseIf m_oArchive.FileCount > 0 Then
-                ConsolePrint "No matches found" & vbCrLf
+                ConsoleError "No matches found" & vbCrLf
             Else
-                ConsolePrint "Archive is empty" & vbCrLf
+                ConsoleError "Archive is empty" & vbCrLf
             End If
         Case "t"
             If LenB(.Item("zip")) = 0 Then
-                ConsolePrint ERR_MISSING_ARCHIVE & vbCrLf
+                ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
                 GoTo QH
             End If
             If Not m_oArchive.OpenArchive(.Item("zip")) Then
@@ -164,7 +173,7 @@ Public Function Init(vArgs As Variant) As Boolean
             m_oArchive.Extract New cDummyStream
         Case "x"
             If LenB(.Item("zip")) = 0 Then
-                ConsolePrint ERR_MISSING_ARCHIVE & vbCrLf
+                ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
                 GoTo QH
             End If
             If Not m_oArchive.OpenArchive(.Item("zip")) Then
@@ -172,16 +181,16 @@ Public Function Init(vArgs As Variant) As Boolean
             End If
             m_sAction = "Extracting "
             If .Item("numfiles") = 0 Then
-                m_oArchive.Extract CStr(.Item("-o")), Password:=.Item("-p")
+                m_oArchive.Extract CStr(.Item("o")), Password:=.Item("p")
             Else
                 For lIdx = 1 To .Item("numfiles")
                     sFile = .Item("file" & lIdx)
-                    m_oArchive.Extract CStr(.Item("-o")), Filter:=sFile, Password:=.Item("-p")
+                    m_oArchive.Extract CStr(.Item("o")), Filter:=sFile, Password:=.Item("p")
                 Next
             End If
         Case Else
             If LenB(.Item("command")) = 0 Or .Item("command") = "?" Then
-                ConsolePrint "Usage: vbzip.exe <command> [-options...] <archive_file> [files]..." & vbCrLf & _
+                ConsoleError "Usage: vbzip.exe <command> [-options...] <archive_file> [files]..." & vbCrLf & _
                     "e.g. vbzip.exe a backup.zip doc1.txt reports*.xls" & vbCrLf & vbCrLf & _
                     "Commands:" & vbCrLf & _
                     "  a           add files to archive" & vbCrLf & _
@@ -195,14 +204,16 @@ Public Function Init(vArgs As Variant) As Boolean
                     "  -o OUTPUT   output folder to extract to" & vbCrLf & _
                     "  -i          no percentage indicator" & vbCrLf & _
                     "  -y          assume yes to all questions" & vbCrLf & _
-                    "  -p PASSWORD password used to encrypt/decrypt files" & vbCrLf
+                    "  -p PASSWORD password used to encrypt/decrypt files" & vbCrLf & _
+                    "  -mem METHOD encryption method" & vbCrLf & _
+                    "  -so         write data to stdout" & vbCrLf
             Else
-                ConsolePrint "Invalid command: " & .Item("command") & vbCrLf
+                ConsoleError "Invalid command: " & .Item("command") & vbCrLf
             End If
         End Select
         If Len(m_sLastRow) <> 0 Then
-            ConsolePrint vbCr & Space$(Len(m_sLastRow)) & vbCr
-            ConsolePrint "Done" & vbCrLf
+            ConsoleError vbCr & Space$(Len(m_sLastRow)) & vbCr
+            ConsoleError "Done" & vbCrLf
         End If
     End With
     '--- success
@@ -210,7 +221,7 @@ Public Function Init(vArgs As Variant) As Boolean
 QH:
     Exit Function
 EH:
-    ConsolePrint "unhandled error: " & Err.Description & vbCrLf
+    ConsoleError "unhandled error: " & Err.Description & vbCrLf
 End Function
 
 Private Function pvLimitNumericOption(sOpt As String, dblDefault As Double, dblMin As Double, dblMax As Double) As Boolean
@@ -245,74 +256,253 @@ Private Function FormatAttr(ByVal eAttr As VbFileAttribute, ByVal lFlags As Long
             IIf(lFlags And 1, "E", vbNullString), 5)
     End If
 End Function
-    
-Private Function ParseOpt(vArgs As Variant) As Object
-    Dim oOpt            As Object
-    Dim lIdx            As Long
-    Dim bNoMoreOpt      As Boolean
 
-    Set oOpt = CreateObject("Scripting.Dictionary")
-    With oOpt
-        .CompareMode = 1
-        For lIdx = 0 To UBound(vArgs)
-            Select Case Left$(vArgs(lIdx), 1 + bNoMoreOpt)
-            Case "-", "/"
-                Select Case Mid$(vArgs(lIdx), 2, 3)
-                Case "mem"
-                    If Len(vArgs(lIdx)) > 4 Then
-                        .Item("-" & Mid$(vArgs(lIdx), 2, 3)) = Mid$(vArgs(lIdx), 5)
-                    ElseIf LenB(vArgs(lIdx + 1)) <> 0 Then
-                        .Item("-" & Mid$(vArgs(lIdx), 2, 3)) = vArgs(lIdx + 1)
-                        lIdx = lIdx + 1
-                    End If
-                Case Else
-                    Select Case Mid$(vArgs(lIdx), 2, 1)
-                    Case "o", "m", "p"
-                        If Len(vArgs(lIdx)) > 2 Then
-                            .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = Mid$(vArgs(lIdx), 3)
-                        ElseIf LenB(vArgs(lIdx + 1)) <> 0 Then
-                            .Item("-" & Mid$(vArgs(lIdx), 2, 1)) = vArgs(lIdx + 1)
-                            lIdx = lIdx + 1
-                        End If
-                    Case "-"
-                        If Len(vArgs(lIdx)) = 2 Then
-                            bNoMoreOpt = True
-                        End If
-                    Case Else
-                        .Item("-" & Mid$(vArgs(lIdx), 2)) = True
-                    End Select
-                End Select
-            Case Else
-                If LenB(.Item("command")) = 0 Then
-                    .Item("command") = vArgs(lIdx)
-                ElseIf LenB(.Item("zip")) = 0 Then
-                    .Item("zip") = vArgs(lIdx)
+Public Function GetOpts(vArgs As Variant, sOptDefs As String, Optional RetVal As Object) As Object
+'---
+'--- == sOptDefs format ==
+'---
+'--- `<single_char_opt>?(<long_opt>)?<has_arg_flag>?` where has_arg_flag=':'
+'---
+'--- Use `a(add):` for option with argument:
+'--- ```
+'---   -a --add FILE append FILE to image
+'--- ```
+'---
+'--- Use `f(flag)(noflag)` for bool options:
+'--- ```
+'---   -f --flag     turn flag on
+'---   --noflag      turn flag off
+'--- ```
+'---
+'--- == JSON keys in result ==
+'---
+'---   Key                     Value
+'---   ----------------------  --------------------------------------
+'---   `<long_opt>`            Last option value if <long_opt> is specified
+'---                           e.g. JsonItem(oOpt, "user") -> "bob"
+'---   `<single_char_opt>`     Last option value if no <long_opt> is specified
+'---                           e.g. JsonItem(oOpt, "u") -> "bob"
+'---   `<long_opt> & ".array"` Array of option's all values if repeated
+'---                           e.g. JsonItem(oOpt, "user.array") -> [ "bob", "ana" ]
+'---   `"__arg__"`             Last optionless arg
+'---   `"__arg__.array"`       All optionless args
+'---   `"__arg__.opt"`         Snapshots of all options at the time each optionless args in
+'--                            [__arg__.array] is parsed. This allows handling of a repeating
+'---                           action: e.g. `-u userA http://url1 -u userB http://url2 ...` to
+'---                           use different user for each url
+'---   `"__unknown__"`         Last unmatched option
+'---   `"__unknown__.array"`   All unmatched options
+'---
+    Dim oDefs           As Object
+    Dim lIdx            As Long
+    Dim sChar           As String
+    Dim sShortOpt       As String
+    Dim sLongOpt        As String
+    Dim sHasArg         As String
+    Dim lPos            As Long
+    '--- output
+    Dim sProp           As String
+    Dim sValue          As String
+    Dim oSnapshot       As Object
+    Dim oItem           As Object
+    
+    '--- parse options definition
+    For lIdx = 1 To Len(sOptDefs)
+        sChar = Mid$(sOptDefs, lIdx, 1)
+        '--- short
+        If sChar <> "(" Then
+            sShortOpt = sChar
+            lIdx = lIdx + 1
+            sChar = Mid$(sOptDefs, lIdx, 1)
+        Else
+            sShortOpt = vbNullString
+        End If
+        '--- long
+        If sChar = "(" Then
+            lPos = InStr(lIdx, sOptDefs, ")")
+            sLongOpt = Mid$(sOptDefs, lIdx + 1, lPos - lIdx - 1)
+            lIdx = lPos + 1
+            sChar = Mid$(sOptDefs, lIdx, 1)
+        Else
+            sLongOpt = sShortOpt
+        End If
+        '--- has arg
+        If sChar = ":" Then
+            sHasArg = sChar
+        Else
+            sHasArg = vbNullString
+            lIdx = lIdx - 1
+        End If
+        '--- populate oDefs object
+        If LenB(sShortOpt) <> 0 Then
+            JsonItem(oDefs, sShortOpt) = sLongOpt
+        End If
+        JsonItem(oDefs, "--" & sLongOpt) = sHasArg
+    Next
+    '--- parse current args from oDefs grammar
+    For lIdx = 0 To UBound(vArgs)
+        If Mid$(vArgs(lIdx), 1, 2) = "--" Then
+            '--- long opt: parse "--user bob" only
+            If Not IsEmpty(JsonItem(oDefs, vArgs(lIdx))) Then
+                sProp = Mid$(vArgs(lIdx), 3)
+ParseLongOpt:
+                If JsonItem(oDefs, "--" & sProp) = ":" Then
+                    lIdx = lIdx + 1
+                    sValue = At(vArgs, lIdx)
+                    GoTo AppendValue
                 Else
-                    .Item("numfiles") = .Item("numfiles") + 1
-                    .Item("file" & .Item("numfiles")) = vArgs(lIdx)
+                    JsonItem(RetVal, sProp) = True
                 End If
-            End Select
-        Next
-    End With
-    Set ParseOpt = oOpt
+            Else
+                sProp = "__unknown__"
+                sValue = Mid$(vArgs(lIdx), 3)
+                GoTo AppendValue
+            End If
+        ElseIf Left$(vArgs(lIdx), 1) = "/" Or Left$(vArgs(lIdx), 1) = "-" Then
+            '--- short opt: parse "/u:bob", "/u bob" and "/ubob"
+            sProp = JsonItem(oDefs, Mid$(vArgs(lIdx), 2, 1))
+            If LenB(sProp) <> 0 Then
+                If JsonItem(oDefs, "--" & sProp) = ":" Then
+                    Select Case Mid$(vArgs(lIdx), 3, 1)
+                    Case ":"
+                        sValue = Mid$(vArgs(lIdx), 4)
+                    Case vbNullString
+                        lIdx = lIdx + 1
+                        sValue = At(vArgs, lIdx)
+                    Case Else
+                        sValue = Mid$(vArgs(lIdx), 3)
+                    End Select
+                    GoTo AppendValue
+                Else
+                    JsonItem(RetVal, sProp) = True
+                End If
+            Else
+                '--- try to correct wrong "/long_opt" args
+                sProp = Mid$(vArgs(lIdx), 2)
+                If Not IsEmpty(JsonItem(oDefs, "--" & sProp)) Then
+                    GoTo ParseLongOpt
+                End If
+                sProp = "__unknown__"
+                sValue = Mid$(vArgs(lIdx), 2, 1)
+                GoTo AppendValue
+            End If
+        Else
+            '--- optionless arg
+            sProp = "__arg__"
+            sValue = vArgs(lIdx)
+AppendValue:
+            JsonItem(RetVal, sProp) = sValue
+            If IsObject(JsonItem(RetVal, sProp & ".array")) Then
+                Set oItem = JsonItem(RetVal, sProp & ".array")
+            Else
+                Set oItem = Nothing
+                JsonItem(oItem, 0) = Empty
+                JsonItem(RetVal, sProp & ".array") = oItem
+            End If
+            JsonItem(oItem, oItem.Count) = sValue
+            If sProp = "__arg__" Then
+                If IsObject(JsonItem(RetVal, sProp & ".opts")) Then
+                    Set oItem = JsonItem(RetVal, sProp & ".opts")
+                Else
+                    Set oItem = Nothing
+                    JsonItem(oItem, 0) = Empty
+                    JsonItem(RetVal, sProp & ".opts") = oItem
+                End If
+                JsonClone RetVal, oSnapshot
+                JsonItem(oSnapshot, sProp) = Empty
+                JsonItem(oSnapshot, sProp & ".array") = Empty
+                JsonItem(oSnapshot, sProp & ".opts") = Empty
+                JsonItem(oItem, oItem.Count) = oSnapshot
+            End If
+        End If
+    Next
+    Set GetOpts = RetVal
 End Function
+
+Property Get JsonItem(oJson As Object, ByVal sKey As String) As Variant
+    Dim vKey            As Variant
+    
+    If Not oJson Is Nothing Then
+        vKey = IIf(CStr(C_Lng(sKey)) = sKey, C_Lng(sKey), sKey)
+        If oJson.Exists(vKey) Then
+            If IsObject(oJson.Item(vKey)) Then
+                Set JsonItem = oJson.Item(vKey)
+            Else
+                JsonItem = oJson.Item(vKey)
+            End If
+        End If
+    End If
+End Property
+
+Property Let JsonItem(oJson As Object, ByVal sKey As String, vValue As Variant)
+    Dim vKey            As Variant
+    
+    vKey = IIf(CStr(C_Lng(sKey)) = sKey, C_Lng(sKey), sKey)
+    If oJson Is Nothing Then
+        Set oJson = CreateObject("Scripting.Dictionary")
+'        oJson.CompareMode = IIf(VarType(vKey) = vbLong, vbBinaryCompare, vbTextCompare)
+    End If
+    If IsEmpty(vValue) Then
+        If oJson.Exists(vKey) Then
+            oJson.Remove vKey
+        End If
+    ElseIf IsObject(vValue) Then
+        Set oJson.Item(vKey) = vValue
+    Else
+        oJson.Item(vKey) = vValue
+    End If
+End Property
+
+Private Sub JsonClone(vSrc As Variant, vDest As Variant)
+    Dim vKey            As Variant
+    Dim vTemp           As Variant
+    
+    If IsObject(vSrc) Then
+        Set vDest = CreateObject("Scripting.Dictionary")
+        vDest.CompareMode = vSrc.CompareMode
+        For Each vKey In vSrc.Keys
+            JsonClone vSrc.Item(vKey), vTemp
+            If IsObject(vTemp) Then
+                Set vDest.Item(vKey) = vTemp
+            Else
+                vDest.Item(vKey) = vTemp
+            End If
+        Next
+    Else
+        vDest = vSrc
+    End If
+End Sub
+
+Private Function C_Lng(Value As Variant) As Long
+    On Error GoTo QH
+    If IsNumeric(Value) Then
+        C_Lng = CLng(Value)
+    End If
+QH:
+End Function
+
+Private Sub m_oArchive_BeforeExtract(ByVal FileIdx As Long, File As Variant, SkipFile As Boolean, Cancel As Boolean)
+    If m_oOpt.Item("so") Then
+        File = "stdout:"
+    End If
+End Sub
 
 Private Sub m_oArchive_Error(ByVal FileIdx As Long, Source As String, Description As String, Cancel As Boolean)
     If LenB(m_sLastRow) <> 0 Then
-        ConsolePrint vbCrLf
+        ConsoleError vbCrLf
     End If
-    ConsolePrint "Error: " & Description & vbCrLf
+    ConsoleError "Error: " & Description & vbCrLf
     m_sLastRow = vbNullString
-    If Not Cancel And Not m_oOpt.Item("-y") Then
+    If Not Cancel And Not m_oOpt.Item("y") Then
         Do
-            ConsolePrint "Do you want to continue (y/n/a)? "
+            ConsoleError "Do you want to continue (y/n/a)? "
             Select Case LCase$(Left$(ConsoleReadLine(), 1))
             Case "y"
                 GoTo QH
             Case "n"
                 Exit Do
             Case "a"
-                m_oOpt.Item("-y") = True
+                m_oOpt.Item("y") = True
                 GoTo QH
             End Select
         Loop
@@ -326,15 +516,15 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, By
     Dim vInfo           As Variant
 
     If Current < Total Then
-        If Not m_oOpt.Item("-i") Then
+        If Not m_oOpt.Item("i") Then
             sPercent = " - " & Format$(Current * 100# / Total, "0.0") & "%"
-            m_sLastRow = ConsolePrint(vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent)
+            m_sLastRow = ConsoleError(vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent)
         End If
     Else
         vInfo = m_oArchive.FileInfo(FileIdx)
         If At(vInfo, ucsIdxSize) <> 0 Then
             sPercent = " [" & Format$(At(vInfo, ucsIdxCompressedSize) * 100# / At(vInfo, ucsIdxSize), "0.0") & "%] "
         End If
-        ConsolePrint IIf(LenB(m_sLastRow) <> 0, vbCr, vbNullString) & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent & vbCrLf
+        ConsoleError IIf(LenB(m_sLastRow) <> 0, vbCr, vbNullString) & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent & vbCrLf
     End If
 End Sub
