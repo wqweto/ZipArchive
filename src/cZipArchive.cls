@@ -221,6 +221,7 @@ Private Const LNG_ENC_HEADER_SIZE   As Long = 12
 Private Const LNG_AES_AUTHCODE_SIZE As Long = 10
 Private Const LNG_AES_BLOCK_SIZE    As Long = 16
 Private Const LNG_DEF_ENCR_STRENGTH As Long = 0
+Private Const LNG_PIPE_ENDED_ERROR  As Long = 109
 Private Const ERR_USER_CANCEL       As String = "User cancelled"
 Private Const ERR_INIT_COMPRESSOR   As String = "Cannot init deflate compressor"
 Private Const ERR_COMPRESSING       As String = "Error compressing"
@@ -427,7 +428,7 @@ End Type
 '=========================================================================
 
 Property Get SemVersion() As String
-    SemVersion = "0.2.2"
+    SemVersion = "0.2.3"
 End Property
 
 Property Get ThunkBuildDate() As String
@@ -511,7 +512,7 @@ QH:
     pvVfsClose uFile
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 End Function
 
@@ -821,10 +822,10 @@ QH:
     pvVfsClose uArchiveFile
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 EH_Continue:
-    If pvSetError(MODULE_NAME & "." & FUNC_NAME, Err.Description, CanContinue:=True) Then
+    If pvSetError(MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description, CanContinue:=True) Then
         Resume QH
     Else
         Resume SkipFile
@@ -889,7 +890,7 @@ Public Function AddFromFolder( _
 QH:
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 End Function
 
@@ -905,7 +906,7 @@ Private Function pvEnumFiles(sFolder As String, sMask As String, ByVal eAttrib A
     If hFind = INVALID_HANDLE_VALUE Then
         If Err.LastDllError <> 2 Then
             On Error GoTo 0
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & sFile & ")"
+            Err.Raise vbObjectError, "pvEnumFiles", GetSystemMessage(Err.LastDllError) & " (" & sFile & ")"
         End If
     Else
         Do
@@ -1154,7 +1155,7 @@ QH:
     pvVfsClose uArchiveFile
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 End Function
 
@@ -1445,10 +1446,10 @@ QH:
     pvVfsClose uFile
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 EH_Continue:
-    If pvSetError(MODULE_NAME & "." & FUNC_NAME, Err.Description, CanContinue:=True) Then
+    If pvSetError(MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description, CanContinue:=True) Then
         Resume QH
     Else
         Resume SkipFile
@@ -1720,7 +1721,7 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
         If hFind <> INVALID_HANDLE_VALUE Then
             Call FindClose(hFind)
         Else
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & File & ")"
+            Err.Raise vbObjectError, "pvVfsOpen", GetSystemMessage(Err.LastDllError) & " (" & File & ")"
         End If
     End If
 End Function
@@ -1762,7 +1763,7 @@ Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
         If Right$(File, 1) <> "\" Then
             pvVfsCreate.Handle = pvCreateFile(File, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
             If pvVfsCreate.Handle = INVALID_HANDLE_VALUE Then
-                Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & File & ")"
+                Err.Raise vbObjectError, "pvVfsCreate", GetSystemMessage(Err.LastDllError) & " (" & File & ")"
             End If
         End If
     End If
@@ -1796,11 +1797,13 @@ Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lS
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
             uFile.Handle = pvCreateFile(uFile.FileName, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)
             If uFile.Handle = INVALID_HANDLE_VALUE Then
-                Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+                Err.Raise vbObjectError, "pvVfsRead", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
         End If
         If ReadFile(uFile.Handle, ByVal lPtr, lSize, pvVfsRead, 0) = 0 Then
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            If Err.LastDllError <> LNG_PIPE_ENDED_ERROR Then
+                Err.Raise vbObjectError, "pvVfsRead", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            End If
         End If
     End If
 End Function
@@ -1834,11 +1837,11 @@ Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal l
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
             uFile.Handle = pvCreateFile(uFile.FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
             If uFile.Handle = INVALID_HANDLE_VALUE Then
-                Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+                Err.Raise vbObjectError, "pvVfsWrite", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
         End If
         If WriteFile(uFile.Handle, ByVal lPtr, lSize, pvVfsWrite, 0) = 0 Then
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            Err.Raise vbObjectError, "pvVfsWrite", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
     End If
 End Function
@@ -1863,7 +1866,7 @@ Private Function pvVfsSeek(uFile As UcsVfsFileType, ByVal lPosition As Long, ByV
         End If
         pvVfsSeek = SetFilePointer(uFile.Handle, lPosition, 0, lMoveMethod)
         If pvVfsSeek = INVALID_SET_FILE_POINTER Then
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            Err.Raise vbObjectError, "pvVfsSeek", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
     End If
 End Function
@@ -1884,7 +1887,7 @@ Private Sub pvVfsSetEof(uFile As UcsVfsFileType, sMetaData As String)
         uFile.Stream.VfsSetEndOfFile sMetaData
     ElseIf Right$(uFile.FileName, 1) <> ":" Then
         If SetEndOfFile(uFile.Handle) = 0 Then
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            Err.Raise vbObjectError, "pvVfsSetEof", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
     End If
 End Sub
@@ -2076,7 +2079,7 @@ Private Function GetSystemMessage(ByVal lLastDllError As Long) As String
             lSize = lSize - 2
         End If
     End If
-    GetSystemMessage = Left$(GetSystemMessage, lSize)
+    GetSystemMessage = "[" & lLastDllError & "] " & Left$(GetSystemMessage, lSize)
 End Function
 
 Private Sub AssignVariant(vDest As Variant, vSrc As Variant)
