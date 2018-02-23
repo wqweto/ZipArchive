@@ -38,6 +38,46 @@ Public Sub Main()
     End With
 End Sub
 
+Public Function GetOpt(vArgs As Variant, Optional OptionsWithArg As String) As Object
+    Dim oRetVal         As Object
+    Dim lIdx            As Long
+    Dim bNoMoreOpt      As Boolean
+    Dim vOptArg         As Variant
+    Dim vElem           As Variant
+
+    vOptArg = Split(OptionsWithArg, ":")
+    Set oRetVal = CreateObject("Scripting.Dictionary")
+    With oRetVal
+        .CompareMode = vbTextCompare
+        For lIdx = 0 To UBound(vArgs)
+            Select Case Left$(At(vArgs, lIdx), 1 + bNoMoreOpt)
+            Case "-", "/"
+                For Each vElem In vOptArg
+                    If Mid$(At(vArgs, lIdx), 2, Len(vElem)) = vElem Then
+                        If Mid(At(vArgs, lIdx), Len(vElem) + 2, 1) = ":" Then
+                            .Item("-" & vElem) = Mid$(At(vArgs, lIdx), Len(vElem) + 3)
+                        ElseIf Len(At(vArgs, lIdx)) > Len(vElem) + 1 Then
+                            .Item("-" & vElem) = Mid$(At(vArgs, lIdx), Len(vElem) + 2)
+                        ElseIf LenB(At(vArgs, lIdx + 1)) <> 0 Then
+                            .Item("-" & vElem) = At(vArgs, lIdx + 1)
+                            lIdx = lIdx + 1
+                        Else
+                            .Item("error") = "Option -" & vElem & " requires an argument"
+                        End If
+                        GoTo Conitnue
+                    End If
+                Next
+                .Item("-" & Mid$(At(vArgs, lIdx), 2)) = True
+            Case Else
+                .Item("numarg") = .Item("numarg") + 1
+                .Item("arg" & .Item("numarg")) = At(vArgs, lIdx)
+            End Select
+Conitnue:
+        Next
+    End With
+    Set GetOpt = oRetVal
+End Function
+
 Public Function ConsolePrint(ByVal sText As String, ParamArray A() As Variant) As String
     ConsolePrint = pvConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), sText, CVar(A))
 End Function
