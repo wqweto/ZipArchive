@@ -111,6 +111,10 @@ Private Const BCRYPT_CHAINING_MODE          As String = "ChainingMode"
 Private Const BCRYPT_CHAIN_MODE_ECB         As String = "ChainingModeECB"
 Private Const BCRYPT_ALG_HANDLE_HMAC_FLAG   As Long = 8
 Private Const BCRYPT_HASH_REUSABLE_FLAG     As Long = &H20
+'--- for GetStdHandle
+Private Const STD_INPUT_HANDLE              As Long = -10&
+Private Const STD_OUTPUT_HANDLE             As Long = -11&
+Private Const STD_ERROR_HANDLE              As Long = -12&
 
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 Private Declare Function FindFirstFile Lib "kernel32" Alias "FindFirstFileA" (ByVal lpFileName As String, lpFindFileData As WIN32_FIND_DATA) As Long
@@ -132,6 +136,7 @@ Private Declare Function CallWindowProc Lib "user32" Alias "CallWindowProcA" (By
 Private Declare Sub CoTaskMemFree Lib "ole32" (ByVal pv As Long)
 Private Declare Function MultiByteToWideChar Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, lpMultiByteStr As Any, ByVal cbMultiByte As Long, lpWideCharStr As Any, ByVal cchWideChar As Long) As Long
 Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As Long, ByVal cchWideChar As Long, ByVal lpMultiByteStr As Long, ByVal cchMultiByte As Long, ByVal lpDefaultChar As Long, ByVal lpUsedDefaultChar As Long) As Long
+Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) As Long
 #If ImplCompress Then
     Private Declare Function FileTimeToDosDateTime Lib "kernel32" (lpFileTime As FILETIME, ByVal lpFatDate As Long, ByVal lpFatTime As Long) As Long
     Private Declare Function ApiEmptyByteArray Lib "oleaut32" Alias "SafeArrayCreateVector" (Optional ByVal VarType As VbVarType = vbByte, Optional ByVal Low As Long = 0, Optional ByVal Count As Long = 0) As Byte()
@@ -487,7 +492,12 @@ Public Function AddFile( _
         .Comment = Comment
         .LastModified = pvFromFileTime(uFile.Data.ftLastWriteTime)
         .Extra = vbNullString
-        AssignVariant .SourceFile, File
+        If IsObject(File) Then
+            '--- remove VT_BYREF if any
+            Set .SourceFile = C_Obj(File)
+        Else
+            .SourceFile = File
+        End If
         #If ImplCrypto Then
             .Password = Password
             .Aes.Strength = EncrStrength
@@ -1705,6 +1715,19 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
     End If
 End Function
 
+Private Function pvCreateFile(ByVal lpFileName As String, ByVal dwDesiredAccess As Long, ByVal dwShareMode As Long, ByVal NoSecurity As Long, ByVal dwCreationDisposition As Long, ByVal dwFlagsAndAttributes As Long, ByVal hTemplateFile As Long) As Long
+    Select Case LCase(lpFileName)
+    Case "stdin:"
+        pvCreateFile = GetStdHandle(STD_INPUT_HANDLE)
+    Case "stdout:"
+        pvCreateFile = GetStdHandle(STD_OUTPUT_HANDLE)
+    Case "stderr:"
+        pvCreateFile = GetStdHandle(STD_ERROR_HANDLE)
+    Case Else
+        pvCreateFile = CreateFile(lpFileName, dwDesiredAccess, dwShareMode, NoSecurity, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile)
+    End Select
+End Function
+
 Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
     Dim sError          As String
     
@@ -1727,7 +1750,7 @@ Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
             End If
         End If
         If Right$(File, 1) <> "\" Then
-            pvVfsCreate.Handle = CreateFile(File, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
+            pvVfsCreate.Handle = pvCreateFile(File, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
             If pvVfsCreate.Handle = INVALID_HANDLE_VALUE Then
                 Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & File & ")"
             End If
@@ -1761,7 +1784,7 @@ Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lS
         pvVfsRead = uFile.Stream.VfsReadFile(lPtr, lSize)
     Else
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
-            uFile.Handle = CreateFile(uFile.FileName, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)
+            uFile.Handle = pvCreateFile(uFile.FileName, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)
             If uFile.Handle = INVALID_HANDLE_VALUE Then
                 Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
@@ -1799,7 +1822,7 @@ Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal l
         pvVfsWrite = uFile.Stream.VfsWriteFile(lPtr, lSize)
     Else
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
-            uFile.Handle = CreateFile(uFile.FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
+            uFile.Handle = pvCreateFile(uFile.FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
             If uFile.Handle = INVALID_HANDLE_VALUE Then
                 Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
@@ -1849,7 +1872,7 @@ Private Sub pvVfsSetEof(uFile As UcsVfsFileType, sMetaData As String)
         End If
     ElseIf Not uFile.Stream Is Nothing Then
         uFile.Stream.VfsSetEndOfFile sMetaData
-    Else
+    ElseIf Right$(uFile.FileName, 1) <> ":" Then
         If SetEndOfFile(uFile.Handle) = 0 Then
             Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
@@ -2110,9 +2133,15 @@ Private Function ToUtf8Array(sText As String) As Byte()
     ToUtf8Array = baRetVal
 End Function
 
-Public Function UnsignedAdd(ByVal lUnsignedPtr As Long, ByVal lSignedOffset As Long) As Long
+Private Function UnsignedAdd(ByVal lUnsignedPtr As Long, ByVal lSignedOffset As Long) As Long
     '--- note: safely add *signed* offset to *unsigned* ptr for *unsigned* retval w/o overflow in LARGEADDRESSAWARE processes
     UnsignedAdd = ((lUnsignedPtr Xor &H80000000) + lSignedOffset) Xor &H80000000
+End Function
+
+Private Function C_Obj(Value As Variant) As Object
+    On Error Resume Next
+    Set C_Obj = Value
+    On Error GoTo 0
 End Function
 
 #End If ' Not ImplUseShared
