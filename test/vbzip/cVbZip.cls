@@ -60,13 +60,13 @@ Public Function Init(vArgs As Variant) As Boolean
 
     On Error GoTo EH
     Set m_oArchive = New cZipArchive
-    Set m_oOpt = GetOpt(vArgs, "m:o:p:mem")
+    Set m_oOpt = GetOpt(vArgs, "m:o:p:mem:si")
     With m_oOpt
         .Item("command") = .Item("arg1")
         .Item("zip") = .Item("arg2")
         .Item("numfiles") = .Item("numarg") - 2
         For lIdx = 1 To .Item("numfiles")
-            .Item("file" & lIdx) = .Item("arg" & lIdx + 3)
+            .Item("file" & lIdx) = .Item("arg" & lIdx + 2)
         Next
         If Not .Item("-nologo") Then
             ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2018 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
@@ -80,40 +80,47 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
                 GoTo QH
             End If
-            If .Item("numfiles") <= 0 Then
-                ConsoleError ERR_NO_FILES & vbCrLf
-                GoTo QH
-            End If
-            If Not pvLimitNumericOption("m", 6, 0, 9) Then
+            If Not pvLimitNumericOption("-m", 6, 0, 9) Then
                 ConsoleError ERR_INVALID_LEVEL & vbCrLf
                 GoTo QH
             End If
-            If Not pvLimitNumericOption("mem", 0, 0, 4) Then
+            If Not pvLimitNumericOption("-mem", 0, 0, 4) Then
                 ConsoleError ERR_INVALID_STRENGTH & vbCrLf
                 GoTo QH
             End If
-            For lIdx = 1 To .Item("numfiles")
-                sFile = .Item("file" & lIdx)
-                If InStr(sFile, "*") > 0 Or InStr(sFile, "?") > 0 Then
-                    '--- for *.* default to include empty folders
-                    sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
-                    If sMask = "*" Or sMask = "*.*" Then
-                        .Item("-e") = True
-                    End If
-                    m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r"), _
-                        IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
-                ElseIf (FileAttr(sFile) And vbDirectory) <> 0 Then
-                    If .Item("-r") Then
-                        sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
-                        .Item("-e") = True
-                    End If
-                    m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), TargetFolder:=sMask, _
-                        IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
-                Else
-                    m_oArchive.AddFile sFile, Password:=.Item("-p"), EncrStrength:=.Item("-mem")
+            If .Exists("-si") Then
+                m_oArchive.AddFile "stdin:", CStr(.Item("-si")), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
+            Else
+                If .Item("numfiles") <= 0 Then
+                    ConsoleError ERR_NO_FILES & vbCrLf
+                    GoTo QH
                 End If
-            Next
+                For lIdx = 1 To .Item("numfiles")
+                    sFile = .Item("file" & lIdx)
+                    If InStr(sFile, "*") > 0 Or InStr(sFile, "?") > 0 Then
+                        '--- for *.* default to include empty folders
+                        sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
+                        If sMask = "*" Or sMask = "*.*" Then
+                            .Item("-e") = True
+                        End If
+                        m_oArchive.AddFromFolder sFile, Recursive:=.Item("-r"), _
+                            IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
+                    ElseIf (FileAttr(sFile) And vbDirectory) <> 0 Then
+                        If .Item("-r") Then
+                            sMask = Mid$(sFile, InStrRev(sFile, "\") + 1)
+                            .Item("-e") = True
+                        End If
+                        m_oArchive.AddFromFolder PathCombine(sFile, "*.*"), Recursive:=.Item("-r"), TargetFolder:=sMask, _
+                            IncludeEmptyFolders:=.Item("-e"), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
+                    Else
+                        m_oArchive.AddFile sFile, Password:=.Item("-p"), EncrStrength:=.Item("-mem")
+                    End If
+                Next
+            End If
             m_sAction = "Compressing "
+            If .Item("-so") Then
+                .Item("zip") = "stdout:"
+            End If
             If Not m_oArchive.CompressArchive(.Item("zip"), Level:=.Item("-m")) Then
                 GoTo QH
             End If
@@ -203,15 +210,14 @@ Public Function Init(vArgs As Variant) As Boolean
                     "  -y          assume yes to all questions" & vbCrLf & _
                     "  -p PASSWORD password used to encrypt/decrypt files" & vbCrLf & _
                     "  -mem METHOD encryption method" & vbCrLf & _
-                    "  -so         write data to stdout" & vbCrLf
+                    "  -so         output to stdout" & vbCrLf & _
+                    "  -si NAME    input from stdin zip to NAME in archive" & vbCrLf
             Else
                 ConsoleError "Invalid command: " & .Item("command") & vbCrLf
             End If
         End Select
-        If Len(m_sLastRow) <> 0 Then
-            ConsoleError vbCr & Space$(Len(m_sLastRow)) & vbCr
-            ConsoleError "Done" & vbCrLf
-        End If
+        ConsoleError IIf(LenB(m_sLastRow) <> 0, vbCr & Space$(Len(m_sLastRow)) & vbCr, vbCrLf)
+        ConsoleError "Done" & vbCrLf
     End With
     '--- success
     Init = True
@@ -292,13 +298,18 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, By
     Dim sPercent        As String
     Dim vInfo           As Variant
 
-    If Current < Total Then
+    vInfo = m_oArchive.FileInfo(FileIdx)
+    If Total = 0 Then
+        If Not m_oOpt.Item("-i") Then
+            sPercent = " [" & Format$(At(vInfo, ucsIdxCompressedSize) * 100 / Current, "0.0") & "%] "
+            ConsoleError vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent
+        End If
+    ElseIf Current < Total Then
         If Not m_oOpt.Item("-i") Then
             sPercent = " - " & Format$(Current * 100# / Total, "0.0") & "%"
             m_sLastRow = ConsoleError(vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent)
         End If
     Else
-        vInfo = m_oArchive.FileInfo(FileIdx)
         If At(vInfo, ucsIdxSize) <> 0 Then
             sPercent = " [" & Format$(At(vInfo, ucsIdxCompressedSize) * 100# / At(vInfo, ucsIdxSize), "0.0") & "%] "
         End If
