@@ -1469,9 +1469,16 @@ Private Function pvFromDosDateTime(ByVal nDate As Integer, ByVal nTime As Intege
 End Function
 
 Private Function pvToWinFileName(baBuffer() As Byte, ByVal lCodePage As Long) As String
-    '--- replaces non-ANSI symbols with underscore too
-    pvToWinFileName = Replace(Replace(StrConv(StrConv(pvFromOemString(baBuffer, lCodePage), _
-        vbFromUnicode), vbUnicode), "/", "\"), "?", "_")
+    Dim vSplit          As Variant
+    Dim lIdx            As Long
+    
+    '--- replaces non-ANSI symbols with '?' too
+    vSplit = Split(Replace(StrConv(StrConv(pvFromOemString(baBuffer, lCodePage), _
+        vbFromUnicode), vbUnicode), "/", "\"), "\")
+    For lIdx = 0 To UBound(vSplit)
+        vSplit(lIdx) = SanitizeFileName(CStr(vSplit(lIdx)), "_")
+    Next
+    pvToWinFileName = Join(vSplit, "\")
 End Function
 
 #End If ' ImplDecompress
@@ -1702,7 +1709,10 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
         pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
     Else
         pvVfsOpen.FileName = File
-        If Right$(File, 1) <> "\" Then
+        If Right$(File, 1) = ":" Then
+            pvVfsOpen.Data.dwFileAttributes = vbArchive
+            pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
+        ElseIf Right$(File, 1) <> "\" Then
             hFind = FindFirstFile(File, pvVfsOpen.Data)
         Else
             hFind = FindFirstFile(Left$(File, Len(File) - 1), pvVfsOpen.Data)
@@ -2142,6 +2152,29 @@ Private Function C_Obj(Value As Variant) As Object
     On Error Resume Next
     Set C_Obj = Value
     On Error GoTo 0
+End Function
+
+Private Function SanitizeFileName(sFileName As String, Optional InvalidChar As String = " ") As String
+    Const STR_INVALID   As String = "[\x00-\x1F""<>\|:\*\?\\/]"
+    
+    With InitRegExp(STR_INVALID)
+        SanitizeFileName = .Replace(sFileName, InvalidChar)
+    End With
+End Function
+
+Private Function InitRegExp(sPattern As String) As Object
+    Static oCache       As Object
+    
+    If Not oCache Is Nothing Then
+        If oCache.Pattern = sPattern Then
+            GoTo QH
+        End If
+    End If
+    Set oCache = VBA.CreateObject("VBScript.RegExp")
+    oCache.Global = True
+    oCache.Pattern = sPattern
+QH:
+    Set InitRegExp = oCache
 End Function
 
 #End If ' Not ImplUseShared
