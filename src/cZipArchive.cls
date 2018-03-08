@@ -22,12 +22,11 @@ Option Explicit
 DefObj A-Z
 Private Const MODULE_NAME As String = "cZipArchive"
 
-#Const ImplLogging = DEBUG_MODE
 #Const ImplCompress = ZIP_NOCOMPRESS = 0
 #Const ImplDecompress = ZIP_NOEXTRACT = 0
-#Const ImplUseShared = ZIP_USESHARED
-#Const ImplUseApiForBase64 = False
 #Const ImplCrypto = ZIP_CRYPTO
+#Const ImplUseShared = ZIP_USESHARED
+#Const ImplLogging = DEBUG_MODE
 
 '=========================================================================
 ' Public events
@@ -44,31 +43,31 @@ Event Error(ByVal FileIdx As Long, Source As String, Description As String, Canc
 ' Thunk data
 '=========================================================================
 
-' Auto-generated on 9.4.2017 19:12:30, CodeSize=6336, DataSize=984, ALIGN_SIZE=16
+' Auto-generated on 12.1.2018 17:15:52, CodeSize=6640, DataSize=984, ALIGN_SIZE=16
 Private Const STR_THUNK1 As String = _
-    "UYtEJAhTi1wkEFWLbCQYVleLeDgD64tEJCSJbCQQiwD2wwN0HDvddBQPthNDD7bIM9HB6AgzBJf2wwN16IlcJByL1cdEJBgAAAAAK9OD4vyNDBqDwgPB6gI7yxvJ99EjyolMJCB0eYvpjaQkAAAAAIsbi8vB6QgPtvGLyMHpCA+2yTPxi8vB6RAPttGLyMHpEIu0twAIAAAPtskz0YvIwekYM7SXAAQAAIvTweoYM9EPtsgPtsOLXCQcM8iDwwQzNJeJXCQcM7SPAAwAAItMJBiLxkGJTCQYO811lItsJBCLzTP2K8s76xvt99Uj6XQWD7YTjVsBD7bIRjPRwegIMwSXO/V16otMJCRfXl2JAVtZwhAAzMzMzMzMzMzMzMzMVot0JAhXagyLRhz/0Iv4V4k36AkJAACLThxqFP/Rx0AQAAAAAMdADAAAAACJRwiLx19ewhAAzMzMzMzMzMzMzFaLdCQIV4s+/3YIi0ck/9D/dgSLRyT/0ItHJFb/0F9e" & _
-    "whAAzMzMzMzMzMzMzMzMzItEJAxWi3QkDFeLfCQMhcB0DVD/dgT/Nv836FH+////dhyNRgz/dhj/dhT/dhBQjUYIUP92BP82V+giCQAAX17CEADMzMzMzMzMzMzMzMzM/3QkBOjnDwAAwhAAzMzMzFaLdCQIi04MjUYMV4s+hcl0DDtOBHQHUFboghEAAItOEI1GEIXJdAw7Tgh0B1BW6GwRAACDfhQAjUYUdAdQVuhcEQAAjUYEUFboUhEAAI1GCFBW6EgRAACLRyRW/9BfXsIQAMzMzMzMzMzMzMzMzMyLRCQIU1WLbCQMVleNWAxTjXgIV/9wBP8wVeghCQAAi0wkHIvwhcl0GIX2dBSLB4XAdAxR/zNQ/3UA6GH9//+Lxl9eXVvCEADMzMzMzMzMzFaLdCQIg8r/i4YEgAQAD7dMxgKNBMZmO8p0CQ+/wWaJFMbrEItABIP4/3QIZomURgiABACLhgSABACLTCQQiUzGBIuGBIAEAGaJVMYCjRRO" & _
-    "i44EgAQAD7eCCIAEAGaJBM6LhgSABAAPvwzGD7fAZomCCIAEAIP5/3QMZouGBIAEAGaJRM4Ci44EgAQAikQkDIiEDgAABACLhgSABABAJf9/AACJhgSABABewgwAzMzMg+wMU1WLbCQgVleLfCQgM/aLfwSJfCQYObcMgAYAD47iAAAAi48MgAYAi8ErxgPFg/gED4ycAAAAi1QkJDvxfQoPtoQ+CIAGAOsIi8YrwQ+2BBCNXgKIRCQUjUP/O8F9Cg+2hD4JgAYA6wmLxivBD7ZEEAGIRCQVO9l9Cg+2hD4KgAYA6wmLxivBD7ZEEAKIRCQWjUMBO8F9Cg+2hD4LgAYA6wmLxivBD7ZEEAOIRCQXi0QkFGnIvac1HsHpEFFQV+iK/v//Rju3DIAGAA+MUf///+sxi847twyABgB9J42XCIAGAOsJjaQkAAAAAIv/ioQPCIAGAI1SAYhC/0E7jwyABgB86im3DIAGAIXtD471AQAA6wqNpCQAAAAAjUkA" & _
-    "i1wkJIP9BA+MWQEAAIuHAAAEADPtiYcAgAQAaQO9pzUewegQD7+URwiABACD+v8PhDEBAACLjwSABACLwivBvgCAAAAl/38AACvwK86B4f9/AACLhDkAAAQAOwN1Dom0rxCABgBFO2wkLH0JD78U14P6/3XAhe0PjukAAACLRCQoOUQkMH4GiUQkMOsEi0QkML4EAAAAO8Z+cY2bAAAAAIoEHjPJM9uIRCQThe1+WJCLlI8QgAYAi8YrwnkYi4cEgAQAK8IDxiX/fwAAioQ4AAAEAOsLi3wkJIoEOIt8JBg4RCQTdQiJlJ8QgAYAQ0E7zXy9g/sBfg+LRCQwRovri1wkJDvwfJmLXCQki2wkKDv1fT2LlxCABgCLzivKjSwahcl5GIuHBIAEACvCA8Yl/38AAIqEOAAABADrA4oEGTgEKXUIRkE7dCQofNSLbCQoVv+3EIAGAP90JCjooA4AAIX2fn3rOItMJCCKAzyPixGLcQgPtsiLQjB3CQ+2RAgw" & _
-    "agjrDQ+2BAhqCY0ERQEAAABQVlLoRxIAAL4BAAAAi2wkKIP9BHwWaQO9pzUewegQUA+2A1BX6HX8///rFYuPDIAGAIoDiIQPCIAGAP+HDIAGAE5DTYX2f8mJbCQoiVwkJIXtD48X/v//X15dW4PEDMIUAMzMzMzMzMzMzMzMzMyD7BRTVYtsJChWV4t8JCgz9ot/BIl8JCA5twyABgAPjuIAAACLjwyABgCLwSvGA8WD+AQPjJwAAACLVCQsO/F9Cg+2hD4IgAYA6wiLxivBD7YEEI1eAohEJBiNQ/87wX0KD7aEPgmABgDrCYvGK8EPtkQQAYhEJBk72X0KD7aEPgqABgDrCYvGK8EPtkQQAohEJBqNQwE7wX0KD7aEPguABgDrCYvGK8EPtkQQA4hEJBuLRCQYaci9pzUewekQUVBX6Gr7//9GO7cMgAYAD4xR////6zGLzju3DIAGAH0njZcIgAYA6wmNpCQAAAAAi/+KhA8IgAYAjVIBiEL/QTuP" & _
-    "DIAGAHzqKbcMgAYAM8AzyYlEJBSJTCQYiUQkHIXtD44JAgAA6wqNpCQAAAAAjUkAi1wkLIP9BA+MwAEAAIuHAAAEADPtiYcAgAQAaQO9pzUewegQD7+URwiABACD+v8PhJgBAACLjwSABACLwivBvgCAAAAl/38AACvwK86B4f9/AACLhDkAAAQAOwN1Dom0rxCABgBFO2wkNH0JD78U14P6/3XAhe0PjkwBAACLVCQwi0QkODvCfgaLwolEJDi+BAAAADvGfneKBB4zyTPbiEQkE4XtfmDrB42kJAAAAACLlI8QgAYAi8YrwnkYi4cEgAQAK8IDxiX/fwAAioQ4AAAEAOsLi3wkLIoEOIt8JCA4RCQTdQiJlJ8QgAYAQ0E7zXy9g/sBfg+LRCQ4Rovri1wkLDvwfJGLXCQsi1QkMDvyfTmLlxCABgCLzivKjSwahcl5GIuHBIAEACvCA8Yl/38AAIqEOAAABADrA4oEGTgEKXUIRkE7dCQwfNSLbCQU" & _
-    "he1+Xo1FATvwfk+LRCQoixCLaAiLRCQcPI8PtsiLQjB3CQ+2RAgwagjrDQ+2BAhqCY0ERQEAAABQVVLoIA8AAA+2A4uPEIAGAIlMJBiJdCQUiUQkHOmQAAAAi0QkGFVQ6yWLhxCABgCJRCQYD7YDiXQkFIlEJBzrcYtMJBiLbCQUhe1+MlVR/3QkMOjwCgAAM8CNdf+JRCQUhfZ/UotsJDCLTCQYhe0PjwP+//9fXl1bg8QUwhQAi0wkKIoDPI+LEYtxCA+2yItCMHcJD7ZECDBqCOsND7YECGoJjQRFAQAAAFBWUuh2DgAAvgEAAACLbCQwg/0EfBZpA72nNR7B6BBQD7YDUFfopPj//+sVi48MgAYAigOIhA8IgAYA/4cMgAYATkNNhfZ/yYlsJDCJXCQs6Wr////MzMzMzMzMzMxWV4t8JAxosI8GAIsHi0Ac/9CL8IX2dQVfXsIEAIl3BI1OAroAgAAAg8j/6wONSQDHQQL/////jUkIZolB+GaJ" & _
-    "QfaD6gF16Y2+CIAEALkAgAAA86tfiZYEgAQAjUIBiZYMgAYAXsIEAMzMzMzMzMzMVleLfCQMuQ8AAAC+AFDYZ7hgKNhn86WLTCQQg8BgX17HAQAQ2GeJQQTHQQigQNhnx0EMeETYZ8IIAMzMzMzMzFOLXCQIVldoAIAAAIs7i3MIi0cc/9CJBjPAOUQkJGoDD5XAx0YIAIAAAIPAAsdGBAAAAABQVlfoNA0AAIN8JCgA/3QkMP90JDD/dCQg/3QkIFN0B+gX+P//6wXoMPv//2oHagBWV+gFDQAAg3wkJAB0GItOEIXJdBG4CAAAACvBUGoAVlfo5gwAAItEJByLDl+JCItEJByLTgReW4kIuAEAAADCJADMzMzMzMzMzMzMUVNVVot0JBRXaACAAACLHolcJByLQxz/0ItsJCCJhqSBAADHhqyBAAAAgAAAx4aogQAAAAAAAIXtfw2DvpwBAAAAD462BQAAg76cAQAAGI2+nAEAAH0qi1QkHOsDjUkA" & _
-    "he1+GQ+2Ak2LD0LT4AmGmAEAAI1BCIkHg/gYfOOJVCQci0YYhcB1CcdGGAEAAADrpoP4AXVzixeD+gMPjF0FAACLhpgBAACDwv3R6IvIiRfB6AKJhpgBAACD4QN1HYvKx0YYCgAAAIPhByvR0+iJF4mGmAEAAOlc////g/kBdRiLRgSJRgyLRgiJRhDHRhgGAAAA6T////+D+QIPhTb///+JThjpLv///4P4AnVuixeD+g4PjOUEAACLjpgBAACLwYPgH8HpBQUBAQAAx0YsAAAAAIlGIIvBg+AfwekFQMdGGAMAAACJRiSLwYPgD8HpBIPABImOmAEAAIlGKI1C8okHM8CJRkSJRkiJRkyJRlBmiUZUiEZW6bv+//+D+AN1bzkHD4x1BAAAi0YsO0YofTGDPwN8LItLNItGLIqWmAEAAIDiBw+2BAGIVDBE/0Ysi0Ysgwf9wa6YAQAAAztGKHzPi0YsO0YoD4Vp/v//ahONRkRQVujGCQAAiUYUx0YY" & _
-    "BAAAAMdGLAAAAADpR/7//4P4BA+F4gAAAItGJItOIAPBOUYsfD9RjUZXUFbojwkAAP92JIlGDItGIIPAVwPGUFboegkAAI1+FIlGEFdW6L0FAADHBwAAAADHRhgGAAAA6fL9////dhSNhpgBAABXUOgbBgAAi8iD+f8PhJ4DAACD+f4PhGIDAACD+RB9D4tGLIhMMFf/Rizpuv3//3UHuAIAAADrDzPAg/kRD5XAjQSFAwAAAIlGMDPAg/kSD5TAjQTFAwAAAIlGNIP5EHUbi0YshcB+FA+2RDBWiUY8x0YYBQAAAOlt/f//M8DHRhgFAAAAiUY86Vz9//+D+AV1XIsfi04wO9kPjBEDAACLhpgBAAC6AQAAANPiK9lKiR8j0NPoA1Y0iYaYAQAAhdJ+HItGJANGIItOLDvIfQ+KRjxKiEQxV/9GLIXSf+SLXCQYx0YYBAAAAOn7/P//g/gGD4WcAAAA/3YMjV4MV42GmAEAAFDoGAUAAIP4/w+EnQIA"
+    "UYtEJAhTi1wkEFWLbCQYVleLeEQD64tEJCSJbCQQiwD2wwN0HDvddBQPthNDD7bIM9HB6AgzBJf2wwN16IlcJByL1cdEJBgAAAAAK9OD4vyNDBqDwgPB6gI7yxvJ99EjyolMJCB0eYvpjaQkAAAAAIsbi8vB6QgPtvGLyMHpCA+2yTPxi8vB6RAPttGLyMHpEIu0twAIAAAPtskz0YvIwekYM7SXAAQAAIvTweoYM9EPtsgPtsOLXCQcM8iDwwQzNJeJXCQcM7SPAAwAAItMJBiLxkGJTCQYO811lItsJBCLzTP2K8s76xvt99Uj6XQWD7YTjVsBD7bIRjPRwegIMwSXO/V16otMJCRfXl2JAVtZwhAAzMzMzMzMzMzMzMzMVot0JBCF9n41i1QkDE6LRCQIwe4ERoMCAYsKdQP/QgSJCItKBIlIBMdACAAAAADHQAwAAAAAg8AQg+4BddhewhAAzMzMzMzMzMzMzMzMzMyLVCQMhdJ0GotEJAhWi3Qk" & _
+    "CCvwigwGjUABMEj/g+oBdfJewhAAzMzMzMzMzMzMzMyDfCQMAItEJASLSAyJTCQED46OAAAAU1VWi3QkFFeLfCQgi++D5QGD5wKNmwAAAACKHoXtdBWLSAiDyQKL0YPyAQ+v0cHqCDLTiBaF/3QCih4PthBGD7bLi1wkFDPRiwjB6QiLFJOLWAgz0Q+2ygNIBGnJBYQICIkQD7bTwesIQYlIBA+2SAcz0YtMJBQzHJGLTCQcSYlYCIlMJByFyX+QX15dW8IQAMzMzMzMzMzMzFaLdCQIV2oMi0Yo/9CL+FeJN+gJCQAAi04oahT/0cdAEAAAAADHQAwAAAAAiUcIi8dfXsIQAMzMzMzMzMzMzMxWi3QkCFeLPv92CItHMP/Q/3YEi0cw/9CLRzBW/9BfXsIQAMzMzMzMzMzMzMzMzMyLRCQMVot0JAxXi3wkDIXAdA1Q/3YE/zb/N+gh/f///3YcjUYM/3YY/3YU/3YQUI1GCFD/dgT/NlfoIgkAAF9e" & _
+    "whAAzMzMzMzMzMzMzMzMzP90JATo5w8AAMIQAMzMzMxWi3QkCItODI1GDFeLPoXJdAw7TgR0B1BW6IIRAACLThCNRhCFyXQMO04IdAdQVuhsEQAAg34UAI1GFHQHUFboXBEAAI1GBFBW6FIRAACNRghQVuhIEQAAi0cwVv/QX17CEADMzMzMzMzMzMzMzMzMi0QkCFNVi2wkDFZXjVgMU414CFf/cAT/MFXoIQkAAItMJByL8IXJdBiF9nQUiweFwHQMUf8zUP91AOgx/P//i8ZfXl1bwhAAzMzMzMzMzMxWi3QkCIPK/4uGBIAEAA+3TMYCjQTGZjvKdAkPv8FmiRTG6xCLQASD+P90CGaJlEYIgAQAi4YEgAQAi0wkEIlMxgSLhgSABABmiVTGAo0UTouOBIAEAA+3ggiABABmiQTOi4YEgAQAD78Mxg+3wGaJggiABACD+f90DGaLhgSABABmiUTOAouOBIAEAIpEJAyIhA4AAAQAi4YEgAQAQCX/" & _
+    "fwAAiYYEgAQAXsIMAMzMzIPsDFNVi2wkIFZXi3wkIDP2i38EiXwkGDm3DIAGAA+O4gAAAIuPDIAGAIvBK8YDxYP4BA+MnAAAAItUJCQ78X0KD7aEPgiABgDrCIvGK8EPtgQQjV4CiEQkFI1D/zvBfQoPtoQ+CYAGAOsJi8YrwQ+2RBABiEQkFTvZfQoPtoQ+CoAGAOsJi8YrwQ+2RBACiEQkFo1DATvBfQoPtoQ+C4AGAOsJi8YrwQ+2RBADiEQkF4tEJBRpyL2nNR7B6RBRUFfoiv7//0Y7twyABgAPjFH////rMYvOO7cMgAYAfSeNlwiABgDrCY2kJAAAAACL/4qEDwiABgCNUgGIQv9BO48MgAYAfOoptwyABgCF7Q+O9QEAAOsKjaQkAAAAAI1JAItcJCSD/QQPjFkBAACLhwAABAAz7YmHAIAEAGkDvac1HsHoEA+/lEcIgAQAg/r/D4QxAQAAi48EgAQAi8Irwb4AgAAAJf9/AAAr8CvOgeH/" & _
+    "fwAAi4Q5AAAEADsDdQ6JtK8QgAYARTtsJCx9CQ+/FNeD+v91wIXtD47pAAAAi0QkKDlEJDB+BolEJDDrBItEJDC+BAAAADvGfnGNmwAAAACKBB4zyTPbiEQkE4XtfliQi5SPEIAGAIvGK8J5GIuHBIAEACvCA8Yl/38AAIqEOAAABADrC4t8JCSKBDiLfCQYOEQkE3UIiZSfEIAGAENBO818vYP7AX4Pi0QkMEaL64tcJCQ78HyZi1wkJItsJCg79X09i5cQgAYAi84ryo0sGoXJeRiLhwSABAArwgPGJf9/AACKhDgAAAQA6wOKBBk4BCl1CEZBO3QkKHzUi2wkKFb/txCABgD/dCQo6KAOAACF9n596ziLTCQgigM8j4sRi3EID7bIi0I8dwkPtkQIMGoI6w0PtgQIagmNBEUBAAAAUFZS6EcSAAC+AQAAAItsJCiD/QR8FmkDvac1HsHoEFAPtgNQV+h1/P//6xWLjwyABgCKA4iEDwiABgD/hwyA" & _
+    "BgBOQ02F9n/JiWwkKIlcJCSF7Q+PF/7//19eXVuDxAzCFADMzMzMzMzMzMzMzMzMg+wUU1WLbCQoVleLfCQoM/aLfwSJfCQgObcMgAYAD47iAAAAi48MgAYAi8ErxgPFg/gED4ycAAAAi1QkLDvxfQoPtoQ+CIAGAOsIi8YrwQ+2BBCNXgKIRCQYjUP/O8F9Cg+2hD4JgAYA6wmLxivBD7ZEEAGIRCQZO9l9Cg+2hD4KgAYA6wmLxivBD7ZEEAKIRCQajUMBO8F9Cg+2hD4LgAYA6wmLxivBD7ZEEAOIRCQbi0QkGGnIvac1HsHpEFFQV+hq+///Rju3DIAGAA+MUf///+sxi847twyABgB9J42XCIAGAOsJjaQkAAAAAIv/ioQPCIAGAI1SAYhC/0E7jwyABgB86im3DIAGADPAM8mJRCQUiUwkGIlEJByF7Q+OCQIAAOsKjaQkAAAAAI1JAItcJCyD/QQPjMABAACLhwAABAAz7YmHAIAEAGkDvac1" & _
+    "HsHoEA+/lEcIgAQAg/r/D4SYAQAAi48EgAQAi8Irwb4AgAAAJf9/AAAr8CvOgeH/fwAAi4Q5AAAEADsDdQ6JtK8QgAYARTtsJDR9CQ+/FNeD+v91wIXtD45MAQAAi1QkMItEJDg7wn4Gi8KJRCQ4vgQAAAA7xn53igQeM8kz24hEJBOF7X5g6weNpCQAAAAAi5SPEIAGAIvGK8J5GIuHBIAEACvCA8Yl/38AAIqEOAAABADrC4t8JCyKBDiLfCQgOEQkE3UIiZSfEIAGAENBO818vYP7AX4Pi0QkOEaL64tcJCw78HyRi1wkLItUJDA78n05i5cQgAYAi84ryo0sGoXJeRiLhwSABAArwgPGJf9/AACKhDgAAAQA6wOKBBk4BCl1CEZBO3QkMHzUi2wkFIXtfl6NRQE78H5Pi0QkKIsQi2gIi0QkHDyPD7bIi0I8dwkPtkQIMGoI6w0PtgQIagmNBEUBAAAAUFVS6CAPAAAPtgOLjxCABgCJTCQYiXQk" & _
+    "FIlEJBzpkAAAAItEJBhVUOsli4cQgAYAiUQkGA+2A4l0JBSJRCQc63GLTCQYi2wkFIXtfjJVUf90JDDo8AoAADPAjXX/iUQkFIX2f1KLbCQwi0wkGIXtD48D/v//X15dW4PEFMIUAItMJCiKAzyPixGLcQgPtsiLQjx3CQ+2RAgwagjrDQ+2BAhqCY0ERQEAAABQVlLodg4AAL4BAAAAi2wkMIP9BHwWaQO9pzUewegQUA+2A1BX6KT4///rFYuPDIAGAIoDiIQPCIAGAP+HDIAGAE5DTYX2f8mJbCQwiVwkLOlq////zMzMzMzMzMzMVleLfCQMaLCPBgCLB4tAKP/Qi/CF9nUFX17CBACJdwSNTgK6AIAAAIPI/+sDjUkAx0EC/////41JCGaJQfhmiUH2g+oBdemNvgiABAC5AIAAAPOrX4mWBIAEAI1CAYmWDIAGAF7CBADMzMzMzMzMzFZXi3wkDLkSAAAAvgBQ51W4kCnnVfOli0wkEIPAYF9e" & _
+    "xwEAEOdViUEEx0EIoEDnVcdBDHhE51XCCADMzMzMzMxTi1wkCFZXaACAAACLO4tzCItHKP/QiQYzwDlEJCRqAw+VwMdGCACAAACDwALHRgQAAAAAUFZX6DQNAACDfCQoAP90JDD/dCQw/3QkIP90JCBTdAfoF/j//+sF6DD7//9qB2oAVlfoBQ0AAIN8JCQAdBiLThCFyXQRuAgAAAArwVBqAFZX6OYMAACLRCQciw5fiQiLRCQci04EXluJCLgBAAAAwiQAzMzMzMzMzMzMzFFTVVaLdCQUV2gAgAAAix6JXCQci0Mo/9CLbCQgiYakgQAAx4asgQAAAIAAAMeGqIEAAAAAAACF7X8Ng76cAQAAAA+OtgUAAIO+nAEAABiNvpwBAAB9KotUJBzrA41JAIXtfhkPtgJNiw9C0+AJhpgBAACNQQiJB4P4GHzjiVQkHItGGIXAdQnHRhgBAAAA66aD+AF1c4sXg/oDD4xdBQAAi4aYAQAAg8L90eiLyIkX" & _
+    "wegCiYaYAQAAg+EDdR2LysdGGAoAAACD4Qcr0dPoiReJhpgBAADpXP///4P5AXUYi0YEiUYMi0YIiUYQx0YYBgAAAOk/////g/kCD4U2////iU4Y6S7///+D+AJ1bosXg/oOD4zlBAAAi46YAQAAi8GD4B/B6QUFAQEAAMdGLAAAAACJRiCLwYPgH8HpBUDHRhgDAAAAiUYki8GD4A/B6QSDwASJjpgBAACJRiiNQvKJBzPAiUZEiUZIiUZMiUZQZolGVIhGVum7/v//g/gDdW85Bw+MdQQAAItGLDtGKH0xgz8DfCyLS0CLRiyKlpgBAACA4gcPtgQBiFQwRP9GLItGLIMH/cGumAEAAAM7Rih8z4tGLDtGKA+Faf7//2oTjUZEUFboxgkAAIlGFMdGGAQAAADHRiwAAAAA6Uf+//+D+AQPheIAAACLRiSLTiADwTlGLHw/UY1GV1BW6I8JAAD/diSJRgyLRiCDwFcDxlBW6HoJAACNfhSJRhBXVui9"
 Private Const STR_THUNK2 As String = _
-    "AIP4/g+EXQIAAD0AAQAAfRBQVugIBAAAi1wkGOm2/P//dUCLA8dGGAEAAAA7RgR0DVNW6FgEAADHAwAAAACLRhCNfhCLXCQYO0YID4SG/P//V1boOAQAAMcHAAAAAOl0/P//i1wkGD0eAQAAD41l/P//x0YYBwAAAIlGHOlW/P//g/gHdVSLRhwtAQEAAI0MQItDKI0ciA+/SwI5Dw+M+wEAAIuWmAEAALgBAAAA0+BII8IDQwSJRjgPv0MCKQeKSwKLXCQY0+qJlpgBAADHRhgIAAAA6f37//+D+Ah1Ov92EI2GmAEAAFdQ6CEEAACD+P8PhKYBAACD+P4PhGoBAACD+B4PjWEBAADHRhgJAAAAiUYc6b77//+D+AkPhY8AAACLRhyLF40MQItDLI0EiA+/SAKJRCQgiUwkEDvRD4xaAQAAi4aYAQAAuwEAAAArVCQQ0+OLTCQgSyPYA1kEiReKSQLT6IN+OACJhpgBAADHRhgGAAAAdCyNpCQAAAAA" & _
-    "i4aggQAA/044K8Ml/38AAA+2hDCgAQAAUFbogQIAAIN+OAB12/9OOItcJBjpJvv//4P4CnUxixeD+hAPjN0AAACLjpgBAAAPt8GJRkCNQvDB6RCJB4mOmAEAAMdGGAsAAADp8Pr//4P4C3U/iweD+BAPjKcAAACLjpgBAACDwPAPt9GJB4Hy//8AAItGQMHpEImOmAEAADvCdVD32BvAg+ALQIlGGOms+v//g/gMD4Wj+v//gz8IfGUPtoaYAQAAUFbo2QEAAIMH+MGumAEAAAiDRkD/D4V8+v//x0YYAQAAAOlw+v//i1wkGP+2pIEAAItDJP/Qi0QkJMeGpIEAAAAAAABfXscAAAAAAItEJCBdW8cAAAAAADPAWcIUAItMJCS4AQAAAIuWpIEAAF+JEYuWqIEAAItMJCReXVuJEVnCFADMzMzMzMzMzMzMzMzMgewgAQAAU1aLtCQsAQAAV2iwgQAAi0Yc/9CL2I18JAy4CAgICLkkAAAAaCABAACJ" & _
-    "M/OruAkJCQmNvCSgAAAAuRwAAADzq41EJBDHhCQQAQAABwcHB1BTx4QkHAEAAAcHBwfHhCQgAQAABwcHB8eEJCQBAAAHBwcHx4QkKAEAAAcHBwfHhCQsAQAABwcHB8eEJDABAAAICAgIx4QkNAEAAAgICAjoxwQAAIlDBI1EJAxqIFBTx0QkGAUFBQXHRCQcBQUFBcdEJCAFBQUFx0QkJAUFBQXHRCQoBQUFBcdEJCwFBQUFx0QkMAUFBQXHRCQ0BQUFBeh3BAAAX4lDCIvDXsdDGAAAAADHQxQAAAAAx0MQAAAAAMdDDAAAAADHg5gBAAAAAAAAx4OcAQAAAAAAAMeDoIEAAAAAAABbgcQgAQAAwgQAzMzMzMzMzMzMzMzMU4tcJAxWi3QkDIuGoIEAAIsOiJwwoAEAAIuGoIEAAEAl/38AAImGoIEAAIuGqIEAADuGrIEAAHwaA8BQ/7akgQAAiYasgQAAi0Eg/9CJhqSBAACLhqiBAACLjqSBAACI" & _
-    "HAH/hqiBAABeW8IIAMzMzFOLXCQIVYtsJBCLA4lEJAyF7XUIXYPI/1vCCABXi30Ahf90S1Yz9jk3fCPrA41JAItHBI0E8IPABIM4AHQHUFPou////0Y7N37mi0QkFP93BItAJP/Qi0QkFMdHBAAAAABXi0Ak/9DHRQAAAAAAXl9dM8BbwggAzMzMzMzMzMzMi0QkDFOLXCQMVosIi0AEizNXi3wkEIsXI8qNBMgPtgg7zn8mD7YI0+or8WaDeAL/dSyLQASFwHQaiwiLQAQjyo0EyA+2CDvOftpfXoPI/1vCDABfXrj+////W8IMAIkXiTMPv0ACX15bwgwAzMzMzIPsCItEJAxViyiLQAiJRCQQi0QkGIlsJASFwA+OLQEAAFNWVz0EAQAAfge+AgEAAOsMi/A9AgEAAH4DjXD9K8a7HQAAAIlEJCSDz/+LRSiL6IlEJBSNBDuZK8LR+I0MQDt0jQR9BIvY6+s7dI0IfgSL+Ovhi1wkHI0EQI08hQAA" & _
-    "AAC5FwEAAA+3BC8D/YtsJBBmO8EPv8iLRTB/DA+2hEgA/v//agfrBw+2RAGoaghQU1XoKQMAAA+3RwJmhcB0DSt3BJhQVlNV6BMDAACLRSyDzv+LXCQgvx4AAACL6Iv/jQQ3mSvC0fiNDEA7XI0EfQSL+OvrO1yNCH4Ei/Dr4Yt8JByNBECNNIUAAAAAA/WLbCQQagUPvw6LRTAPtgTIUFdV6LkCAAAPt0YCZoXAdA+YUIvDK0YEUFdV6KECAACLRCQkhcAPj9n+//9fXltdg8QIwgwAzMzMzMzMzMzMzMxTVYtsJAxWV2oIi0Uc/9CLXCQoi/iLy7gBAAAA0+C+AQAAAItMJCxI0+aJRCQojQT1AAAAAFCLRRz/0IlHBDPJjUb/g8r/iQeFwHgjjWQkAItHBGaJVMgCi0cExgTIAItHBMdEyAQAAAAAQTsPfuEz7TlsJCB+aYt0JBzrA41JAA+2BC47w35Ri0QkGIsEqIvII0wkKDtMJCR1PovL0/gj" & _
-    "BzsHfzSLTwRmiWzBAotPBA+2FC4r0400wQ+2DjvKfQKIFot0JBy6AQAAAA+2DC4ry9PiA8I7B37MRTtsJCB8oDP2OTd8Z4tUJCyLbCQci/+LRwSNDPAPtgE7wn5Lg8j/ZolBAotHBI0M8A+2ASvCg/gHfgW4BwAAAFCNBBOIEVCLy4vG0+ALRCQsUP90JCxV/3QkLP90JCzow/7//4tPBItUJCyJRPEERjs3fqOLx19eXVvCHADMzMzMzMzMzMzMgewEBQAAM8Az0lWLrCQUBQAAiVQkBIlEJAyJRCQQiUQkFIlEJBiJRCQciUQkIIlEJCSJRCQoiUQkLIlEJDCJRCQ0iUQkOIlEJDyJRCRAiUQkRFaLtCQUBQAAhe1+GYv/D7YMMP9EjAw70X0Ci9FAO8V87YlUJAgz0jPJ6wONSQCJVAxQA1QMEIPBBAPSg/k8fO5XM/+F7X5JU42cJJQAAAAPtjQ3xwMAAAAAi1S0VI1CAYlEtFSF9nQYM8CNZCQA" & _
-    "i8oDwIPhAdH6C8GD7gF18IkDi7QkHAUAAEeDwwQ7/XzAW4tEJAxfg/gJfAW4CQAAAFBqAGoAVf+0JCQFAACNhCSgAAAAUIuEJCgFAAD/MOiM/f//Xl2BxAQFAADCDADMi0QkDFaLdCQMi04Q0+AJRgyLRCQUA8GJRhCD+Ah8OVeLfCQMi0YIOUYEfA8DwFD/NolGCItHIP/QiQaLVgSLDopGDIgECv9GBMFuDAiDRhD4g34QCH3NX17CEABVi+yLAIBAwCCgYOAQkFDQMLBw8AiISMgoqGjoGJhY2Di4ePgEhETEJKRk5BSUVNQ0tHT0DIxMzCysbOwcnFzcPLx8/AKCQsIiomLiEpJS0jKycvIKikrKKqpq6hqaWto6unr6BoZGxiamZuYWllbWNrZ29g6OTs4urm7uHp5e3j6+fv4BgUHBIaFh4RGRUdExsXHxCYlJySmpaekZmVnZObl5+QWFRcUlpWXlFZVV1TW1dfUNjU3NLa1t7R2dXd09vX39" & _
-    "A4NDwyOjY+MTk1PTM7Nz8wuLS8srq2vrG5tb2zu7e/sHh0fHJ6dn5xeXV9c3t3f3D49Pzy+vb+8fn1/fP79//wEBAAADAAAAAwAAAAIBAAAEAAAABAAAAAMBAAAFAAAABQAAAAQBAAAGAAAABgAAAAUBAAAHAAAABwAAAAYBAAAIAAAACAAAAAcBAAAJAAAACQAAAAgBAAAKAAAACgAAAAkBAQALAAAADAAAAAoBAQANAAAADgAAAAsBAQAPAAAAEAAAAAwBAQARAAAAEgAAAA0BAgATAAAAFgAAAA4BAgAXAAAAGgAAAA8BAgAbAAAAHgAAABABAgAfAAAAIgAAABEBAwAjAAAAKgAAABIBAwArAAAAMgAAABMBAwAzAAAAOgAAABQBAwA7AAAAQgAAABUBBABDAAAAUgAAABYBBABTAAAAYgAAABcBBABjAAAAcgAAABgBBABzAAAAggAAABkBBQCDAAAAogAAABoBBQCjAAAAwgAAABsBBQDDAAAA" & _
-    "4gAAABwBBQDjAAAAAQEAAB0BAAACAQAAAgEAABAREgAIBwkGCgULBAwDDQIOAQ8AAAAAAAEAAAABAAAAAQAAAAIAAAACAAAAAgAAAAMAAAADAAAAAwAAAAQAAAAEAAAABAABAAUAAAAGAAAABQABAAcAAAAIAAAABgACAAkAAAAMAAAABwACAA0AAAAQAAAACAADABEAAAAYAAAACQADABkAAAAgAAAACgAEACEAAAAwAAAACwAEADEAAABAAAAADAAFAEEAAABgAAAADQAFAGEAAACAAAAADgAGAIEAAADAAAAADwAGAMEAAAAAAQAAEAAHAAEBAACAAQAAEQAHAIEBAAAAAgAAEgAIAAECAAAAAwAAEwAIAAEDAAAABAAAFAAJAAEEAAAABgAAFQAJAAEGAAAACAAAFgAKAAEIAAAADAAAFwAKAAEMAAAAEAAAGAALAAEQAAAAGAAAGQALAAEYAAAAIAAAGgAMAAEgAAAAMAAAGwAMAAEwAAAAQAAA" & _
-    "HAANAAFAAAAAYAAAHQANAAFgAAAAgAAA"
-Private Const STR_THUNK_OFFSETS As String = "288|352|400|480|496|608|0|0|0|0|6592|6960|6336|6940"
-Private Const STR_THUNK_BUILDDATE As String = "9.4.2017 19:12:30"
+    "BQAAxwcAAAAAx0YYBgAAAOny/f///3YUjYaYAQAAV1DoGwYAAIvIg/n/D4SeAwAAg/n+D4RiAwAAg/kQfQ+LRiyITDBX/0Ys6br9//91B7gCAAAA6w8zwIP5EQ+VwI0EhQMAAACJRjAzwIP5Eg+UwI0ExQMAAACJRjSD+RB1G4tGLIXAfhQPtkQwVolGPMdGGAUAAADpbf3//zPAx0YYBQAAAIlGPOlc/f//g/gFdVyLH4tOMDvZD4wRAwAAi4aYAQAAugEAAADT4ivZSokfI9DT6ANWNImGmAEAAIXSfhyLRiQDRiCLTiw7yH0PikY8SohEMVf/RiyF0n/ki1wkGMdGGAQAAADp+/z//4P4Bg+FnAAAAP92DI1eDFeNhpgBAABQ6BgFAACD+P8PhJ0CAACD+P4PhF0CAAA9AAEAAH0QUFboCAQAAItcJBjptvz//3VAiwPHRhgBAAAAO0YEdA1TVuhYBAAAxwMAAAAAi0YQjX4Qi1wkGDtGCA+Ehvz/" & _
+    "/1dW6DgEAADHBwAAAADpdPz//4tcJBg9HgEAAA+NZfz//8dGGAcAAACJRhzpVvz//4P4B3VUi0YcLQEBAACNDECLQzSNHIgPv0sCOQ8PjPsBAACLlpgBAAC4AQAAANPgSCPCA0MEiUY4D79DAikHiksCi1wkGNPqiZaYAQAAx0YYCAAAAOn9+///g/gIdTr/dhCNhpgBAABXUOghBAAAg/j/D4SmAQAAg/j+D4RqAQAAg/geD41hAQAAx0YYCQAAAIlGHOm++///g/gJD4WPAAAAi0YcixeNDECLQziNBIgPv0gCiUQkIIlMJBA70Q+MWgEAAIuGmAEAALsBAAAAK1QkENPji0wkIEsj2ANZBIkXikkC0+iDfjgAiYaYAQAAx0YYBgAAAHQsjaQkAAAAAIuGoIEAAP9OOCvDJf9/AAAPtoQwoAEAAFBW6IECAACDfjgAddv/TjiLXCQY6Sb7//+D+Ap1MYsXg/oQD4zdAAAAi46YAQAAD7fBiUZAjULw" & _
+    "wekQiQeJjpgBAADHRhgLAAAA6fD6//+D+At1P4sHg/gQD4ynAAAAi46YAQAAg8DwD7fRiQeB8v//AACLRkDB6RCJjpgBAAA7wnVQ99gbwIPgC0CJRhjprPr//4P4DA+Fo/r//4M/CHxlD7aGmAEAAFBW6NkBAACDB/jBrpgBAAAIg0ZA/w+FfPr//8dGGAEAAADpcPr//4tcJBj/tqSBAACLQzD/0ItEJCTHhqSBAAAAAAAAX17HAAAAAACLRCQgXVvHAAAAAAAzwFnCFACLTCQkuAEAAACLlqSBAABfiRGLlqiBAACLTCQkXl1biRFZwhQAzMzMzMzMzMzMzMzMzIHsIAEAAFNWi7QkLAEAAFdosIEAAItGKP/Qi9iNfCQMuAgICAi5JAAAAGggAQAAiTPzq7gJCQkJjbwkoAAAALkcAAAA86uNRCQQx4QkEAEAAAcHBwdQU8eEJBwBAAAHBwcHx4QkIAEAAAcHBwfHhCQkAQAABwcHB8eEJCgBAAAH" & _
+    "BwcHx4QkLAEAAAcHBwfHhCQwAQAACAgICMeEJDQBAAAICAgI6McEAACJQwSNRCQMaiBQU8dEJBgFBQUFx0QkHAUFBQXHRCQgBQUFBcdEJCQFBQUFx0QkKAUFBQXHRCQsBQUFBcdEJDAFBQUFx0QkNAUFBQXodwQAAF+JQwiLw17HQxgAAAAAx0MUAAAAAMdDEAAAAADHQwwAAAAAx4OYAQAAAAAAAMeDnAEAAAAAAADHg6CBAAAAAAAAW4HEIAEAAMIEAMzMzMzMzMzMzMzMzFOLXCQMVot0JAyLhqCBAACLDoicMKABAACLhqCBAABAJf9/AACJhqCBAACLhqiBAAA7hqyBAAB8GgPAUP+2pIEAAImGrIEAAItBLP/QiYakgQAAi4aogQAAi46kgQAAiBwB/4aogQAAXlvCCADMzMxTi1wkCFWLbCQQiwOJRCQMhe11CF2DyP9bwggAV4t9AIX/dEtWM/Y5N3wj6wONSQCLRwSNBPCDwASDOAB0B1BT" & _
+    "6Lv///9GOzd+5otEJBT/dwSLQDD/0ItEJBTHRwQAAAAAV4tAMP/Qx0UAAAAAAF5fXTPAW8IIAMzMzMzMzMzMzItEJAxTi1wkDFaLCItABIszV4t8JBCLFyPKjQTID7YIO85/Jg+2CNPqK/Fmg3gC/3Usi0AEhcB0GosIi0AEI8qNBMgPtgg7zn7aX16DyP9bwgwAX164/v///1vCDACJF4kzD79AAl9eW8IMAMzMzMyD7AiLRCQMVYsoi0AIiUQkEItEJBiJbCQEhcAPji0BAABTVlc9BAEAAH4HvgIBAADrDIvwPQIBAAB+A41w/SvGux0AAACJRCQkg8//i0U0i+iJRCQUjQQ7mSvC0fiNDEA7dI0EfQSL2OvrO3SNCH4Ei/jr4YtcJByNBECNPIUAAAAAuRcBAAAPtwQvA/2LbCQQZjvBD7/Ii0U8fwwPtoRIAP7//2oH6wcPtkQBqGoIUFNV6CkDAAAPt0cCZoXAdA0rdwSYUFZTVegTAwAAi0U4" & _
+    "g87/i1wkIL8eAAAAi+iL/40EN5krwtH4jQxAO1yNBH0Ei/jr6ztcjQh+BIvw6+GLfCQcjQRAjTSFAAAAAAP1i2wkEGoFD78Oi0U8D7YEyFBXVei5AgAAD7dGAmaFwHQPmFCLwytGBFBXVeihAgAAi0QkJIXAD4/Z/v//X15bXYPECMIMAMzMzMzMzMzMzMzMU1WLbCQMVldqCItFKP/Qi1wkKIv4i8u4AQAAANPgvgEAAACLTCQsSNPmiUQkKI0E9QAAAABQi0Uo/9CJRwQzyY1G/4PK/4kHhcB4I41kJACLRwRmiVTIAotHBMYEyACLRwTHRMgEAAAAAEE7D37hM+05bCQgfmmLdCQc6wONSQAPtgQuO8N+UYtEJBiLBKiLyCNMJCg7TCQkdT6Ly9P4Iwc7B380i08EZolswQKLTwQPthQuK9ONNMEPtg47yn0CiBaLdCQcugEAAAAPtgwuK8vT4gPCOwd+zEU7bCQgfKAz9jk3fGeLVCQsi2wkHIv/" & _
+    "i0cEjQzwD7YBO8J+S4PI/2aJQQKLRwSNDPAPtgErwoP4B34FuAcAAABQjQQTiBFQi8uLxtPgC0QkLFD/dCQsVf90JCz/dCQs6MP+//+LTwSLVCQsiUTxBEY7N36ji8dfXl1bwhwAzMzMzMzMzMzMzIHsBAUAADPAM9JVi6wkFAUAAIlUJASJRCQMiUQkEIlEJBSJRCQYiUQkHIlEJCCJRCQkiUQkKIlEJCyJRCQwiUQkNIlEJDiJRCQ8iUQkQIlEJERWi7QkFAUAAIXtfhmL/w+2DDD/RIwMO9F9AovRQDvFfO2JVCQIM9IzyesDjUkAiVQMUANUDBCDwQQD0oP5PHzuVzP/he1+SVONnCSUAAAAD7Y0N8cDAAAAAItUtFSNQgGJRLRUhfZ0GDPAjWQkAIvKA8CD4QHR+gvBg+4BdfCJA4u0JBwFAABHg8MEO/18wFuLRCQMX4P4CXwFuAkAAABQagBqAFX/tCQkBQAAjYQkoAAAAFCLhCQoBQAA/zDo" & _
+    "jP3//15dgcQEBQAAwgwAzItEJAxWi3QkDItOENPgCUYMi0QkFAPBiUYQg/gIfDlXi3wkDItGCDlGBHwPA8BQ/zaJRgiLRyz/0IkGi1YEiw6KRgyIBAr/RgTBbgwIg0YQ+IN+EAh9zV9ewhAAVYvsiwCAQMAgoGDgEJBQ0DCwcPAIiEjIKKho6BiYWNg4uHj4BIRExCSkZOQUlFTUNLR09AyMTMwsrGzsHJxc3Dy8fPwCgkLCIqJi4hKSUtIysnLyCopKyiqqauoamlraOrp6+gaGRsYmpmbmFpZW1ja2dvYOjk7OLq5u7h6eXt4+vn7+AYFBwSGhYeERkVHRMbFx8QmJSckpqWnpGZlZ2Tm5efkFhUXFJaVl5RWVVdU1tXX1DY1NzS2tbe0dnV3dPb19/QODQ8Mjo2PjE5NT0zOzc/MLi0vLK6tr6xubW9s7u3v7B4dHxyenZ+cXl1fXN7d39w+PT88vr2/vH59f3z+/f/8BAQAAAwAAAAMAAAACAQAA" & _
+    "BAAAAAQAAAADAQAABQAAAAUAAAAEAQAABgAAAAYAAAAFAQAABwAAAAcAAAAGAQAACAAAAAgAAAAHAQAACQAAAAkAAAAIAQAACgAAAAoAAAAJAQEACwAAAAwAAAAKAQEADQAAAA4AAAALAQEADwAAABAAAAAMAQEAEQAAABIAAAANAQIAEwAAABYAAAAOAQIAFwAAABoAAAAPAQIAGwAAAB4AAAAQAQIAHwAAACIAAAARAQMAIwAAACoAAAASAQMAKwAAADIAAAATAQMAMwAAADoAAAAUAQMAOwAAAEIAAAAVAQQAQwAAAFIAAAAWAQQAUwAAAGIAAAAXAQQAYwAAAHIAAAAYAQQAcwAAAIIAAAAZAQUAgwAAAKIAAAAaAQUAowAAAMIAAAAbAQUAwwAAAOIAAAAcAQUA4wAAAAEBAAAdAQAAAgEAAAIBAAAQERIACAcJBgoFCwQMAw0CDgEPAAAAAAABAAAAAQAAAAEAAAACAAAAAgAAAAIAAAADAAAA" & _
+    "AwAAAAMAAAAEAAAABAAAAAQAAQAFAAAABgAAAAUAAQAHAAAACAAAAAYAAgAJAAAADAAAAAcAAgANAAAAEAAAAAgAAwARAAAAGAAAAAkAAwAZAAAAIAAAAAoABAAhAAAAMAAAAAsABAAxAAAAQAAAAAwABQBBAAAAYAAAAA0ABQBhAAAAgAAAAA4ABgCBAAAAwAAAAA8ABgDBAAAAAAEAABAABwABAQAAgAEAABEABwCBAQAAAAIAABIACAABAgAAAAMAABMACAABAwAAAAQAABQACQABBAAAAAYAABUACQABBgAAAAgAABYACgABCAAAAAwAABcACgABDAAAABAAABgACwABEAAAABgAABkACwABGAAAACAAABoADAABIAAAADAAABsADAABMAAAAEAAABwADQABQAAAAGAAAB0ADQABYAAAAIAAAA=="
+Private Const STR_THUNK_OFFSETS As String = "592|656|704|784|800|912|0|288|368|416|0|0|0|6896|7264|6640|7244"
+Private Const STR_THUNK_BUILDDATE As String = "12.1.2018 17:15:52"
 ' end of generated code
 
 '=========================================================================
@@ -102,6 +101,20 @@ Private Const FORMAT_MESSAGE_IGNORE_INSERTS As Long = &H200
 Private Const INVALID_SET_FILE_POINTER      As Long = -1
 '--- for CryptStringToBinary
 Private Const CRYPT_STRING_BASE64           As Long = 1
+'--- for CNG
+Private Const MS_PRIMITIVE_PROVIDER         As String = "Microsoft Primitive Provider"
+Private Const BCRYPT_SHA1_ALGORITHM         As String = "SHA1"
+Private Const BCRYPT_AES_ALGORITHM          As String = "AES"
+Private Const BCRYPT_HASH_LENGTH            As String = "HashDigestLength"
+Private Const BCRYPT_OBJECT_LENGTH          As String = "ObjectLength"
+Private Const BCRYPT_CHAINING_MODE          As String = "ChainingMode"
+Private Const BCRYPT_CHAIN_MODE_ECB         As String = "ChainingModeECB"
+Private Const BCRYPT_ALG_HANDLE_HMAC_FLAG   As Long = 8
+Private Const BCRYPT_HASH_REUSABLE_FLAG     As Long = &H20
+'--- for GetStdHandle
+Private Const STD_INPUT_HANDLE              As Long = -10&
+Private Const STD_OUTPUT_HANDLE             As Long = -11&
+Private Const STD_ERROR_HANDLE              As Long = -12&
 
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 Private Declare Function FindFirstFile Lib "kernel32" Alias "FindFirstFileA" (ByVal lpFileName As String, lpFindFileData As WIN32_FIND_DATA) As Long
@@ -123,6 +136,7 @@ Private Declare Function CallWindowProc Lib "user32" Alias "CallWindowProcA" (By
 Private Declare Sub CoTaskMemFree Lib "ole32" (ByVal pv As Long)
 Private Declare Function MultiByteToWideChar Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, lpMultiByteStr As Any, ByVal cbMultiByte As Long, lpWideCharStr As Any, ByVal cchWideChar As Long) As Long
 Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As Long, ByVal cchWideChar As Long, ByVal lpMultiByteStr As Long, ByVal cchMultiByte As Long, ByVal lpDefaultChar As Long, ByVal lpUsedDefaultChar As Long) As Long
+Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) As Long
 #If ImplCompress Then
     Private Declare Function FileTimeToDosDateTime Lib "kernel32" (lpFileTime As FILETIME, ByVal lpFatDate As Long, ByVal lpFatTime As Long) As Long
     Private Declare Function ApiEmptyByteArray Lib "oleaut32" Alias "SafeArrayCreateVector" (Optional ByVal VarType As VbVarType = vbByte, Optional ByVal Low As Long = 0, Optional ByVal Count As Long = 0) As Byte()
@@ -131,14 +145,27 @@ Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As L
 #If ImplDecompress Then
     Private Declare Function DosDateTimeToFileTime Lib "kernel32" (ByVal wFatDate As Long, ByVal wFatTime As Long, lpFileTime As FILETIME) As Long
 #End If ' ImplDecompress
+#If ImplCrypto Then
+    Private Declare Function CoCreateGuid Lib "ole32" (pguid As Any) As Long
+    Private Declare Function BCryptOpenAlgorithmProvider Lib "bcrypt" (phAlgorithm As Long, ByVal pszAlgId As Long, ByVal pszImplementation As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptCloseAlgorithmProvider Lib "bcrypt" (ByVal hAlgorithm As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptGetProperty Lib "bcrypt" (ByVal hObject As Long, ByVal pszProperty As Long, pbOutput As Any, ByVal cbOutput As Long, cbResult As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptSetProperty Lib "bcrypt" (ByVal hObject As Long, ByVal pszProperty As Long, ByVal pbInput As Long, ByVal cbInput As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptGenerateSymmetricKey Lib "bcrypt" (ByVal hAlgorithm As Long, phKey As Long, pbKeyObject As Any, ByVal cbKeyObject As Long, pbSecret As Any, ByVal cbSecret As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptDestroyKey Lib "bcrypt" (ByVal hKey As Long) As Long
+    Private Declare Function BCryptEncrypt Lib "bcrypt" (ByVal hKey As Long, pbInput As Any, ByVal cbInput As Long, ByVal pPaddingInfo As Long, ByVal pbIV As Long, ByVal cbIV As Long, pbOutput As Any, ByVal cbOutput As Long, pcbResult As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptDeriveKeyPBKDF2 Lib "bcrypt" (ByVal pPrf As Long, pbPassword As Any, ByVal cbPassword As Long, pbSalt As Any, ByVal cbSalt As Long, ByVal cIterations As Long, ByVal dwDummy As Long, pbDerivedKey As Any, ByVal cbDerivedKey As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptCreateHash Lib "bcrypt" (ByVal hAlgorithm As Long, phHash As Long, ByVal pbHashObject As Long, ByVal cbHashObject As Long, pbSecret As Any, ByVal cbSecret As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptDestroyHash Lib "bcrypt" (ByVal hHash As Long) As Long
+    Private Declare Function BCryptHashData Lib "bcrypt" (ByVal hHash As Long, pbInput As Any, ByVal cbInput As Long, ByVal dwFlags As Long) As Long
+    Private Declare Function BCryptFinishHash Lib "bcrypt" (ByVal hHash As Long, pbOutput As Any, ByVal cbOutput As Long, ByVal dwFlags As Long) As Long
+#End If ' ImplCrypto
 #If ImplUseShared = 0 Then
     Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageA" (ByVal dwFlags As Long, lpSource As Long, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As String, ByVal nSize As Long, Args As Any) As Long
     Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
     Private Declare Function CreateDirectory Lib "kernel32" Alias "CreateDirectoryA" (ByVal lpPathName As String, ByVal lpSecurityAttributes As Long) As Long
-#End If ' Not ImplUseShared
-#If ImplUseApiForBase64 Then
     Private Declare Function CryptStringToBinary Lib "crypt32" Alias "CryptStringToBinaryW" (ByVal pszString As Long, ByVal cchString As Long, ByVal dwFlags As Long, ByVal pbBinary As Long, ByRef pcbBinary As Long, ByRef pdwSkip As Long, ByRef pdwFlags As Long) As Long
-#End If ' ImplUseApiForBase64
+#End If ' Not ImplUseShared
 
 Private Type FILETIME
     dwLowDateTime       As Long
@@ -176,6 +203,7 @@ End Type
 Private Const LNG_SIG_LOCAL         As Long = &H4034B50
 Private Const LNG_SIG_CENTRAL       As Long = &H2014B50
 Private Const LNG_SIG_END           As Long = &H6054B50
+Private Const LNG_SIG_DATADESC      As Long = &H7064B50
 Private Const LNG_LEN_LOCAL         As Long = 30
 Private Const LNG_LEN_CENTRAL       As Long = 46
 Private Const LNG_LEN_END           As Long = 22
@@ -191,8 +219,9 @@ Private Const LNG_EXTRADATA_AES_SIZE As Long = 11
 Private Const LNG_EXTRADATA_AE_2_MAXSIZE As Long = 20
 Private Const LNG_ENC_HEADER_SIZE   As Long = 12
 Private Const LNG_AES_AUTHCODE_SIZE As Long = 10
-Private Const LNG_AES256_SALT_SIZE  As Long = 16
-Private Const LNG_AES256_KEY_SIZE   As Long = 32
+Private Const LNG_AES_BLOCK_SIZE    As Long = 16
+Private Const LNG_DEF_ENCR_STRENGTH As Long = 0
+Private Const LNG_PIPE_ENDED_ERROR  As Long = 109
 Private Const ERR_USER_CANCEL       As String = "User cancelled"
 Private Const ERR_INIT_COMPRESSOR   As String = "Cannot init deflate compressor"
 Private Const ERR_COMPRESSING       As String = "Error compressing"
@@ -227,7 +256,7 @@ Private m_lCurrentFile          As Long
     Private m_vArchiveFile      As Variant
 #End If ' ImplDecompress
 #If ImplCrypto Then
-    Private m_oCrypto           As cZipCrypto
+    Private m_uCrypto           As UcsZipCryptoType
 #End If ' ImplCrypto
 
 Private Type UcsVfsFileType
@@ -249,6 +278,9 @@ Private Type UcsZlibRelocTableType
     DecompressCleanup   As Long
     DecompressBlock     As Long
     CalcCrc32           As Long
+    MemNonce            As Long
+    MemXor              As Long
+    ZipCrypt            As Long
     MallocImpl          As Long
     ReallocImpl         As Long
     FreeImpl            As Long
@@ -278,6 +310,9 @@ Private Enum UcsRelocIndexesEnum
     ucsIdx_DecompressCleanup
     ucsIdx_DecompressBlock
     ucsIdx_CalcCrc32
+    ucsIdx_MemNonce
+    ucsIdx_MemXor
+    ucsIdx_ZipCrypt
     ucsIdx_MallocImpl
     ucsIdx_ReallocImpl
     ucsIdx_FreeImpl
@@ -288,69 +323,69 @@ Private Enum UcsRelocIndexesEnum
 End Enum
 
 Private Enum UcsHeaderFlagsEnum
-    ucsZcfEncrypted = 2 ^ 0                     ' If set, indicates that the file is encrypted
-    ucsZcfCompressOptionMask = 2 ^ 1 Or 2 ^ 2   ' 0 - normal, 1 - maximum, 2 - fast, 3 - super fast
-    ucsZcfHasDataDescriptor = 2 ^ 3             ' Values are put in the data descriptor immediately following the compressed data
-    ucsZcfStrongEncrypted = 2 ^ 6               ' Strong encryption
-    ucsZcfUseUtf8 = 2 ^ 11                      ' Language encoding flag (EFS)
+    ucsZcfEncrypted = 2 ^ 0                         ' If set, indicates that the file is encrypted
+    ucsZcfCompressOptionMask = 2 ^ 1 Or 2 ^ 2       ' 0 - normal, 1 - maximum, 2 - fast, 3 - super fast
+    ucsZcfHasDataDescriptor = 2 ^ 3                 ' Values are put in the data descriptor immediately following the compressed data
+    ucsZcfStrongEncrypted = 2 ^ 6                   ' Strong encryption
+    ucsZcfUseUtf8 = 2 ^ 11                          ' Language encoding flag (EFS)
 End Enum
 
 Private Type UcsLocalHeaderType
-    Signature       As Long                     'Signature
-    VerExt          As Integer                  'version needed to extract
-    Flags           As Integer                  'encrypt and compression flags
-    Method          As Integer                  'compression method
-    FTime           As Integer                  'time last modifies, dos format
-    FDate           As Integer                  'date last modifies, dos format
+    Signature           As Long                     ' Signature
+    VerExt              As Integer                  ' version needed to extract
+    Flags               As Integer                  ' encrypt and compression flags
+    Method              As Integer                  ' compression method
+    FTime               As Integer                  ' time last modifies, dos format
+    FDate               As Integer                  ' date last modifies, dos format
     '--- padding
-    Crc32           As Long                     'CRC32 for uncompressed file
-    CSize           As Long                     'compressed size
-    USize           As Long                     'uncompressed size
-    LenFname        As Integer                  'Length filename
-    LenExt          As Integer                  'Length for extra field
+    Crc32               As Long                     ' CRC32 for uncompressed file
+    CSize               As Long                     ' compressed size
+    USize               As Long                     ' uncompressed size
+    LenFname            As Integer                  ' Length filename
+    LenExt              As Integer                  ' Length for extra field
 End Type
 
 Private Type UcsCentralHeaderType
-    Signature       As Long                     'Signature
-    VerMade         As Integer                  'version made by
-    VerExt          As Integer                  'version needed to extract
-    Flags           As Integer                  'encrypt and compression flags
-    Method          As Integer                  'compression method
-    FTime           As Integer                  'time last modifies, dos format
-    FDate           As Integer                  'date last modifies, dos format
+    Signature           As Long                     ' Signature
+    VerMade             As Integer                  ' version made by
+    VerExt              As Integer                  ' version needed to extract
+    Flags               As Integer                  ' encrypt and compression flags
+    Method              As Integer                  ' compression method
+    FTime               As Integer                  ' time last modifies, dos format
+    FDate               As Integer                  ' date last modifies, dos format
     '--- padding
-    Crc32           As Long                     'CRC32 for uncompressed file
-    CSize           As Long                     'compressed size
-    USize           As Long                     'uncompressed size
-    LenFname        As Integer                  'Length filename
-    LenExt          As Integer                  'Length for extra field
-    LenCom          As Integer                  'Length for comment field
-    DiskStart       As Integer                  'start disk number
-    AttribI         As Integer                  'internal file attributes
+    Crc32               As Long                     ' CRC32 for uncompressed file
+    CSize               As Long                     ' compressed size
+    USize               As Long                     ' uncompressed size
+    LenFname            As Integer                  ' Length filename
+    LenExt              As Integer                  ' Length for extra field
+    LenCom              As Integer                  ' Length for comment field
+    DiskStart           As Integer                  ' start disk number
+    AttribI             As Integer                  ' internal file attributes
     '--- padding
-    AttribX         As Long                     'external file attributes
-    Offset          As Long                     'relative offset of local header
+    AttribX             As Long                     ' external file attributes
+    Offset              As Long                     ' relative offset of local header
 End Type
 
 Private Type UcsEndHeaderType
-    Signature       As Long                     'Signature
-    DiskNum         As Integer                  'this disk number
-    DiskStart       As Integer                  'start disk number
-    Entries         As Integer                  'Entries on this disk
-    TotEntr         As Integer                  'Number of total entries
-    CenSize         As Long                     'size of entire cetral directory
-    CenOff          As Long                     'offset of central on starting disk
-    LenCom          As Integer                  'Length of comment field
+    Signature           As Long                     ' Signature
+    DiskNum             As Integer                  ' This disk number
+    DiskStart           As Integer                  ' Start disk number
+    Entries             As Integer                  ' Entries on this disk
+    TotEntr             As Integer                  ' Number of total entries
+    CenSize             As Long                     ' Size of entire cetral directory
+    CenOff              As Long                     ' Offset of central on starting disk
+    LenCom              As Integer                  ' Length of comment field
 End Type
 
 Private Type UcsAesExtraDataType
-    HeaderId        As Integer
-    Size            As Integer
-    Version         As Integer
-    VendorId        As Integer
-    Strength        As Byte
+    HeaderId            As Integer                  ' Extra field header ID (0x9901)
+    Size                As Integer                  ' Data size (currently 7, but subject to possible increase in the future)
+    Version             As Integer                  ' Integer version number specific to the zip vendor
+    VendorId            As Integer                  ' 2-character vendor ID
+    Strength            As Byte                     ' Integer mode value indicating AES encryption strength
     '--- padding
-    Method          As Integer
+    Method              As Integer                  ' The actual compression method used to compress the file
 End Type
 
 Private Type UcsFileInfo
@@ -368,8 +403,24 @@ Private Type UcsFileInfo
     SourceFile          As Variant
     #If ImplCrypto Then
         Aes             As UcsAesExtraDataType
+        DecDat          As Byte
         Password        As String
     #End If ' ImplCrypto
+End Type
+
+Private Type UcsZipCryptoType
+    hPbkdf2Alg          As Long
+    hHmacAlg            As Long
+    hHmacHash           As Long
+    HmacHashLen         As Long
+    hAesAlg             As Long
+    hAesKey             As Long
+    AesKeyObjData()     As Byte
+    AesKeyObjLen        As Long
+    Nonce(0 To 1)       As Long
+    EncrData()          As Byte
+    EncrPos             As Long
+    TradKey(0 To 3)     As Long
 End Type
 
 '=========================================================================
@@ -377,7 +428,7 @@ End Type
 '=========================================================================
 
 Property Get SemVersion() As String
-    SemVersion = "0.2"
+    SemVersion = "0.2.3"
 End Property
 
 Property Get ThunkBuildDate() As String
@@ -418,7 +469,8 @@ Public Function AddFile( _
             File As Variant, _
             Optional Name As String, _
             Optional Comment As String, _
-            Optional Password As String) As Boolean
+            Optional Password As String, _
+            Optional EncrStrength As Long = LNG_DEF_ENCR_STRENGTH) As Boolean
     Const FUNC_NAME     As String = "AddFile"
     Dim uFile           As UcsVfsFileType
     
@@ -441,9 +493,15 @@ Public Function AddFile( _
         .Comment = Comment
         .LastModified = pvFromFileTime(uFile.Data.ftLastWriteTime)
         .Extra = vbNullString
-        AssignVariant .SourceFile, File
+        If IsObject(File) Then
+            '--- remove VT_BYREF if any
+            Set .SourceFile = C_Obj(File)
+        Else
+            .SourceFile = File
+        End If
         #If ImplCrypto Then
             .Password = Password
+            .Aes.Strength = EncrStrength
         #End If
     End With
     m_lFileCount = m_lFileCount + 1
@@ -454,7 +512,7 @@ QH:
     pvVfsClose uFile
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 End Function
 
@@ -475,6 +533,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
     Dim uEndHdr         As UcsEndHeaderType
     Dim lEntries        As Long
     #If ImplCrypto Then
+        Dim lSaltSize   As Long
         Dim baSalt()    As Byte
         Dim nPassVer    As Integer
         Dim lJdx        As Long
@@ -507,24 +566,39 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
-                    If m_oCrypto Is Nothing Then
-                        Set m_oCrypto = New cZipCrypto
+                    uLocal.Flags = uLocal.Flags Or ucsZcfEncrypted
+                    If .Aes.Strength = 0 Then
+                        uLocal.Flags = uLocal.Flags Or ucsZcfHasDataDescriptor
+                        If Not pvCryptoTradInit(ToUtf8Array(.Password)) Then
+                            Err.Raise vbObjectError, , m_sLastError
+                        End If
+                        '--- encrypt 12-byte random header w/ last byte used for password check
+                        baSalt = pvCryptoAesGetRandomSalt(LNG_ENC_HEADER_SIZE)
+                        Call CopyMemory(baSalt(LNG_ENC_HEADER_SIZE - 1), ByVal UnsignedAdd(VarPtr(uLocal.FDate), -1), 1)
+                        If Not pvCryptoTradCrypt(baSalt) Then
+                            Err.Raise vbObjectError, , m_sLastError
+                        End If
+                    Else
+                        lSaltSize = (.Aes.Strength + 1) * 4
+                        baSalt = pvCryptoAesGetRandomSalt(lSaltSize)
+                        If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, lSaltSize * 2, nPassVer) Then
+                            Err.Raise vbObjectError, , m_sLastError
+                        End If
+                        '--- reserve space in extra data for AE-1/2
+                        lJdx = UBound(.Extra) + 1
+                        ReDim Preserve .Extra(0 To lJdx + LNG_EXTRADATA_AES_SIZE - 1) As Byte
                     End If
-                    baSalt = m_oCrypto.CryptoAesRandomSalt(LNG_AES256_SALT_SIZE)
-                    If Not m_oCrypto.CryptoAesInit(ToUtf8Array(.Password), baSalt, LNG_AES256_KEY_SIZE, nPassVer) Then
-                        Err.Raise vbObjectError, , m_oCrypto.LastError
-                    End If
-                    '--- reserve space in extra data for AE-1/2
-                    lJdx = UBound(.Extra) + 1
-                    ReDim Preserve .Extra(0 To lJdx + LNG_EXTRADATA_AES_SIZE - 1) As Byte
                 End If
             #End If
             pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
-                    '--- prepend salt and password verification value before file data
-                    pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES256_SALT_SIZE
-                    pvVfsWrite uArchiveFile, VarPtr(nPassVer), 2
+                    '--- prepend salt/enc_header before file data
+                    pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), UBound(baSalt) + 1
+                    If .Aes.Strength > 0 Then
+                        '--- prepend Password Verification Value for AES
+                        pvVfsWrite uArchiveFile, VarPtr(nPassVer), 2
+                    End If
                 End If
             #End If
             lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
@@ -551,8 +625,14 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                                     ReDim baBuffer(0 To (uBuf.OutLen And -2048) + 2047) As Byte
                                 End If
                                 Call CopyMemory(baBuffer(0), ByVal uBuf.OutBlock, uBuf.OutLen)
-                                If Not m_oCrypto.CryptoAesEncrypt(baBuffer, Size:=uBuf.OutLen) Then
-                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                If .Aes.Strength = 0 Then
+                                    If Not pvCryptoTradCrypt(baBuffer, Size:=uBuf.OutLen) Then
+                                        Err.Raise vbObjectError, , m_sLastError
+                                    End If
+                                Else
+                                    If Not pvCryptoAesCrypt(baBuffer, Size:=uBuf.OutLen, HashAfter:=True) Then
+                                        Err.Raise vbObjectError, , m_sLastError
+                                    End If
                                 End If
                                 pvVfsWrite uArchiveFile, VarPtr(baBuffer(0)), uBuf.OutLen
                                 Call CoTaskMemFree(uBuf.OutBlock)
@@ -589,6 +669,19 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                     uLocal.Crc32 = -1
                     uLocal.USize = 0
                     uLocal.CSize = 0
+                    #If ImplCrypto Then
+                        If LenB(.Password) <> 0 Then
+                            If .Aes.Strength = 0 Then
+                                If Not pvCryptoTradInit(ToUtf8Array(.Password)) Then
+                                    Err.Raise vbObjectError, , m_sLastError
+                                End If
+                            Else
+                                If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, lSaltSize * 2, nPassVer) Then
+                                    Err.Raise vbObjectError, , m_sLastError
+                                End If
+                            End If
+                        End If
+                    #End If
                     Do
                         RaiseEvent Progress(lIdx, uLocal.USize, .Size, m_bCancel)
                         If m_bCancel Then
@@ -602,8 +695,14 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                         Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), VarPtr(baBuffer(0)), lSize, VarPtr(uLocal.Crc32))
                         #If ImplCrypto Then
                             If LenB(.Password) <> 0 Then
-                                If Not m_oCrypto.CryptoAesEncrypt(baBuffer, Size:=lSize) Then
-                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                If .Aes.Strength = 0 Then
+                                    If Not pvCryptoTradCrypt(baBuffer, Size:=lSize) Then
+                                        Err.Raise vbObjectError, , m_sLastError
+                                    End If
+                                Else
+                                    If Not pvCryptoAesCrypt(baBuffer, Size:=lSize, HashAfter:=True) Then
+                                        Err.Raise vbObjectError, , m_sLastError
+                                    End If
                                 End If
                             End If
                         #End If
@@ -617,39 +716,50 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.Crc32 = uLocal.Crc32 Xor -1
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
-                    '--- append HMAC SHA1 authetication code after file data
-                    baSalt = m_oCrypto.CryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)
-                    pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES_AUTHCODE_SIZE
-                    '--- update AE-1/2 in extra data
-                    uAes.HeaderId = LNG_EXTRADATA_AES_HEADER
-                    uAes.Size = LNG_EXTRADATA_AES_SIZE - 4
-                    uAes.Version = IIf(.Size <= LNG_EXTRADATA_AE_2_MAXSIZE, 2, 1)
-                    uAes.VendorId = LNG_EXTRADATA_AES_VENDOR
-                    uAes.Strength = LNG_AES256_KEY_SIZE / 8 - 1
-                    uAes.Method = uLocal.Method
-                    lJdx = UBound(.Extra) + 1 - LNG_EXTRADATA_AES_SIZE
-                    Debug.Assert VarPtr(uAes.Strength) + 1 - VarPtr(uAes) = 9
-                    Call CopyMemory(.Extra(lJdx), uAes, 9)
-                    Call CopyMemory(.Extra(lJdx + 9), uAes.Method, 2)
-                    '--- update local header
-                    uLocal.Flags = uLocal.Flags Or ucsZcfEncrypted
-                    uLocal.Method = LNG_METHOD_AES
-                    uLocal.CSize = uLocal.CSize + LNG_AES256_SALT_SIZE + 2 + LNG_AES_AUTHCODE_SIZE
-                    If uAes.Version = 2 Then
-                        uLocal.Crc32 = 0
+                    If .Aes.Strength = 0 Then
+                        uLocal.CSize = uLocal.CSize + LNG_ENC_HEADER_SIZE
+                    Else
+                        '--- append HMAC SHA1 authetication code after file data
+                        baSalt = pvCryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)
+                        pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES_AUTHCODE_SIZE
+                        '--- update AE-1/2 in extra data
+                        uAes.HeaderId = LNG_EXTRADATA_AES_HEADER
+                        uAes.Size = LNG_EXTRADATA_AES_SIZE - 4
+                        uAes.Version = IIf(.Size <= LNG_EXTRADATA_AE_2_MAXSIZE, 2, 1)
+                        uAes.VendorId = LNG_EXTRADATA_AES_VENDOR
+                        uAes.Strength = lSaltSize / 4 - 1
+                        uAes.Method = uLocal.Method
+                        lJdx = UBound(.Extra) + 1 - LNG_EXTRADATA_AES_SIZE
+                        Debug.Assert VarPtr(uAes.Strength) + 1 - VarPtr(uAes) = 9
+                        Call CopyMemory(.Extra(lJdx), uAes, 9)
+                        Call CopyMemory(.Extra(lJdx + 9), uAes.Method, 2)
+                        '--- update local header
+                        uLocal.Method = LNG_METHOD_AES
+                        uLocal.CSize = uLocal.CSize + lSaltSize + 2 + LNG_AES_AUTHCODE_SIZE
+                        If uAes.Version = 2 Then
+                            uLocal.Crc32 = 0
+                        End If
                     End If
                 End If
             #End If
-            lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
-            pvVfsSeek uArchiveFile, .Offset, FILE_BEGIN
-            pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
-            pvVfsSeek uArchiveFile, lBeginOffset, FILE_BEGIN
             .Crc32 = uLocal.Crc32
             Debug.Assert .Size = uLocal.USize
             .Size = uLocal.USize
             .CompressedSize = uLocal.CSize
             .Method = uLocal.Method
             .Flags = uLocal.Flags
+            If (uLocal.Flags And ucsZcfHasDataDescriptor) <> 0 Then
+                lBeginOffset = LNG_SIG_DATADESC
+                pvVfsWrite uArchiveFile, VarPtr(lBeginOffset), 4
+                pvVfsWrite uArchiveFile, VarPtr(uLocal.Crc32), 12
+                uLocal.Crc32 = 0
+                uLocal.CSize = 0
+                uLocal.USize = 0
+            End If
+            lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
+            pvVfsSeek uArchiveFile, .Offset, FILE_BEGIN
+            pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
+            pvVfsSeek uArchiveFile, lBeginOffset, FILE_BEGIN
             If False Then
 SkipFile:
                 On Error GoTo EH
@@ -712,10 +822,10 @@ QH:
     pvVfsClose uArchiveFile
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 EH_Continue:
-    If pvSetError(MODULE_NAME & "." & FUNC_NAME, Err.Description, CanContinue:=True) Then
+    If pvSetError(MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description, CanContinue:=True) Then
         Resume QH
     Else
         Resume SkipFile
@@ -727,7 +837,8 @@ Public Function AddFromFolder( _
             Optional Recursive As Boolean, _
             Optional TargetFolder As String, _
             Optional IncludeEmptyFolders As Boolean, _
-            Optional Password As String) As Boolean
+            Optional Password As String, _
+            Optional EncrStrength As Long = LNG_DEF_ENCR_STRENGTH) As Boolean
     Const FUNC_NAME     As String = "AddFromFolder"
     Dim lIdx            As Long
     Dim sFolder         As String
@@ -755,7 +866,7 @@ Public Function AddFromFolder( _
         cFolders.Remove 1
         lIdx = 0
         For Each vElem In pvEnumFiles(sFolder, sMask, -vbDirectory)
-            If AddFile(vElem, PathCombine(TargetFolder, Mid$(vElem, lRootOffset + 2)), Password:=Password) Then
+            If AddFile(vElem, PathCombine(TargetFolder, Mid$(vElem, lRootOffset + 2)), Password:=Password, EncrStrength:=EncrStrength) Then
                 lIdx = lIdx + 1
                 '--- success (entries added)
                 AddFromFolder = True
@@ -764,7 +875,7 @@ Public Function AddFromFolder( _
         If lIdx = 0 And IncludeEmptyFolders Then
             sName = PathCombine(TargetFolder, Mid$(sFolder, lRootOffset + 2))
             If LenB(sName) <> 0 Then
-                If AddFile(sFolder & "\", sName & "\", Password:=Password) Then
+                If AddFile(sFolder & "\", sName & "\", Password:=Password, EncrStrength:=EncrStrength) Then
                     '--- success (entries added)
                     AddFromFolder = True
                 End If
@@ -779,7 +890,7 @@ Public Function AddFromFolder( _
 QH:
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 End Function
 
@@ -795,7 +906,7 @@ Private Function pvEnumFiles(sFolder As String, sMask As String, ByVal eAttrib A
     If hFind = INVALID_HANDLE_VALUE Then
         If Err.LastDllError <> 2 Then
             On Error GoTo 0
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & sFile & ")"
+            Err.Raise vbObjectError, "pvEnumFiles", GetSystemMessage(Err.LastDllError) & " (" & sFile & ")"
         End If
     Else
         Do
@@ -1005,22 +1116,30 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                 .Comment = pvFromOemString(baComment, lCodePage)
             End If
             #If ImplCrypto Then
-                If (.Flags And ucsZcfEncrypted) <> 0 And .Method = LNG_METHOD_AES Then
-                    Dim lJdx            As Long
-                    lJdx = 0
-                    Do While lJdx + 10 <= UBound(baExtra)
-                        If PeekInt(VarPtr(baExtra(lJdx))) = LNG_EXTRADATA_AES_HEADER Then
-                            If PeekInt(VarPtr(baExtra(lJdx + 2))) >= LNG_EXTRADATA_AES_SIZE - 4 Then
-                                Debug.Assert VarPtr(.Aes.Strength) + 1 - VarPtr(.Aes) = 9
-                                Call CopyMemory(.Aes, baExtra(lJdx), 9)
-                                Call CopyMemory(.Aes.Method, baExtra(lJdx + 9), 2)
-                                .Method = .Aes.Method
+                If (.Flags And ucsZcfEncrypted) <> 0 Then
+                    If .Method = LNG_METHOD_AES Then
+                        Dim lJdx            As Long
+                        lJdx = 0
+                        Do While lJdx + 10 <= UBound(baExtra)
+                            If PeekInt(VarPtr(baExtra(lJdx))) = LNG_EXTRADATA_AES_HEADER Then
+                                If PeekInt(VarPtr(baExtra(lJdx + 2))) >= LNG_EXTRADATA_AES_SIZE - 4 Then
+                                    Debug.Assert VarPtr(.Aes.Strength) + 1 - VarPtr(.Aes) = 9
+                                    Call CopyMemory(.Aes, baExtra(lJdx), 9)
+                                    Call CopyMemory(.Aes.Method, baExtra(lJdx + 9), 2)
+                                    .Method = .Aes.Method
+                                End If
+                                Exit Do
+                            Else
+                                lJdx = lJdx + PeekInt(VarPtr(baExtra(lJdx + 2))) + 4
                             End If
-                            Exit Do
-                        Else
-                            lJdx = lJdx + PeekInt(VarPtr(baExtra(lJdx + 2))) + 4
-                        End If
-                    Loop
+                        Loop
+                    End If
+                    '--- store for traditional ZipCrypt password check
+                    If (.Flags And ucsZcfHasDataDescriptor) <> 0 Then
+                        Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.FDate), -1), 1)
+                    Else
+                        Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.CSize), -1), 1)
+                    End If
                 End If
             #End If ' ImplCrypto
         End With
@@ -1036,7 +1155,7 @@ QH:
     pvVfsClose uArchiveFile
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 End Function
 
@@ -1063,6 +1182,7 @@ Public Function Extract( _
     Dim bSkip           As Boolean
     Dim sFilter         As String
     #If ImplCrypto Then
+        Dim lSaltSize   As Long
         Dim baSalt()    As Byte
         Dim nPassVer    As Integer
     #End If ' ImplCrypto
@@ -1158,6 +1278,11 @@ Public Function Extract( _
                 pCrc32 = VarPtr(lCrc32)
                 lRead = 0
                 If (.Flags And ucsZcfEncrypted) <> 0 Then
+                    RaiseEvent Progress(lIdx, lRead, .CompressedSize, m_bCancel)
+                    If m_bCancel Then
+                        m_sLastError = ERR_USER_CANCEL
+                        GoTo QH
+                    End If
                     #If ImplCrypto Then
                         If (.Flags And ucsZcfStrongEncrypted) <> 0 Then
                             Err.Raise vbObjectError, , ERR_UNSUPPORTED_ENCRYPTION
@@ -1165,46 +1290,43 @@ Public Function Extract( _
                         If LenB(Password) = 0 Then
                             Err.Raise vbObjectError, , ERR_PASSWORD_REQUIRED
                         End If
-                        If m_oCrypto Is Nothing Then
-                            Set m_oCrypto = New cZipCrypto
-                        End If
                         If .Aes.Strength = 0 Then
                             '--- init traditional ZipCrypt
-                            lRead = LNG_ENC_HEADER_SIZE
-                            If Not m_oCrypto.CryptoTradInit(ToUtf8Array(Password)) Then
-                                Err.Raise vbObjectError, , m_oCrypto.LastError
+                            If Not pvCryptoTradInit(ToUtf8Array(Password)) Then
+                                Err.Raise vbObjectError, , m_sLastError
                             End If
                             lResult = pvVfsRead(uArchiveFile, VarPtr(baBuffer(0)), LNG_ENC_HEADER_SIZE)
                             If lResult = 0 Then
                                 Err.Raise vbObjectError, , ERR_READING_ARCHIVE
                             End If
-                            If Not m_oCrypto.CryptoTradDecrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE) Then
-                                Err.Raise vbObjectError, , m_oCrypto.LastError
+                            If Not pvCryptoTradCrypt(baBuffer, 0, LNG_ENC_HEADER_SIZE, UseAfter:=True) Then
+                                Err.Raise vbObjectError, , m_sLastError
                             End If
-                            If baBuffer(LNG_ENC_HEADER_SIZE - 1) <> (PeekInt(VarPtr(.Crc32) + 2) And &HFF00&) \ &H100 Then
+                            If baBuffer(LNG_ENC_HEADER_SIZE - 1) <> .DecDat Then
                                 Err.Raise vbObjectError, , ERR_INVALID_PASSWORD
                             End If
+                            lRead = LNG_ENC_HEADER_SIZE
                         Else
                             '--- init WinZip AES w/ ECB
-                            lRead = 4 + 4 * .Aes.Strength
-                            lResult = pvVfsRead(uArchiveFile, VarPtr(baBuffer(0)), lRead + 2)
-                            If lResult < lRead + 2 Then
+                            lSaltSize = (.Aes.Strength + 1) * 4
+                            lResult = pvVfsRead(uArchiveFile, VarPtr(baBuffer(0)), lSaltSize + 2)
+                            If lResult < lSaltSize + 2 Then
                                 Err.Raise vbObjectError, , ERR_READING_ARCHIVE
                             End If
-                            ReDim baSalt(0 To lRead - 1) As Byte
+                            ReDim baSalt(0 To lSaltSize - 1) As Byte
                             Call CopyMemory(baSalt(0), baBuffer(0), UBound(baSalt) + 1)
-                            If Not m_oCrypto.CryptoAesInit(ToUtf8Array(Password), baSalt, lRead * 2, nPassVer) Then
-                                Err.Raise vbObjectError, , m_oCrypto.LastError
+                            If Not pvCryptoAesInit(ToUtf8Array(Password), baSalt, lSaltSize * 2, nPassVer) Then
+                                Err.Raise vbObjectError, , m_sLastError
                             End If
-                            If nPassVer <> PeekInt(VarPtr(baBuffer(lRead))) Then
+                            If nPassVer <> PeekInt(VarPtr(baBuffer(lSaltSize))) Then
                                 Err.Raise vbObjectError, , ERR_INVALID_PASSWORD
                             End If
-                            '--- LNG_AES_AUTHCODE_SIZE is at the end of compressed data
-                            lRead = lRead + 2 + LNG_AES_AUTHCODE_SIZE
                             '-- don't calc CRC32 for AE-2
                             If .Aes.Version = 2 Then
                                 pCrc32 = 0
                             End If
+                            '--- note: LNG_AES_AUTHCODE_SIZE chunk comes after file data
+                            lRead = lSaltSize + 2 + LNG_AES_AUTHCODE_SIZE
                         End If
                     #Else
                         Err.Raise vbObjectError, , ERR_UNSUPPORTED_ENCRYPTION
@@ -1236,12 +1358,12 @@ Public Function Extract( _
                     #If ImplCrypto Then
                         If (.Flags And ucsZcfEncrypted) <> 0 Then
                             If .Aes.Strength = 0 Then
-                                If Not m_oCrypto.CryptoTradDecrypt(baBuffer, 0, lResult) Then
-                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                If Not pvCryptoTradCrypt(baBuffer, 0, lResult, UseAfter:=True) Then
+                                    Err.Raise vbObjectError, , m_sLastError
                                 End If
                             Else
-                                If Not m_oCrypto.CryptoAesDecrypt(baBuffer, 0, lResult) Then
-                                    Err.Raise vbObjectError, , m_oCrypto.LastError
+                                If Not pvCryptoAesCrypt(baBuffer, 0, lResult, HashBefore:=True) Then
+                                    Err.Raise vbObjectError, , m_sLastError
                                 End If
                             End If
                         End If
@@ -1273,7 +1395,7 @@ Public Function Extract( _
                         If lResult < LNG_AES_AUTHCODE_SIZE Then
                             Err.Raise vbObjectError, , ERR_READING_ARCHIVE
                         End If
-                        If CStr(baSalt) <> CStr(m_oCrypto.CryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)) Then
+                        If CStr(baSalt) <> CStr(pvCryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)) Then
                             Err.Raise vbObjectError, , ERR_INVALID_AUTHCODE
                         End If
                     End If
@@ -1324,10 +1446,10 @@ QH:
     pvVfsClose uFile
     Exit Function
 EH:
-    pvSetError MODULE_NAME & "." & FUNC_NAME, Err.Description
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 EH_Continue:
-    If pvSetError(MODULE_NAME & "." & FUNC_NAME, Err.Description, CanContinue:=True) Then
+    If pvSetError(MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description, CanContinue:=True) Then
         Resume QH
     Else
         Resume SkipFile
@@ -1348,26 +1470,219 @@ Private Function pvFromDosDateTime(ByVal nDate As Integer, ByVal nTime As Intege
 End Function
 
 Private Function pvToWinFileName(baBuffer() As Byte, ByVal lCodePage As Long) As String
-    '--- replaces non-ANSI symbols with underscore too
-    pvToWinFileName = Replace(Replace(StrConv(StrConv(pvFromOemString(baBuffer, lCodePage), _
-        vbFromUnicode), vbUnicode), "/", "\"), "?", "_")
+    Dim vSplit          As Variant
+    Dim lIdx            As Long
+    
+    '--- replaces non-ANSI symbols with '?' too
+    vSplit = Split(Replace(StrConv(StrConv(pvFromOemString(baBuffer, lCodePage), _
+        vbFromUnicode), vbUnicode), "/", "\"), "\")
+    For lIdx = 0 To UBound(vSplit)
+        vSplit(lIdx) = SanitizeFileName(CStr(vSplit(lIdx)), "_")
+    Next
+    pvToWinFileName = Join(vSplit, "\")
 End Function
 
 #End If ' ImplDecompress
 
-Private Function pvArrPtr(vArray As Variant) As Long
-    Const VT_BYREF      As Long = &H4000
-    Dim lPtr            As Long
+'= Crypto ================================================================
+
+#If ImplCrypto Then
+
+Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyLen As Long, nPassVer As Integer) As Boolean
+    Dim baDerivedKey()  As Byte
+    Dim lResult         As Long '--- discarded
     
-    '--- note: unsigned add for LARGEADDRESSAWARE processes
-    lPtr = Peek(((VarPtr(vArray) Xor &H80000000) + 8) Xor &H80000000)
-    If (Peek(VarPtr(vArray)) And VT_BYREF) <> 0 Then
-        lPtr = Peek(lPtr)
+    '--- init member vars
+    m_uCrypto.Nonce(0) = 0
+    m_uCrypto.Nonce(1) = 0
+    m_uCrypto.EncrData = vbNullString
+    m_uCrypto.EncrPos = 0
+    '--- generate RFC 2898 based derived key
+    If m_uCrypto.hPbkdf2Alg = 0 Then
+        '--- CNG API missing on XP
+        On Error GoTo EH_Unsupported
+        If BCryptOpenAlgorithmProvider(m_uCrypto.hPbkdf2Alg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG) <> 0 Then
+            GoTo QH
+        End If
+        On Error GoTo 0
     End If
-    If lPtr <> 0 Then
-        pvArrPtr = Peek(((lPtr Xor &H80000000) + 12) Xor &H80000000)
+    ReDim baDerivedKey(0 To 2 * lKeyLen + 1) As Byte
+    '--- PBKDF2 API missing on Vista
+    On Error GoTo EH_Unsupported
+    If BCryptDeriveKeyPBKDF2(m_uCrypto.hPbkdf2Alg, baPass(0), UBound(baPass) + 1, baSalt(0), UBound(baSalt) + 1, 1000, 0, baDerivedKey(0), UBound(baDerivedKey) + 1, 0) <> 0 Then
+        GoTo QH
     End If
+    On Error GoTo 0
+    '--- extract Password Verification Value from last 2 bytes of derived key
+    Call CopyMemory(nPassVer, baDerivedKey(2 * lKeyLen), 2)
+    '--- init AES w/ ECB from first half of derived key
+    If m_uCrypto.hAesAlg = 0 Then
+        If BCryptOpenAlgorithmProvider(m_uCrypto.hAesAlg, StrPtr(BCRYPT_AES_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), 0) <> 0 Then
+            GoTo QH
+        End If
+        If BCryptGetProperty(m_uCrypto.hAesAlg, StrPtr(BCRYPT_OBJECT_LENGTH), m_uCrypto.AesKeyObjLen, 4, lResult, 0) <> 0 Then
+            GoTo QH
+        End If
+        If BCryptSetProperty(m_uCrypto.hAesAlg, StrPtr(BCRYPT_CHAINING_MODE), StrPtr(BCRYPT_CHAIN_MODE_ECB), LenB(BCRYPT_CHAIN_MODE_ECB), 0) <> 0 Then
+            GoTo QH
+        End If
+    End If
+    If m_uCrypto.hAesKey <> 0 Then
+        Call BCryptDestroyKey(m_uCrypto.hAesKey)
+        m_uCrypto.hAesKey = 0
+    End If
+    ReDim m_uCrypto.AesKeyObjData(0 To m_uCrypto.AesKeyObjLen - 1) As Byte
+    If BCryptGenerateSymmetricKey(m_uCrypto.hAesAlg, m_uCrypto.hAesKey, m_uCrypto.AesKeyObjData(0), m_uCrypto.AesKeyObjLen, baDerivedKey(0), lKeyLen, 0) <> 0 Then
+        GoTo QH
+    End If
+    '-- init HMAC from second half of derived key
+    If m_uCrypto.hHmacAlg = 0 Then
+        If BCryptOpenAlgorithmProvider(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG) <> 0 Then
+            GoTo QH
+        End If
+        If BCryptGetProperty(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_HASH_LENGTH), m_uCrypto.HmacHashLen, 4, lResult, 0) <> 0 Then
+            GoTo QH
+        End If
+    End If
+    If m_uCrypto.hHmacHash <> 0 Then
+        Call BCryptDestroyHash(m_uCrypto.hHmacHash)
+        m_uCrypto.hHmacHash = 0
+    End If
+    If BCryptCreateHash(m_uCrypto.hHmacAlg, m_uCrypto.hHmacHash, 0, 0, baDerivedKey(lKeyLen), lKeyLen, BCRYPT_HASH_REUSABLE_FLAG) <> 0 Then
+        GoTo QH
+    End If
+    '--- success
+    pvCryptoAesInit = True
+    Exit Function
+QH:
+    m_sLastError = GetSystemMessage(Err.LastDllError)
+    Exit Function
+EH_Unsupported:
+    m_sLastError = ERR_UNSUPPORTED_ENCRYPTION
 End Function
+
+Private Sub pvCryptoTerminate()
+    If m_uCrypto.hPbkdf2Alg <> 0 Then
+        Call BCryptCloseAlgorithmProvider(m_uCrypto.hPbkdf2Alg, 0)
+        m_uCrypto.hPbkdf2Alg = 0
+    End If
+    If m_uCrypto.hHmacHash <> 0 Then
+        Call BCryptDestroyHash(m_uCrypto.hHmacHash)
+        m_uCrypto.hHmacHash = 0
+    End If
+    If m_uCrypto.hHmacAlg <> 0 Then
+        Call BCryptCloseAlgorithmProvider(m_uCrypto.hHmacAlg, 0)
+        m_uCrypto.hHmacAlg = 0
+    End If
+    If m_uCrypto.hAesKey <> 0 Then
+        Call BCryptDestroyKey(m_uCrypto.hAesKey)
+        m_uCrypto.hAesKey = 0
+    End If
+    If m_uCrypto.hAesAlg <> 0 Then
+        Call BCryptCloseAlgorithmProvider(m_uCrypto.hAesAlg, 0)
+        m_uCrypto.hAesAlg = 0
+    End If
+End Sub
+
+Private Function pvCryptoAesCrypt( _
+            baData() As Byte, _
+            Optional ByVal Offset As Long, _
+            Optional ByVal Size As Long, _
+            Optional ByVal HashBefore As Boolean, _
+            Optional ByVal HashAfter As Boolean) As Boolean
+    Dim lIdx            As Long
+    Dim lPadSize        As Long
+    Dim lResult         As Long '--- discarded
+    
+    If Size < 0 Then
+        Size = UBound(baData) + 1 - Offset
+    End If
+    If HashBefore Then
+        If BCryptHashData(m_uCrypto.hHmacHash, baData(Offset), Size, 0) <> 0 Then
+            GoTo QH
+        End If
+    End If
+    With m_uCrypto
+        '--- reuse EncrData from prev call until next LNG_AES_BLOCK_SIZE boundary
+        For lIdx = Offset To Offset + Size - 1
+            If (.EncrPos And (LNG_AES_BLOCK_SIZE - 1)) = 0 Then
+                Exit For
+            End If
+            baData(lIdx) = baData(lIdx) Xor .EncrData(.EncrPos)
+            .EncrPos = .EncrPos + 1
+        Next
+        If lIdx < Offset + Size Then
+            '--- pad remaining input size to LNG_AES_BLOCK_SIZE
+            lPadSize = (Offset + Size - lIdx + LNG_AES_BLOCK_SIZE - 1) And -LNG_AES_BLOCK_SIZE
+            If UBound(.EncrData) + 1 < lPadSize Then
+                ReDim .EncrData(0 To lPadSize - 1) As Byte
+            End If
+            '--- encrypt incremental nonces in EncrData
+            Call CallWindowProc(m_uRtbl.MemNonce, VarPtr(.EncrData(0)), VarPtr(.Nonce(0)), lPadSize)
+            If BCryptEncrypt(.hAesKey, .EncrData(0), lPadSize, 0, 0, 0, .EncrData(0), lPadSize, lResult, 0) <> 0 Then
+                GoTo QH
+            End If
+            '--- xor remaining input and leave anything extra of EncrData for reuse
+            .EncrPos = Offset + Size - lIdx
+            Call CallWindowProc(m_uRtbl.MemXor, VarPtr(.EncrData(0)), VarPtr(baData(lIdx)), .EncrPos)
+        End If
+    End With
+    If HashAfter Then
+        If BCryptHashData(m_uCrypto.hHmacHash, baData(Offset), Size, 0) <> 0 Then
+            GoTo QH
+        End If
+    End If
+    '--- success
+    pvCryptoAesCrypt = True
+    Exit Function
+QH:
+    m_sLastError = GetSystemMessage(Err.LastDllError)
+End Function
+
+Private Function pvCryptoAesGetFinalHash(ByVal lSize As Long) As Byte()
+    Dim baResult()      As Byte
+    
+    ReDim baResult(0 To m_uCrypto.HmacHashLen - 1) As Byte
+    Call BCryptFinishHash(m_uCrypto.hHmacHash, baResult(0), m_uCrypto.HmacHashLen, 0)
+    ReDim Preserve baResult(0 To lSize - 1) As Byte
+    pvCryptoAesGetFinalHash = baResult
+End Function
+
+Private Function pvCryptoAesGetRandomSalt(ByVal lSize As Long) As Byte()
+    Dim baResult()      As Byte
+    
+    ReDim baResult(0 To 15) As Byte
+    Call CoCreateGuid(baResult(0))
+    ReDim Preserve baResult(0 To lSize - 1) As Byte
+    pvCryptoAesGetRandomSalt = baResult
+End Function
+
+Private Function pvCryptoTradInit(baPass() As Byte) As Boolean
+    With m_uCrypto
+        .TradKey(0) = &H12345678
+        .TradKey(1) = &H23456789
+        .TradKey(2) = &H34567890
+        .TradKey(3) = m_uRtbl.Crc32Table
+        Call CallWindowProc(m_uRtbl.ZipCrypt, VarPtr(.TradKey(0)), VarPtr(baPass(0)), UBound(baPass) + 1)
+    End With
+    '--- success
+    pvCryptoTradInit = True
+End Function
+
+Private Function pvCryptoTradCrypt( _
+            baData() As Byte, _
+            Optional ByVal Offset As Long, _
+            Optional ByVal Size As Long = -1, _
+            Optional ByVal UseAfter As Boolean) As Boolean
+    If Size < 0 Then
+        Size = UBound(baData) + 1 - Offset
+    End If
+    Call CallWindowProc(m_uRtbl.ZipCrypt, VarPtr(m_uCrypto.TradKey(0)), VarPtr(baData(Offset)), Size, IIf(UseAfter, 3, 1))
+    '--- success
+    pvCryptoTradCrypt = True
+End Function
+
+#End If
 
 '= VFS ===================================================================
 
@@ -1395,7 +1710,10 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
         pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
     Else
         pvVfsOpen.FileName = File
-        If Right$(File, 1) <> "\" Then
+        If Right$(File, 1) = ":" Then
+            pvVfsOpen.Data.dwFileAttributes = vbArchive
+            pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
+        ElseIf Right$(File, 1) <> "\" Then
             hFind = FindFirstFile(File, pvVfsOpen.Data)
         Else
             hFind = FindFirstFile(Left$(File, Len(File) - 1), pvVfsOpen.Data)
@@ -1403,9 +1721,22 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
         If hFind <> INVALID_HANDLE_VALUE Then
             Call FindClose(hFind)
         Else
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & File & ")"
+            Err.Raise vbObjectError, "pvVfsOpen", GetSystemMessage(Err.LastDllError) & " (" & File & ")"
         End If
     End If
+End Function
+
+Private Function pvCreateFile(ByVal lpFileName As String, ByVal dwDesiredAccess As Long, ByVal dwShareMode As Long, ByVal NoSecurity As Long, ByVal dwCreationDisposition As Long, ByVal dwFlagsAndAttributes As Long, ByVal hTemplateFile As Long) As Long
+    Select Case LCase(lpFileName)
+    Case "stdin:"
+        pvCreateFile = GetStdHandle(STD_INPUT_HANDLE)
+    Case "stdout:"
+        pvCreateFile = GetStdHandle(STD_OUTPUT_HANDLE)
+    Case "stderr:"
+        pvCreateFile = GetStdHandle(STD_ERROR_HANDLE)
+    Case Else
+        pvCreateFile = CreateFile(lpFileName, dwDesiredAccess, dwShareMode, NoSecurity, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile)
+    End Select
 End Function
 
 Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
@@ -1430,9 +1761,9 @@ Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
             End If
         End If
         If Right$(File, 1) <> "\" Then
-            pvVfsCreate.Handle = CreateFile(File, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
+            pvVfsCreate.Handle = pvCreateFile(File, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
             If pvVfsCreate.Handle = INVALID_HANDLE_VALUE Then
-                Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & File & ")"
+                Err.Raise vbObjectError, "pvVfsCreate", GetSystemMessage(Err.LastDllError) & " (" & File & ")"
             End If
         End If
     End If
@@ -1464,13 +1795,15 @@ Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lS
         pvVfsRead = uFile.Stream.VfsReadFile(lPtr, lSize)
     Else
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
-            uFile.Handle = CreateFile(uFile.FileName, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)
+            uFile.Handle = pvCreateFile(uFile.FileName, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)
             If uFile.Handle = INVALID_HANDLE_VALUE Then
-                Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+                Err.Raise vbObjectError, "pvVfsRead", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
         End If
         If ReadFile(uFile.Handle, ByVal lPtr, lSize, pvVfsRead, 0) = 0 Then
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            If Err.LastDllError <> LNG_PIPE_ENDED_ERROR Then
+                Err.Raise vbObjectError, "pvVfsRead", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            End If
         End If
     End If
 End Function
@@ -1502,13 +1835,13 @@ Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal l
         pvVfsWrite = uFile.Stream.VfsWriteFile(lPtr, lSize)
     Else
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
-            uFile.Handle = CreateFile(uFile.FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
+            uFile.Handle = pvCreateFile(uFile.FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
             If uFile.Handle = INVALID_HANDLE_VALUE Then
-                Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+                Err.Raise vbObjectError, "pvVfsWrite", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
         End If
         If WriteFile(uFile.Handle, ByVal lPtr, lSize, pvVfsWrite, 0) = 0 Then
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            Err.Raise vbObjectError, "pvVfsWrite", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
     End If
 End Function
@@ -1533,7 +1866,7 @@ Private Function pvVfsSeek(uFile As UcsVfsFileType, ByVal lPosition As Long, ByV
         End If
         pvVfsSeek = SetFilePointer(uFile.Handle, lPosition, 0, lMoveMethod)
         If pvVfsSeek = INVALID_SET_FILE_POINTER Then
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            Err.Raise vbObjectError, "pvVfsSeek", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
     End If
 End Function
@@ -1552,12 +1885,25 @@ Private Sub pvVfsSetEof(uFile As UcsVfsFileType, sMetaData As String)
         End If
     ElseIf Not uFile.Stream Is Nothing Then
         uFile.Stream.VfsSetEndOfFile sMetaData
-    Else
+    ElseIf Right$(uFile.FileName, 1) <> ":" Then
         If SetEndOfFile(uFile.Handle) = 0 Then
-            Err.Raise vbObjectError, , GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            Err.Raise vbObjectError, "pvVfsSetEof", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
     End If
 End Sub
+
+Private Function pvArrPtr(vArray As Variant) As Long
+    Const VT_BYREF      As Long = &H4000
+    Dim lPtr            As Long
+    
+    lPtr = Peek(UnsignedAdd(VarPtr(vArray), 8))
+    If (Peek(VarPtr(vArray)) And VT_BYREF) <> 0 Then
+        lPtr = Peek(lPtr)
+    End If
+    If lPtr <> 0 Then
+        pvArrPtr = Peek(UnsignedAdd(lPtr, 12))
+    End If
+End Function
 
 '= common ================================================================
 
@@ -1637,6 +1983,9 @@ Private Function pvInitRelocTable(uRtbl As UcsZlibRelocTableType) As Long
         .DecompressCleanup = lpThunk + vSplit(ucsIdx_DecompressCleanup)
         .DecompressBlock = lpThunk + vSplit(ucsIdx_DecompressBlock)
         .CalcCrc32 = lpThunk + vSplit(ucsIdx_CalcCrc32)
+        .MemNonce = lpThunk + vSplit(ucsIdx_MemNonce)
+        .MemXor = lpThunk + vSplit(ucsIdx_MemXor)
+        .ZipCrypt = lpThunk + vSplit(ucsIdx_ZipCrypt)
         .MallocImpl = GetProcAddress(GetModuleHandle("ole32.dll"), "CoTaskMemAlloc")
         .ReallocImpl = GetProcAddress(GetModuleHandle("ole32.dll"), "CoTaskMemRealloc")
         .FreeImpl = GetProcAddress(GetModuleHandle("ole32.dll"), "CoTaskMemFree")
@@ -1730,7 +2079,7 @@ Private Function GetSystemMessage(ByVal lLastDllError As Long) As String
             lSize = lSize - 2
         End If
     End If
-    GetSystemMessage = Left$(GetSystemMessage, lSize)
+    GetSystemMessage = "[" & lLastDllError & "] " & Left$(GetSystemMessage, lSize)
 End Function
 
 Private Sub AssignVariant(vDest As Variant, vSrc As Variant)
@@ -1745,8 +2094,6 @@ Private Function PathCombine(sPath As String, sFile As String) As String
     PathCombine = sPath & IIf(LenB(sPath) <> 0 And Right$(sPath, 1) <> "\" And LenB(sFile) <> 0, "\", vbNullString) & sFile
 End Function
 
-#If ImplUseApiForBase64 Then
-
 Private Function FromBase64Array(sText As String) As Byte()
     Dim lSize           As Long
     Dim dwDummy         As Long
@@ -1757,105 +2104,6 @@ Private Function FromBase64Array(sText As String) As Byte()
     Call CryptStringToBinary(StrPtr(sText), Len(sText), CRYPT_STRING_BASE64, VarPtr(baOutput(0)), lSize, 0, dwDummy)
     FromBase64Array = baOutput
 End Function
-
-#Else
-
-Private Function FromBase64Array(sText As String) As Byte()
-    Const STR_BASE64_CHARS As String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-    Dim laPow2(0 To 30) As Long
-    Dim baInput()       As Byte
-    Dim laTable()       As Long
-    Dim lIdx            As Long
-    Dim lCh             As Long
-    Dim baOutput()      As Byte
-    Dim lPtr            As Long
-    Dim lCarry          As Long
-    
-    On Error GoTo EH
-    '--- init decoding table
-    For lIdx = 0 To UBound(laPow2)
-        laPow2(lIdx) = 2 ^ lIdx
-    Next
-    ReDim laTable(0 To &H3FF) As Long
-    For lIdx = 0 To UBound(laTable)
-        laTable(lIdx) = -1
-    Next
-    baInput = StrConv(STR_BASE64_CHARS, vbFromUnicode)
-    For lIdx = 0 To UBound(baInput)
-        lCh = baInput(lIdx)
-        laTable(lCh) = lIdx * laPow2(2)
-        laTable(&H100 + lCh) = (lIdx And &H30) \ laPow2(4) Or (lIdx And &HF) * laPow2(12)
-        laTable(&H200 + lCh) = (lIdx And &H3) * laPow2(22) Or (lIdx And &H3C) * laPow2(6)
-        laTable(&H300 + lCh) = lIdx * laPow2(16)
-    Next
-    '--- figure out output size
-    baInput = StrConv(Replace(Replace(sText, vbCr, vbNullString), vbLf, vbNullString), vbFromUnicode)
-    If laTable(baInput(UBound(baInput))) >= 0 Then
-        lIdx = 1
-    ElseIf laTable(baInput(UBound(baInput) - 1)) >= 0 Then
-        lIdx = 2
-    Else
-        lIdx = 3
-    End If
-    ReDim baOutput(0 To (Len(sText) \ 4) * 3 - lIdx) As Byte
-    '--- decode loop
-    lPtr = VarPtr(baOutput(0))
-    For lIdx = 0 To UBound(baInput) - 3 Step 4
-        lCh = laTable(baInput(lIdx + 0)) _
-            Or laTable(&H100 + baInput(lIdx + 1)) _
-            Or laTable(&H200 + baInput(lIdx + 2)) _
-            Or laTable(&H300 + baInput(lIdx + 3))
-        If lCh < 0 Then
-            Exit For
-        End If
-        Call CopyMemory(ByVal lPtr, lCh, 3)
-        lPtr = lPtr + 3
-    Next
-    '--- note: unsigned substract for LARGEADDRESSAWARE processes
-    lPtr = ((lPtr Xor &H80000000) - VarPtr(baOutput(0))) Xor &H80000000
-    '-- handle trailing 4 chars (or input error)
-    If lIdx <= UBound(baInput) Then
-        lCh = laTable(baInput(lIdx + 0))
-        Debug.Assert lCh >= 0 '--- input error
-        If lCh < 0 Then
-            GoTo QH
-        End If
-        lCarry = lCh
-        lCh = laTable(baInput(lIdx + 1))
-        Debug.Assert lCh >= 0 '--- input error
-        If lCh < 0 Then
-            GoTo QH
-        End If
-        baOutput(lPtr + 0) = (lCarry Or lCh \ laPow2(6)) And &HFF
-        lCarry = lCh * laPow2(2)
-        lCh = laTable(baInput(lIdx + 2))
-        If lCh < 0 Then
-            lPtr = lPtr + 1
-            GoTo QH
-        End If
-        baOutput(lPtr + 1) = (lCarry Or lCh \ laPow2(4)) And &HFF
-        lCarry = lCh * laPow2(4)
-        lCh = laTable(baInput(lIdx + 3))
-        If lCh < 0 Then
-            lPtr = lPtr + 2
-            GoTo QH
-        End If
-        Debug.Assert lCh < 0 '--- error in decoding tables
-        baOutput(lPtr + 2) = (lCarry Or lCh \ laPow2(2)) And &HFF
-        lPtr = lPtr + 3
-    End If
-QH:
-    '--- will redim only on input error
-    If UBound(baOutput) <> lPtr - 1 Then
-        ReDim Preserve baOutput(0 To lPtr - 1) As Byte
-    End If
-    FromBase64Array = baOutput
-    Exit Function
-EH:
-    Debug.Print Err.Description
-End Function
-
-#End If
 
 Private Function At(vArray As Variant, ByVal lIdx As Long) As Variant
     On Error GoTo QH
@@ -1884,7 +2132,7 @@ Private Function PeekInt(ByVal lPtr As Long) As Integer
     Call CopyMemory(PeekInt, ByVal lPtr, 2)
 End Function
 
-Public Function ToUtf8Array(sText As String) As Byte()
+Private Function ToUtf8Array(sText As String) As Byte()
     Dim baRetVal()      As Byte
     Dim lSize           As Long
     
@@ -1898,6 +2146,40 @@ Public Function ToUtf8Array(sText As String) As Byte()
     ToUtf8Array = baRetVal
 End Function
 
+Private Function UnsignedAdd(ByVal lUnsignedPtr As Long, ByVal lSignedOffset As Long) As Long
+    '--- note: safely add *signed* offset to *unsigned* ptr for *unsigned* retval w/o overflow in LARGEADDRESSAWARE processes
+    UnsignedAdd = ((lUnsignedPtr Xor &H80000000) + lSignedOffset) Xor &H80000000
+End Function
+
+Private Function C_Obj(Value As Variant) As Object
+    On Error Resume Next
+    Set C_Obj = Value
+    On Error GoTo 0
+End Function
+
+Private Function SanitizeFileName(sFileName As String, Optional InvalidChar As String = " ") As String
+    Const STR_INVALID   As String = "[\x00-\x1F""<>\|:\*\?\\/]"
+    
+    With InitRegExp(STR_INVALID)
+        SanitizeFileName = .Replace(sFileName, InvalidChar)
+    End With
+End Function
+
+Private Function InitRegExp(sPattern As String) As Object
+    Static oCache       As Object
+    
+    If Not oCache Is Nothing Then
+        If oCache.Pattern = sPattern Then
+            GoTo QH
+        End If
+    End If
+    Set oCache = VBA.CreateObject("VBScript.RegExp")
+    oCache.Global = True
+    oCache.Pattern = sPattern
+QH:
+    Set InitRegExp = oCache
+End Function
+
 #End If ' Not ImplUseShared
 
 '=========================================================================
@@ -1908,3 +2190,9 @@ Private Sub Class_Initialize()
     pvInitRelocTable m_uRtbl
     m_lCurrentFile = -1
 End Sub
+
+#If ImplCrypto Then
+    Private Sub Class_Terminate()
+        pvCryptoTerminate
+    End Sub
+#End If

@@ -6,8 +6,9 @@ DefObj A-Z
 ' API
 '=========================================================================
 
-Private Const STD_INPUT_HANDLE          As Long = -10&
-Private Const STD_OUTPUT_HANDLE         As Long = -11&
+Private Const STD_INPUT_HANDLE              As Long = -10&
+Private Const STD_OUTPUT_HANDLE             As Long = -11&
+Private Const STD_ERROR_HANDLE              As Long = -12&
 
 Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) As Long
 Private Declare Function ReadFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToRead As Long, lpNumberOfBytesRead As Long, ByVal lpOverlapped As Long) As Long
@@ -21,7 +22,7 @@ Private Declare Function ApiSysAllocString Lib "oleaut32" Alias "SysAllocString"
 Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
 Private Declare Sub ExitProcess Lib "kernel32" (ByVal uExitCode As Long)
 
-Private m_sLastConsolePrint         As String
+Private m_sLastConsoleOutput        As String
 
 '=========================================================================
 ' Functions
@@ -37,27 +38,73 @@ Public Sub Main()
     End With
 End Sub
 
+Public Function GetOpt(vArgs As Variant, Optional OptionsWithArg As String) As Object
+    Dim oRetVal         As Object
+    Dim lIdx            As Long
+    Dim bNoMoreOpt      As Boolean
+    Dim vOptArg         As Variant
+    Dim vElem           As Variant
+
+    vOptArg = Split(OptionsWithArg, ":")
+    Set oRetVal = CreateObject("Scripting.Dictionary")
+    With oRetVal
+        .CompareMode = vbTextCompare
+        For lIdx = 0 To UBound(vArgs)
+            Select Case Left$(At(vArgs, lIdx), 1 + bNoMoreOpt)
+            Case "-", "/"
+                For Each vElem In vOptArg
+                    If Mid$(At(vArgs, lIdx), 2, Len(vElem)) = vElem Then
+                        If Mid(At(vArgs, lIdx), Len(vElem) + 2, 1) = ":" Then
+                            .Item("-" & vElem) = Mid$(At(vArgs, lIdx), Len(vElem) + 3)
+                        ElseIf Len(At(vArgs, lIdx)) > Len(vElem) + 1 Then
+                            .Item("-" & vElem) = Mid$(At(vArgs, lIdx), Len(vElem) + 2)
+                        ElseIf LenB(At(vArgs, lIdx + 1)) <> 0 Then
+                            .Item("-" & vElem) = At(vArgs, lIdx + 1)
+                            lIdx = lIdx + 1
+                        Else
+                            .Item("error") = "Option -" & vElem & " requires an argument"
+                        End If
+                        GoTo Conitnue
+                    End If
+                Next
+                .Item("-" & Mid$(At(vArgs, lIdx), 2)) = True
+            Case Else
+                .Item("numarg") = .Item("numarg") + 1
+                .Item("arg" & .Item("numarg")) = At(vArgs, lIdx)
+            End Select
+Conitnue:
+        Next
+    End With
+    Set GetOpt = oRetVal
+End Function
+
 Public Function ConsolePrint(ByVal sText As String, ParamArray A() As Variant) As String
+    ConsolePrint = pvConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), sText, CVar(A))
+End Function
+
+Public Function ConsoleError(ByVal sText As String, ParamArray A() As Variant) As String
+    ConsoleError = pvConsoleOutput(GetStdHandle(STD_ERROR_HANDLE), sText, CVar(A))
+End Function
+
+Private Function pvConsoleOutput(ByVal hOut As Long, ByVal sText As String, A As Variant) As String
     Dim lIdx            As Long
     Dim sArg            As String
     Dim baBuffer()      As Byte
     Dim dwDummy         As Long
-    Dim hOut            As Long
 
     '--- format
     For lIdx = UBound(A) To LBound(A) Step -1
         sArg = Replace(A(lIdx), "%", ChrW$(&H101))
         sText = Replace(sText, "%" & (lIdx - LBound(A) + 1), sArg)
     Next
-    ConsolePrint = Replace(sText, ChrW$(&H101), "%")
+    pvConsoleOutput = Replace(sText, ChrW$(&H101), "%")
     '--- output
-    hOut = GetStdHandle(STD_OUTPUT_HANDLE)
     If hOut = 0 Then
-        m_sLastConsolePrint = ConsolePrint
-        Debug.Print ConsolePrint;
+        m_sLastConsoleOutput = pvConsoleOutput
+        Debug.Print pvConsoleOutput;
     Else
-        ReDim baBuffer(0 To Len(ConsolePrint) - 1) As Byte
-        If CharToOemBuff(ConsolePrint, baBuffer(0), UBound(baBuffer) + 1) Then
+        ReDim baBuffer(0 To Len(pvConsoleOutput) - 1) As Byte
+        If CharToOemBuff(pvConsoleOutput, baBuffer(0), UBound(baBuffer) + 1) Then
             Call WriteFile(hOut, baBuffer(0), UBound(baBuffer) + 1, dwDummy, ByVal 0&)
         End If
     End If
@@ -70,7 +117,7 @@ Public Function ConsoleRead(Optional ByVal lSize As Long = 1) As String
     
     hIn = GetStdHandle(STD_INPUT_HANDLE)
     If hIn = 0 Then
-        sText = InputBox(m_sLastConsolePrint, "Console")
+        sText = InputBox(m_sLastConsoleOutput, "Console")
         If StrPtr(sText) = 0 Then
             End
         End If
