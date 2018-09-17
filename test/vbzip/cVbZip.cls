@@ -60,7 +60,7 @@ Public Function Init(vArgs As Variant) As Boolean
 
     On Error GoTo EH
     Set m_oArchive = New cZipArchive
-    Set m_oOpt = GetOpt(vArgs, "m:o:p:mem:si")
+    Set m_oOpt = GetOpt(vArgs, "mem:m:o:p:si")
     With m_oOpt
         .Item("command") = .Item("arg1")
         .Item("zip") = .Item("arg2")
@@ -301,7 +301,7 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, By
     vInfo = m_oArchive.FileInfo(FileIdx)
     If Total = 0 Then
         If Not m_oOpt.Item("-i") Then
-            sPercent = " [" & Format$(At(vInfo, ucsIdxCompressedSize) * 100 / Current, "0.0") & "%] "
+            sPercent = " [" & Format$(At(vInfo, ucsIdxCompressedSize) * 100 / IIf(Current > 0, Current, 1), "0.0") & "%] "
             ConsoleError vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent
         End If
     ElseIf Current < Total Then
