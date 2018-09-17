@@ -110,7 +110,6 @@ Private Const BCRYPT_OBJECT_LENGTH          As String = "ObjectLength"
 Private Const BCRYPT_CHAINING_MODE          As String = "ChainingMode"
 Private Const BCRYPT_CHAIN_MODE_ECB         As String = "ChainingModeECB"
 Private Const BCRYPT_ALG_HANDLE_HMAC_FLAG   As Long = 8
-Private Const BCRYPT_HASH_REUSABLE_FLAG     As Long = &H20
 '--- for GetStdHandle
 Private Const STD_INPUT_HANDLE              As Long = -10&
 Private Const STD_OUTPUT_HANDLE             As Long = -11&
@@ -1490,7 +1489,9 @@ End Function
 
 Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyLen As Long, nPassVer As Integer) As Boolean
     Dim baDerivedKey()  As Byte
-    Dim lResult         As Long '--- discarded
+    Dim lDummy          As Long '--- discarded
+    Dim hResult         As Long
+    Dim sApiSource      As String
     
     '--- init member vars
     m_uCrypto.Nonce(0) = 0
@@ -1501,7 +1502,9 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     If m_uCrypto.hPbkdf2Alg = 0 Then
         '--- CNG API missing on XP
         On Error GoTo EH_Unsupported
-        If BCryptOpenAlgorithmProvider(m_uCrypto.hPbkdf2Alg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG) <> 0 Then
+        hResult = BCryptOpenAlgorithmProvider(m_uCrypto.hPbkdf2Alg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG)
+        If hResult < 0 Then
+            sApiSource = "BCryptOpenAlgorithmProvider(" & BCRYPT_SHA1_ALGORITHM & ")"
             GoTo QH
         End If
         On Error GoTo 0
@@ -1509,7 +1512,9 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     ReDim baDerivedKey(0 To 2 * lKeyLen + 1) As Byte
     '--- PBKDF2 API missing on Vista
     On Error GoTo EH_Unsupported
-    If BCryptDeriveKeyPBKDF2(m_uCrypto.hPbkdf2Alg, baPass(0), UBound(baPass) + 1, baSalt(0), UBound(baSalt) + 1, 1000, 0, baDerivedKey(0), UBound(baDerivedKey) + 1, 0) <> 0 Then
+    hResult = BCryptDeriveKeyPBKDF2(m_uCrypto.hPbkdf2Alg, baPass(0), UBound(baPass) + 1, baSalt(0), UBound(baSalt) + 1, 1000, 0, baDerivedKey(0), UBound(baDerivedKey) + 1, 0)
+    If hResult < 0 Then
+        sApiSource = "BCryptDeriveKeyPBKDF2"
         GoTo QH
     End If
     On Error GoTo 0
@@ -1517,13 +1522,19 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     Call CopyMemory(nPassVer, baDerivedKey(2 * lKeyLen), 2)
     '--- init AES w/ ECB from first half of derived key
     If m_uCrypto.hAesAlg = 0 Then
-        If BCryptOpenAlgorithmProvider(m_uCrypto.hAesAlg, StrPtr(BCRYPT_AES_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), 0) <> 0 Then
+        hResult = BCryptOpenAlgorithmProvider(m_uCrypto.hAesAlg, StrPtr(BCRYPT_AES_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), 0)
+        If hResult < 0 Then
+            sApiSource = "BCryptOpenAlgorithmProvider(" & BCRYPT_AES_ALGORITHM & ")"
             GoTo QH
         End If
-        If BCryptGetProperty(m_uCrypto.hAesAlg, StrPtr(BCRYPT_OBJECT_LENGTH), m_uCrypto.AesKeyObjLen, 4, lResult, 0) <> 0 Then
+        hResult = BCryptGetProperty(m_uCrypto.hAesAlg, StrPtr(BCRYPT_OBJECT_LENGTH), m_uCrypto.AesKeyObjLen, 4, lDummy, 0)
+        If hResult < 0 Then
+            sApiSource = "BCryptGetProperty(" & BCRYPT_OBJECT_LENGTH & ")"
             GoTo QH
         End If
-        If BCryptSetProperty(m_uCrypto.hAesAlg, StrPtr(BCRYPT_CHAINING_MODE), StrPtr(BCRYPT_CHAIN_MODE_ECB), LenB(BCRYPT_CHAIN_MODE_ECB), 0) <> 0 Then
+        hResult = BCryptSetProperty(m_uCrypto.hAesAlg, StrPtr(BCRYPT_CHAINING_MODE), StrPtr(BCRYPT_CHAIN_MODE_ECB), LenB(BCRYPT_CHAIN_MODE_ECB), 0)
+        If hResult < 0 Then
+            sApiSource = "BCryptSetProperty(" & BCRYPT_CHAINING_MODE & ")"
             GoTo QH
         End If
     End If
@@ -1532,15 +1543,21 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
         m_uCrypto.hAesKey = 0
     End If
     ReDim m_uCrypto.AesKeyObjData(0 To m_uCrypto.AesKeyObjLen - 1) As Byte
-    If BCryptGenerateSymmetricKey(m_uCrypto.hAesAlg, m_uCrypto.hAesKey, m_uCrypto.AesKeyObjData(0), m_uCrypto.AesKeyObjLen, baDerivedKey(0), lKeyLen, 0) <> 0 Then
+    hResult = BCryptGenerateSymmetricKey(m_uCrypto.hAesAlg, m_uCrypto.hAesKey, m_uCrypto.AesKeyObjData(0), m_uCrypto.AesKeyObjLen, baDerivedKey(0), lKeyLen, 0)
+    If hResult < 0 Then
+        sApiSource = "BCryptGenerateSymmetricKey"
         GoTo QH
     End If
     '-- init HMAC from second half of derived key
     If m_uCrypto.hHmacAlg = 0 Then
-        If BCryptOpenAlgorithmProvider(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG) <> 0 Then
+        hResult = BCryptOpenAlgorithmProvider(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG)
+        If hResult < 0 Then
+            sApiSource = "BCryptOpenAlgorithmProvider(" & BCRYPT_SHA1_ALGORITHM & ")"
             GoTo QH
         End If
-        If BCryptGetProperty(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_HASH_LENGTH), m_uCrypto.HmacHashLen, 4, lResult, 0) <> 0 Then
+        hResult = BCryptGetProperty(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_HASH_LENGTH), m_uCrypto.HmacHashLen, 4, lDummy, 0)
+        If hResult < 0 Then
+            sApiSource = "BCryptGetProperty(" & BCRYPT_HASH_LENGTH & ")"
             GoTo QH
         End If
     End If
@@ -1548,14 +1565,20 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
         Call BCryptDestroyHash(m_uCrypto.hHmacHash)
         m_uCrypto.hHmacHash = 0
     End If
-    If BCryptCreateHash(m_uCrypto.hHmacAlg, m_uCrypto.hHmacHash, 0, 0, baDerivedKey(lKeyLen), lKeyLen, BCRYPT_HASH_REUSABLE_FLAG) <> 0 Then
+    hResult = BCryptCreateHash(m_uCrypto.hHmacAlg, m_uCrypto.hHmacHash, 0, 0, baDerivedKey(lKeyLen), lKeyLen, 0)
+    If hResult < 0 Then
+        sApiSource = "BCryptCreateHash"
         GoTo QH
     End If
     '--- success
     pvCryptoAesInit = True
     Exit Function
 QH:
-    m_sLastError = GetSystemMessage(Err.LastDllError)
+    If Err.LastDllError <> 0 Then
+        m_sLastError = GetSystemMessage(Err.LastDllError)
+    Else
+        m_sLastError = "[" & Hex(hResult) & "] Error in " & sApiSource
+    End If
     Exit Function
 EH_Unsupported:
     m_sLastError = ERR_UNSUPPORTED_ENCRYPTION
@@ -1592,13 +1615,17 @@ Private Function pvCryptoAesCrypt( _
             Optional ByVal HashAfter As Boolean) As Boolean
     Dim lIdx            As Long
     Dim lPadSize        As Long
-    Dim lResult         As Long '--- discarded
+    Dim lDummy          As Long '--- discarded
+    Dim hResult         As Long
+    Dim sApiSource      As String
     
     If Size < 0 Then
         Size = UBound(baData) + 1 - Offset
     End If
     If HashBefore Then
-        If BCryptHashData(m_uCrypto.hHmacHash, baData(Offset), Size, 0) <> 0 Then
+        hResult = BCryptHashData(m_uCrypto.hHmacHash, baData(Offset), Size, 0)
+        If hResult < 0 Then
+            sApiSource = "BCryptHashData"
             GoTo QH
         End If
     End If
@@ -1619,7 +1646,9 @@ Private Function pvCryptoAesCrypt( _
             End If
             '--- encrypt incremental nonces in EncrData
             Call CallWindowProc(m_uRtbl.MemNonce, VarPtr(.EncrData(0)), VarPtr(.Nonce(0)), lPadSize)
-            If BCryptEncrypt(.hAesKey, .EncrData(0), lPadSize, 0, 0, 0, .EncrData(0), lPadSize, lResult, 0) <> 0 Then
+            hResult = BCryptEncrypt(.hAesKey, .EncrData(0), lPadSize, 0, 0, 0, .EncrData(0), lPadSize, lDummy, 0)
+            If hResult < 0 Then
+                sApiSource = "BCryptEncrypt"
                 GoTo QH
             End If
             '--- xor remaining input and leave anything extra of EncrData for reuse
@@ -1628,7 +1657,9 @@ Private Function pvCryptoAesCrypt( _
         End If
     End With
     If HashAfter Then
-        If BCryptHashData(m_uCrypto.hHmacHash, baData(Offset), Size, 0) <> 0 Then
+        hResult = BCryptHashData(m_uCrypto.hHmacHash, baData(Offset), Size, 0)
+        If hResult < 0 Then
+            sApiSource = "BCryptHashData"
             GoTo QH
         End If
     End If
@@ -1636,7 +1667,11 @@ Private Function pvCryptoAesCrypt( _
     pvCryptoAesCrypt = True
     Exit Function
 QH:
-    m_sLastError = GetSystemMessage(Err.LastDllError)
+    If Err.LastDllError <> 0 Then
+        m_sLastError = GetSystemMessage(Err.LastDllError)
+    Else
+        m_sLastError = "[" & Hex(hResult) & "] Error in " & sApiSource
+    End If
 End Function
 
 Private Function pvCryptoAesGetFinalHash(ByVal lSize As Long) As Byte()
