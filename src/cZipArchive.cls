@@ -1489,10 +1489,12 @@ Public Function InflateBase64(sText As String, baOutput() As Byte) As Boolean
 End Function
 
 Public Function Inflate(baBuffer() As Byte, baOutput() As Byte) As Boolean
+    Const FUNC_NAME     As String = "Inflate"
     Dim hCtx            As Long
     Dim uBuf            As UcsZlibBuffersType
     Dim lResult         As Long
     
+    On Error GoTo EH
     hCtx = CallWindowProc(m_uRtbl.DecompressInit, VarPtr(m_uRtbl))
     If hCtx = 0 Then
         Err.Raise vbObjectError, , ERR_INIT_DECOMPRESSOR
@@ -1505,14 +1507,22 @@ Public Function Inflate(baBuffer() As Byte, baOutput() As Byte) As Boolean
     End If
     ReDim baOutput(0 To uBuf.OutLen - 1) As Byte
     Call CopyMemory(baOutput(0), ByVal uBuf.OutBlock, uBuf.OutLen)
-    Call CoTaskMemFree(uBuf.OutBlock)
-    uBuf.OutBlock = 0
+    '--- success
+    Inflate = True
+QH:
+    On Error Resume Next
+    If uBuf.OutBlock <> 0 Then
+        Call CoTaskMemFree(uBuf.OutBlock)
+        uBuf.OutBlock = 0
+    End If
     If hCtx <> 0 Then
         Call CallWindowProc(m_uRtbl.DecompressCleanup, hCtx)
         hCtx = 0
     End If
-    '--- success
-    Inflate = True
+    Exit Function
+EH:
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
+    Resume QH
 End Function
 
 #End If ' ImplInflate
