@@ -24,8 +24,9 @@ Private Const MODULE_NAME As String = "cZipArchive"
 
 #Const ImplCompress = ZIP_NOCOMPRESS = 0
 #Const ImplDecompress = ZIP_NOEXTRACT = 0
-#Const ImplCrypto = ZIP_CRYPTO
-#Const ImplUseShared = ZIP_USESHARED
+#Const ImplCrypto = ZIP_CRYPTO <> 0
+#Const ImplUseShared = ZIP_USESHARED <> 0
+#Const ImplInflate = ZIP_INFLATE <> 0
 #Const ImplLogging = DEBUG_MODE
 
 '=========================================================================
@@ -427,7 +428,7 @@ End Type
 '=========================================================================
 
 Property Get SemVersion() As String
-    SemVersion = "0.2.3"
+    SemVersion = "0.2.4"
 End Property
 
 Property Get ThunkBuildDate() As String
@@ -1481,6 +1482,51 @@ Private Function pvToWinFileName(baBuffer() As Byte, ByVal lCodePage As Long) As
     pvToWinFileName = Join(vSplit, "\")
 End Function
 
+#If ImplInflate Then
+
+Public Function InflateBase64(sText As String, baOutput() As Byte) As Boolean
+    InflateBase64 = Inflate(FromBase64Array(sText), baOutput)
+End Function
+
+Public Function Inflate(baBuffer() As Byte, baOutput() As Byte) As Boolean
+    Const FUNC_NAME     As String = "Inflate"
+    Dim hCtx            As Long
+    Dim uBuf            As UcsZlibBuffersType
+    Dim lResult         As Long
+    
+    On Error GoTo EH
+    hCtx = CallWindowProc(m_uRtbl.DecompressInit, VarPtr(m_uRtbl))
+    If hCtx = 0 Then
+        Err.Raise vbObjectError, , ERR_INIT_DECOMPRESSOR
+    End If
+    uBuf.InBlock = VarPtr(baBuffer(0))
+    uBuf.InLen = UBound(baBuffer) + 1
+    lResult = CallWindowProc(m_uRtbl.DecompressBlock, hCtx, VarPtr(uBuf))
+    If lResult = 0 Or uBuf.OutBlock = 0 Then
+        Err.Raise vbObjectError, , ERR_DECOMPRESSING
+    End If
+    ReDim baOutput(0 To uBuf.OutLen - 1) As Byte
+    Call CopyMemory(baOutput(0), ByVal uBuf.OutBlock, uBuf.OutLen)
+    '--- success
+    Inflate = True
+QH:
+    On Error Resume Next
+    If uBuf.OutBlock <> 0 Then
+        Call CoTaskMemFree(uBuf.OutBlock)
+        uBuf.OutBlock = 0
+    End If
+    If hCtx <> 0 Then
+        Call CallWindowProc(m_uRtbl.DecompressCleanup, hCtx)
+        hCtx = 0
+    End If
+    Exit Function
+EH:
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
+    Resume QH
+End Function
+
+#End If ' ImplInflate
+
 #End If ' ImplDecompress
 
 '= Crypto ================================================================
@@ -2021,9 +2067,9 @@ Private Function pvInitRelocTable(uRtbl As UcsZlibRelocTableType) As Long
         .MemNonce = lpThunk + vSplit(ucsIdx_MemNonce)
         .MemXor = lpThunk + vSplit(ucsIdx_MemXor)
         .ZipCrypt = lpThunk + vSplit(ucsIdx_ZipCrypt)
-        .MallocImpl = GetProcAddress(GetModuleHandle("ole32.dll"), "CoTaskMemAlloc")
-        .ReallocImpl = GetProcAddress(GetModuleHandle("ole32.dll"), "CoTaskMemRealloc")
-        .FreeImpl = GetProcAddress(GetModuleHandle("ole32.dll"), "CoTaskMemFree")
+        .MallocImpl = GetProcAddress(GetModuleHandle("ole32"), "CoTaskMemAlloc")
+        .ReallocImpl = GetProcAddress(GetModuleHandle("ole32"), "CoTaskMemRealloc")
+        .FreeImpl = GetProcAddress(GetModuleHandle("ole32"), "CoTaskMemFree")
         .LenCodes = lpThunk + vSplit(ucsIdx_LenCodes)
         .DistCodes = lpThunk + vSplit(ucsIdx_DistCodes)
         .MirrorBytes = lpThunk + vSplit(ucsIdx_MirrorBytes)
