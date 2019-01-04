@@ -35,6 +35,9 @@ Private Const MODULE_NAME As String = "cZipArchive"
 
 Event Progress(ByVal FileIdx As Long, ByVal Current As Long, ByVal Total As Long, Cancel As Boolean)
 Event Error(ByVal FileIdx As Long, Source As String, Description As String, Cancel As Boolean)
+#If ImplCompress Then
+    Event BeforeCompress(ByVal FileIdx As Long, Level As Long, SkipFile As Boolean, Cancel As Boolean)
+#End If ' ImplCompress
 #If ImplDecompress Then
     Event BeforeExtract(ByVal FileIdx As Long, File As Variant, SkipFile As Boolean, Cancel As Boolean)
     Event ExtractComplete(ByVal FileIdx As Long, File As Variant)
@@ -220,7 +223,6 @@ Private Const LNG_EXTRADATA_AE_2_MAXSIZE As Long = 20
 Private Const LNG_ENC_HEADER_SIZE   As Long = 12
 Private Const LNG_AES_AUTHCODE_SIZE As Long = 10
 Private Const LNG_AES_BLOCK_SIZE    As Long = 16
-Private Const LNG_DEF_ENCR_STRENGTH As Long = 0
 Private Const LNG_PIPE_ENDED_ERROR  As Long = 109
 Private Const ERR_USER_CANCEL       As String = "User cancelled"
 Private Const ERR_INIT_COMPRESSOR   As String = "Cannot init deflate compressor"
@@ -401,6 +403,7 @@ Private Type UcsFileInfo
     Flags               As Long
     Extra()             As Byte
     SourceFile          As Variant
+    Level               As Long
     #If ImplCrypto Then
         Aes             As UcsAesExtraDataType
         DecDat          As Byte
@@ -470,7 +473,8 @@ Public Function AddFile( _
             Optional Name As String, _
             Optional Comment As String, _
             Optional Password As String, _
-            Optional EncrStrength As Long = LNG_DEF_ENCR_STRENGTH) As Boolean
+            Optional EncrStrength As Long, _
+            Optional Level As Long = -1) As Boolean
     Const FUNC_NAME     As String = "AddFile"
     Dim uFile           As UcsVfsFileType
     
@@ -499,6 +503,7 @@ Public Function AddFile( _
         Else
             .SourceFile = File
         End If
+        .Level = Level
         #If ImplCrypto Then
             .Password = Password
             .Aes.Strength = EncrStrength
@@ -516,7 +521,11 @@ EH:
     Resume QH
 End Function
 
-Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As String, Optional ByVal Level As Long = 6) As Boolean
+Public Function CompressArchive( _
+            ArchiveFile As Variant, _
+            Optional Comment As String, _
+            Optional ByVal Level As Long = 6, _
+            Optional ByVal UseUtf8 As VbTriState = vbUseDefault) As Boolean
     Const FUNC_NAME     As String = "CompressArchive"
     Dim baBuffer()      As Byte
     Dim baNext()        As Byte
@@ -532,6 +541,8 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
     Dim uCentral        As UcsCentralHeaderType
     Dim uEndHdr         As UcsEndHeaderType
     Dim lEntries        As Long
+    Dim lComprLevel     As Long
+    Dim bSkip           As Boolean
     #If ImplCrypto Then
         Dim lSaltSize   As Long
         Dim baSalt()    As Byte
@@ -548,13 +559,22 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
     uArchiveFile = pvVfsCreate(ArchiveFile)
     uLocal.Signature = LNG_SIG_LOCAL
     uLocal.VerExt = LNG_VEREXT
-    Level = LimitLong(Level, 0, 9)
-    uBuf.Greedy = (Level <= 4)
-    uBuf.MaxMatch = At(Array(0, 2, 6, 12, 24, 8, 16, 32, 64, 1000), Level)
-    uBuf.NiceLen = At(Array(0, 8, 10, 14, 24, 30, 65, 130, 200, 32768), Level)
     For lIdx = 0 To m_lFileCount - 1
         m_lCurrentFile = lIdx
         With m_uFiles(lIdx)
+            lComprLevel = IIf(.Level >= 0, .Level, Level)
+            RaiseEvent BeforeCompress(lIdx, lComprLevel, bSkip, m_bCancel)
+            If m_bCancel Then
+                m_sLastError = ERR_USER_CANCEL
+                GoTo QH
+            End If
+            If bSkip Then
+                GoTo SkipFile
+            End If
+            lComprLevel = LimitLong(lComprLevel, 0, 9)
+            uBuf.Greedy = (lComprLevel <= 4)
+            uBuf.MaxMatch = At(Array(0, 2, 6, 12, 24, 8, 16, 32, 64, 1000), lComprLevel)
+            uBuf.NiceLen = At(Array(0, 8, 10, 14, 24, 30, 65, 130, 200, 32768), lComprLevel)
             .Offset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
             On Error GoTo EH_Continue
             uFile = pvVfsOpen(.SourceFile)
@@ -563,7 +583,11 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             uLocal.Crc32 = -1
             uLocal.USize = 0
             uLocal.CSize = 0
-            uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
+            If UseUtf8 = vbUseDefault Then
+                uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
+            Else
+                uLocal.Flags = IIf(UseUtf8 = vbTrue, ucsZcfUseUtf8, 0)
+            End If
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
                     uLocal.Flags = uLocal.Flags Or ucsZcfEncrypted
@@ -603,7 +627,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
             #End If
             lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
             If (.Attributes And vbDirectory + vbVolume) = 0 Then
-                If Level > 0 Then
+                If lComprLevel > 0 Then
                     hCtx = CallWindowProc(m_uRtbl.CompressInit, VarPtr(m_uRtbl))
                     If hCtx = 0 Then
                         Err.Raise vbObjectError, , ERR_INIT_COMPRESSOR
@@ -615,7 +639,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                         uBuf.InLen = lSize
                         lSize = pvVfsRead(uFile, VarPtr(baNext(0)), LNG_IOBUF_SIZE)
                         uBuf.Final = (lSize = 0)
-                        lResult = CallWindowProc(m_uRtbl.CompressBlock, hCtx, VarPtr(uBuf), VarPtr(uLocal.Crc32), Level) '--- level ignored
+                        lResult = CallWindowProc(m_uRtbl.CompressBlock, hCtx, VarPtr(uBuf), VarPtr(uLocal.Crc32), lComprLevel) '--- level ignored
                         If lResult = 0 Or uBuf.OutBlock = 0 Then
                             Err.Raise vbObjectError, , ERR_COMPRESSING
                         End If
@@ -662,7 +686,7 @@ Public Function CompressArchive(ArchiveFile As Variant, Optional Comment As Stri
                     End If
                 End If
                 '--- if data is incompressible -> store file
-                If Level = 0 Or uLocal.CSize > uLocal.USize Then
+                If lComprLevel = 0 Or uLocal.CSize > uLocal.USize Then
                     pvVfsSeek uFile, 0, FILE_BEGIN
                     pvVfsSeek uArchiveFile, lBeginOffset, FILE_BEGIN
                     uLocal.Method = LNG_METHOD_STORE
@@ -838,7 +862,8 @@ Public Function AddFromFolder( _
             Optional TargetFolder As String, _
             Optional IncludeEmptyFolders As Boolean, _
             Optional Password As String, _
-            Optional EncrStrength As Long = LNG_DEF_ENCR_STRENGTH) As Boolean
+            Optional EncrStrength As Long, _
+            Optional Level As Long = -1) As Boolean
     Const FUNC_NAME     As String = "AddFromFolder"
     Dim lIdx            As Long
     Dim sFolder         As String
@@ -866,7 +891,7 @@ Public Function AddFromFolder( _
         cFolders.Remove 1
         lIdx = 0
         For Each vElem In pvEnumFiles(sFolder, sMask, -vbDirectory)
-            If AddFile(vElem, PathCombine(TargetFolder, Mid$(vElem, lRootOffset + 2)), Password:=Password, EncrStrength:=EncrStrength) Then
+            If AddFile(vElem, PathCombine(TargetFolder, Mid$(vElem, lRootOffset + 2)), Password:=Password, EncrStrength:=EncrStrength, Level:=Level) Then
                 lIdx = lIdx + 1
                 '--- success (entries added)
                 AddFromFolder = True
@@ -875,7 +900,7 @@ Public Function AddFromFolder( _
         If lIdx = 0 And IncludeEmptyFolders Then
             sName = PathCombine(TargetFolder, Mid$(sFolder, lRootOffset + 2))
             If LenB(sName) <> 0 Then
-                If AddFile(sFolder & "\", sName & "\", Password:=Password, EncrStrength:=EncrStrength) Then
+                If AddFile(sFolder & "\", sName & "\", Password:=Password, EncrStrength:=EncrStrength, Level:=Level) Then
                     '--- success (entries added)
                     AddFromFolder = True
                 End If
@@ -1259,6 +1284,7 @@ Public Function Extract( _
                 RaiseEvent BeforeExtract(lIdx, OutputTarget, bSkip, m_bCancel)
             End If
             If m_bCancel Then
+                m_sLastError = ERR_USER_CANCEL
                 GoTo QH
             End If
             If bSkip Then

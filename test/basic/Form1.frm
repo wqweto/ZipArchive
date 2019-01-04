@@ -99,9 +99,9 @@ Private Sub Command1_Click()
     With m_oZip
 '        .AddFile "D:\TEMP\Unzip\Unzip.zip"
         .AddFile "D:\TEMP\thunk.bin"
-        .AddFile "D:\TEMP\aaa.pdf", "report.pdf"
+        .AddFile "D:\TEMP\aaa.pdf", "report.pdf", Level:=0
         .AddFile "D:\TEMP\enwik8.txt"
-        bResult = .CompressArchive("D:\TEMP\aaa.zip")
+        bResult = .CompressArchive("D:\TEMP\aaa.zip", UseUtf8:=vbTrue)
         sLastError = .LastError
     End With
     Set m_oZip = Nothing
