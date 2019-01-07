@@ -13,7 +13,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 '=========================================================================
 '
-' cZipArchive (c) 2017-2018 by wqweto@gmail.com
+' cZipArchive (c) 2017-2019 by wqweto@gmail.com
 '
 ' A single-class pure VB6 library for zip archives management
 '
@@ -1265,11 +1265,10 @@ Public Function Extract( _
             If uLocal.Signature <> LNG_SIG_LOCAL Then
                 Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & ". " & Replace(ERR_ENTRY_INVALID_SIG, "%1", lIdx + 1)
             End If
-            If pvToWinFileName(baFName, .Flags) <> .FileName Then
+'            If pvToWinFileName(baFName, .Flags) <> .FileName Then
 '                Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & " (Filename)"
-            End If
+'            End If
             If .Method <> LNG_METHOD_DEFLATE And .Method <> LNG_METHOD_STORE Then
-'                Err.Raise vbObjectError, , Replace(ERR_UNSUPPORTED_METHOD , "%1", .Method)
                 If pvSetError(MODULE_NAME & "." & FUNC_NAME, Replace(ERR_UNSUPPORTED_METHOD, "%1", .Method), CanContinue:=True) Then
                     GoTo QH
                 Else
@@ -1649,7 +1648,7 @@ QH:
     If Err.LastDllError <> 0 Then
         m_sLastError = GetSystemMessage(Err.LastDllError)
     Else
-        m_sLastError = "[" & Hex(hResult) & "] Error in " & sApiSource
+        m_sLastError = "[" & Hex$(hResult) & "] Error in " & sApiSource
     End If
     Exit Function
 EH_Unsupported:
@@ -1742,7 +1741,7 @@ QH:
     If Err.LastDllError <> 0 Then
         m_sLastError = GetSystemMessage(Err.LastDllError)
     Else
-        m_sLastError = "[" & Hex(hResult) & "] Error in " & sApiSource
+        m_sLastError = "[" & Hex$(hResult) & "] Error in " & sApiSource
     End If
 End Function
 
@@ -1834,7 +1833,7 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
 End Function
 
 Private Function pvCreateFile(ByVal lpFileName As String, ByVal dwDesiredAccess As Long, ByVal dwShareMode As Long, ByVal NoSecurity As Long, ByVal dwCreationDisposition As Long, ByVal dwFlagsAndAttributes As Long, ByVal hTemplateFile As Long) As Long
-    Select Case LCase(lpFileName)
+    Select Case LCase$(lpFileName)
     Case "stdin:"
         pvCreateFile = GetStdHandle(STD_INPUT_HANDLE)
     Case "stdout:"
@@ -2020,7 +2019,7 @@ Private Function pvFromOemString(baBuffer() As Byte, Optional ByVal lCodePage As
     If UBound(baBuffer) >= 0 Then
         lSize = MultiByteToWideChar(lCodePage, 0, baBuffer(0), UBound(baBuffer) + 1, 0, 0)
         If lSize > 0 Then
-            pvFromOemString = String(lSize, 0)
+            pvFromOemString = String$(lSize, 0)
             lSize = MultiByteToWideChar(lCodePage, 0, baBuffer(0), UBound(baBuffer) + 1, ByVal StrPtr(pvFromOemString), lSize)
         End If
     End If
@@ -2239,7 +2238,7 @@ Private Function PeekInt(ByVal lPtr As Long) As Integer
     Call CopyMemory(PeekInt, ByVal lPtr, 2)
 End Function
 
-Private Function ToUtf8Array(sText As String) As Byte()
+Public Function ToUtf8Array(sText As String) As Byte()
     Dim baRetVal()      As Byte
     Dim lSize           As Long
     
@@ -2251,6 +2250,16 @@ Private Function ToUtf8Array(sText As String) As Byte()
         baRetVal = vbNullString
     End If
     ToUtf8Array = baRetVal
+End Function
+
+Public Function FromUtf8Array(baText() As Byte) As String
+    Dim lSize           As Long
+    
+    If UBound(baText) >= 0 Then
+        FromUtf8Array = String$(2 * UBound(baText), 0)
+        lSize = MultiByteToWideChar(CP_UTF8, 0, baText(0), UBound(baText) + 1, ByVal StrPtr(FromUtf8Array), Len(FromUtf8Array))
+        FromUtf8Array = Left$(FromUtf8Array, lSize)
+    End If
 End Function
 
 Private Function UnsignedAdd(ByVal lUnsignedPtr As Long, ByVal lSignedOffset As Long) As Long
