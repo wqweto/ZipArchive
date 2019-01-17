@@ -78,6 +78,7 @@ Private Const STR_THUNK_BUILDDATE As String = "12.1.2018 17:15:52"
 ' API
 '=========================================================================
 
+Private Const VT_BYREF                      As Long = &H4000
 '--- for FindFirstFile
 Private Const MAX_PATH                      As Long = 260
 Private Const INVALID_HANDLE_VALUE          As Long = -1
@@ -243,6 +244,7 @@ Private Const ERR_UNSUPPORTED_ENCRYPTION As String = "Unsupported encryption"
 Private Const ERR_PASSWORD_REQUIRED As String = "Password required"
 Private Const ERR_INVALID_PASSWORD  As String = "Invalid password"
 Private Const ERR_INVALID_AUTHCODE  As String = "Invalid authentication code"
+Private Const ERR_INVALID_BYTEARRAY As String = "Invalid byte array"
 Private Const STR_BUFFER            As String = "[buffer]"
 Private Const STR_STREAM            As String = "[stream]"
 Private Const STR_ENTRY             As String = "[entry %1]"
@@ -1797,7 +1799,11 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
     
     If IsArray(File) Then
         pvVfsOpen.FileName = STR_BUFFER
-        Call CopyMemory(pvVfsOpen.BufferArray, File, 16)
+        If (Peek(VarPtr(File)) And VT_BYREF) <> 0 Then
+            Call CopyMemory(pvVfsOpen.BufferArray, File, 16)
+        Else
+            pvVfsOpen.BufferArray = File
+        End If
         pvVfsOpen.BufferBase = pvArrPtr(File)
         pvVfsOpen.BufferPtr = pvVfsOpen.BufferBase
         If pvVfsOpen.BufferBase <> 0 Then
@@ -1850,7 +1856,11 @@ Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
     
     If IsArray(File) Then
         pvVfsCreate.FileName = STR_BUFFER
-        Call CopyMemory(pvVfsCreate.BufferArray, File, 16)
+        If (Peek(VarPtr(File)) And VT_BYREF) <> 0 Then
+            Call CopyMemory(pvVfsCreate.BufferArray, File, 16)
+        Else
+            Err.Raise vbObjectError, "pvVfsCreate", ERR_INVALID_BYTEARRAY
+        End If
         pvVfsCreate.BufferBase = pvArrPtr(pvVfsCreate.BufferArray)
         pvVfsCreate.BufferPtr = pvVfsCreate.BufferBase
         If pvVfsCreate.BufferBase <> 0 Then
@@ -1879,7 +1889,11 @@ Private Function pvVfsClose(uFile As UcsVfsFileType)
     Dim vEmpty          As Variant
     
     If Not IsEmpty(uFile.BufferArray) Then
-        Call CopyMemory(uFile.BufferArray, vEmpty, 16)
+        If (Peek(VarPtr(uFile.BufferArray)) And VT_BYREF) <> 0 Then
+            Call CopyMemory(uFile.BufferArray, vEmpty, 16)
+        Else
+            uFile.BufferArray = Empty
+        End If
     End If
     If uFile.Handle <> 0 And uFile.Handle <> INVALID_HANDLE_VALUE Then
         Call CloseHandle(uFile.Handle)
@@ -1999,7 +2013,6 @@ Private Sub pvVfsSetEof(uFile As UcsVfsFileType, sMetaData As String)
 End Sub
 
 Private Function pvArrPtr(vArray As Variant) As Long
-    Const VT_BYREF      As Long = &H4000
     Dim lPtr            As Long
     
     lPtr = Peek(UnsignedAdd(VarPtr(vArray), 8))
