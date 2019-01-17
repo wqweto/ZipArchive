@@ -2163,12 +2163,14 @@ Private Function pvGetCrc32Table() As Long
 End Function
 
 Public Function CalcCrc32Array(baData() As Byte) As Long
+    CalcCrc32Array = -1
     Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), VarPtr(baData(0)), UBound(baData) + 1, VarPtr(CalcCrc32Array))
+    CalcCrc32Array = CalcCrc32Array Xor -1
 End Function
 
-Public Function CalcCrc32Ptr(ByVal lPtr As Long, ByVal lSize As Long) As Long
-    Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), lPtr, lSize, VarPtr(CalcCrc32Ptr))
-End Function
+Public Sub CalcCrc32Ptr(ByVal lPtr As Long, ByVal lSize As Long, lCrc32 As Long)
+    Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), lPtr, lSize, VarPtr(lCrc32))
+End Sub
 
 '= shared ================================================================
 

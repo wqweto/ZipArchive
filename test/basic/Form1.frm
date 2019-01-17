@@ -199,9 +199,11 @@ Private Sub Command6_Click()
         bResult = .Extract(baOutput, 1)
         WriteBinaryFile "D:\temp\report.pdf", baOutput
         sLastError = .LastError
+        labProgress.Caption = IIf(bResult, "Done. ", sLastError & ". ") & Format(Timer - dblTimer, "0.000") & " elapsed"
+        dblTimer = Timer
+        Debug.Print "Size=" & UBound(baOutput) + 1 & ", CRC32=0x" & Hex$(.CalcCrc32Array(baOutput)) & ", Elapsed=" & Format$(Timer - dblTimer, "0.000")
     End With
     Set m_oZip = Nothing
-    labProgress.Caption = IIf(bResult, "Done. ", sLastError & ". ") & Format(Timer - dblTimer, "0.000") & " elapsed"
 End Sub
 
 Private Sub m_oExtractInMemory_BeforeExtract(ByVal FileIdx As Long, File As Variant, SkipFile As Boolean, Cancel As Boolean)
