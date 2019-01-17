@@ -2162,6 +2162,14 @@ Private Function pvGetCrc32Table() As Long
     pvGetCrc32Table = VarPtr(aTable(0))
 End Function
 
+Public Function CalcCrc32Array(baData() As Byte) As Long
+    Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), VarPtr(baData(0)), UBound(baData) + 1, VarPtr(CalcCrc32Array))
+End Function
+
+Public Function CalcCrc32Ptr(ByVal lPtr As Long, ByVal lSize As Long) As Long
+    Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), lPtr, lSize, VarPtr(CalcCrc32Ptr))
+End Function
+
 '= shared ================================================================
 
 #If ImplUseShared = 0 Then
