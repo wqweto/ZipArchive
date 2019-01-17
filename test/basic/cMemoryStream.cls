@@ -22,7 +22,6 @@ Private Const FILE_BEGIN                As Long = 0
 Private Const FILE_CURRENT              As Long = 1
 Private Const FILE_END                  As Long = 2
 
-Private Declare Function ApiEmptyByteArray Lib "oleaut32" Alias "SafeArrayCreateVector" (Optional ByVal VarType As VbVarType = vbByte, Optional ByVal Low As Long = 0, Optional ByVal Count As Long = 0) As Byte()
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 
 '=========================================================================
@@ -39,11 +38,10 @@ Private m_lSize                 As Long
 
 Property Get Contents() As Byte()
     If m_lSize > 0 Then
-'        ReDim Preserve m_baBuffer(0 To m_lSize - 1) As Byte
         Contents = m_baBuffer
         ReDim Preserve Contents(0 To m_lSize - 1) As Byte
     Else
-        Contents = ApiEmptyByteArray()
+        Contents = vbNullString
     End If
 End Property
 
@@ -109,5 +107,5 @@ End Sub
 '=========================================================================
 
 Private Sub Class_Initialize()
-    m_baBuffer = ApiEmptyByteArray()
+    m_baBuffer = vbNullString
 End Sub
