@@ -211,8 +211,9 @@ Private Const LNG_SIG_DATADESC      As Long = &H7064B50
 Private Const LNG_LEN_LOCAL         As Long = 30
 Private Const LNG_LEN_CENTRAL       As Long = 46
 Private Const LNG_LEN_END           As Long = 22
-Private Const LNG_VERMADE           As Long = 20
-Private Const LNG_VEREXT            As Long = 20
+Private Const LNG_VER_DEFAULT       As Long = 10
+Private Const LNG_VER_DEFLATE       As Long = 20
+Private Const LNG_VER_ZIP64         As Long = 45
 Private Const LNG_METHOD_DEFLATE    As Long = 8
 Private Const LNG_METHOD_STORE      As Long = 0
 Private Const LNG_IOBUF_SIZE        As Long = 65536
@@ -560,7 +561,7 @@ Public Function CompressArchive( _
     ReDim baNext(0 To LNG_IOBUF_SIZE - 1) As Byte
     uArchiveFile = pvVfsCreate(ArchiveFile)
     uLocal.Signature = LNG_SIG_LOCAL
-    uLocal.VerExt = LNG_VEREXT
+    uCentral.VerExt = LNG_VER_DEFAULT
     For lIdx = 0 To m_lFileCount - 1
         m_lCurrentFile = lIdx
         With m_uFiles(lIdx)
@@ -582,6 +583,7 @@ Public Function CompressArchive( _
             uFile = pvVfsOpen(.SourceFile)
             pvToDosDateTime .LastModified, uLocal.FDate, uLocal.FTime
             uLocal.Method = LNG_METHOD_DEFLATE
+            uLocal.VerExt = LNG_VER_DEFLATE
             uLocal.Crc32 = -1
             uLocal.USize = 0
             uLocal.CSize = 0
@@ -685,6 +687,7 @@ Public Function CompressArchive( _
                     End If
                     If uLocal.CSize = 0 And uLocal.USize = 0 Then
                         uLocal.Method = LNG_METHOD_STORE
+                        uLocal.VerExt = LNG_VER_DEFAULT
                     End If
                 End If
                 '--- if data is incompressible -> store file
@@ -692,6 +695,7 @@ Public Function CompressArchive( _
                     pvVfsSeek uFile, 0, FILE_BEGIN
                     pvVfsSeek uArchiveFile, lBeginOffset, FILE_BEGIN
                     uLocal.Method = LNG_METHOD_STORE
+                    uLocal.VerExt = LNG_VER_DEFAULT
                     uLocal.Crc32 = -1
                     uLocal.USize = 0
                     uLocal.CSize = 0
@@ -782,6 +786,9 @@ Public Function CompressArchive( _
                 uLocal.CSize = 0
                 uLocal.USize = 0
             End If
+            If uLocal.VerExt > uCentral.VerExt Then
+                uCentral.VerExt = uLocal.VerExt
+            End If
             lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
             pvVfsSeek uArchiveFile, .Offset, FILE_BEGIN
             pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
@@ -802,8 +809,7 @@ SkipFile:
     m_lCurrentFile = -1
     lBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
     uCentral.Signature = LNG_SIG_CENTRAL
-    uCentral.VerMade = LNG_VERMADE
-    uCentral.VerExt = LNG_VEREXT
+    uCentral.VerMade = LNG_VER_ZIP64
     For lIdx = 0 To m_lFileCount - 1
         m_lCurrentFile = lIdx
         With m_uFiles(lIdx)
