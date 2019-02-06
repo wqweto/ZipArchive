@@ -4,11 +4,19 @@ Begin VB.Form Form1
    ClientHeight    =   3804
    ClientLeft      =   108
    ClientTop       =   456
-   ClientWidth     =   8604
+   ClientWidth     =   9936
    LinkTopic       =   "Form1"
    ScaleHeight     =   3804
-   ScaleWidth      =   8604
+   ScaleWidth      =   9936
    StartUpPosition =   3  'Windows Default
+   Begin VB.CommandButton Command7 
+      Caption         =   "Command7"
+      Height          =   432
+      Left            =   8400
+      TabIndex        =   7
+      Top             =   504
+      Width           =   1356
+   End
    Begin VB.CommandButton Command6 
       Caption         =   "Command6"
       Height          =   432
@@ -208,6 +216,24 @@ Private Sub Command6_Click()
         Debug.Print "Size=" & UBound(baOutput) + 1 & ", CRC32=0x" & Hex$(.CalcCrc32Array(baOutput)) & ", Elapsed=" & Format$(Timer - dblTimer, "0.000")
     End With
     Set m_oZip = Nothing
+End Sub
+
+Private Sub Command7_Click()
+    Dim baBuffer()      As Byte
+    Dim baCompressed()  As Byte
+    Dim baOutput()      As Byte
+    
+    baBuffer = ReadBinaryFile("D:\TEMP\area41.pdf")
+    With New cZipArchive
+        If Not .Deflate(baBuffer, baCompressed) Then
+            MsgBox .LastError, vbExclamation
+        End If
+        Debug.Print UBound(baBuffer) & "->" & UBound(baCompressed), Timer
+        If Not .Inflate(baCompressed, baOutput) Then
+            MsgBox .LastError, vbExclamation
+        End If
+    End With
+    WriteBinaryFile "d:\temp\aaa.pdf", baOutput
 End Sub
 
 Private Sub m_oExtractInMemory_BeforeExtract(ByVal FileIdx As Long, File As Variant, SkipFile As Boolean, Cancel As Boolean)
