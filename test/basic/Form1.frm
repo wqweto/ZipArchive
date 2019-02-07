@@ -220,16 +220,16 @@ End Sub
 
 Private Sub Command7_Click()
     Dim baBuffer()      As Byte
-    Dim baCompressed()  As Byte
+    Dim sCompressed     As String
     Dim baOutput()      As Byte
     
     baBuffer = ReadBinaryFile("D:\TEMP\area41.pdf")
     With New cZipArchive
-        If Not .Deflate(baBuffer, baCompressed) Then
+        If Not .DeflateBase64(baBuffer, sCompressed) Then
             MsgBox .LastError, vbExclamation
         End If
-        Debug.Print UBound(baBuffer) & "->" & UBound(baCompressed), Timer
-        If Not .Inflate(baCompressed, baOutput) Then
+        Debug.Print UBound(baBuffer) & "->" & Len(sCompressed), Timer
+        If Not .InflateBase64(sCompressed, baOutput) Then
             MsgBox .LastError, vbExclamation
         End If
     End With
