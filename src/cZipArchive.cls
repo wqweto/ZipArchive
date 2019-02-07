@@ -104,7 +104,7 @@ Private Const FORMAT_MESSAGE_FROM_SYSTEM    As Long = &H1000
 Private Const FORMAT_MESSAGE_IGNORE_INSERTS As Long = &H200
 '--- for SetFilePointer
 Private Const INVALID_SET_FILE_POINTER      As Long = -1
-'--- for CryptStringToBinary
+'--- for CryptBinaryToString/CryptStringToBinary
 Private Const CRYPT_STRING_BASE64           As Long = 1
 '--- for CNG
 Private Const MS_PRIMITIVE_PROVIDER         As String = "Microsoft Primitive Provider"
@@ -168,6 +168,7 @@ Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) 
     Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageA" (ByVal dwFlags As Long, lpSource As Long, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As String, ByVal nSize As Long, Args As Any) As Long
     Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesW" (ByVal lpFileName As Long) As Long
     Private Declare Function CreateDirectory Lib "kernel32" Alias "CreateDirectoryW" (ByVal lpPathName As Long, ByVal lpSecurityAttributes As Long) As Long
+    Private Declare Function CryptBinaryToString Lib "crypt32" Alias "CryptBinaryToStringW" (ByVal pbBinary As Long, ByVal cbBinary As Long, ByVal dwFlags As Long, ByVal pszString As Long, ByRef pcchString As Long) As Long
     Private Declare Function CryptStringToBinary Lib "crypt32" Alias "CryptStringToBinaryW" (ByVal pszString As Long, ByVal cchString As Long, ByVal dwFlags As Long, ByVal pbBinary As Long, ByRef pcbBinary As Long, ByRef pdwSkip As Long, ByRef pdwFlags As Long) As Long
 #End If ' Not ImplUseShared
 
@@ -1599,6 +1600,12 @@ EH:
     Resume QH
 End Function
 
+Public Function DeflateBase64(baInput() As Byte, sText As String, Optional ByVal Level As Long = 6) As Boolean
+    Dim baOutput() As Byte
+    DeflateBase64 = Deflate(baInput, baOutput, Level)
+    If DeflateBase64 Then sText = ToBase64String(baOutput)
+End Function
+
 #End If ' ImplInflate
 
 #End If ' ImplDecompress
@@ -2279,6 +2286,14 @@ Private Function FromBase64Array(sText As String) As Byte()
     ReDim baOutput(0 To lSize - 1) As Byte
     Call CryptStringToBinary(StrPtr(sText), Len(sText), CRYPT_STRING_BASE64, VarPtr(baOutput(0)), lSize, 0, dwDummy)
     FromBase64Array = baOutput
+End Function
+
+Private Function ToBase64String(baInput() As Byte) As String
+    Dim lSize As Long
+    If (CryptBinaryToString(VarPtr(baInput(LBound(baInput))), UBound(baInput) - LBound(baInput) + 1, CRYPT_STRING_BASE64, 0&, lSize) <> 0) Then
+        ToBase64String = String$(lSize - 1, 0)
+        Call CryptBinaryToString(VarPtr(baInput(LBound(baInput))), UBound(baInput) - LBound(baInput) + 1, CRYPT_STRING_BASE64, StrPtr(ToBase64String), lSize)
+    End If
 End Function
 
 Private Function At(vArray As Variant, ByVal lIdx As Long) As Variant
