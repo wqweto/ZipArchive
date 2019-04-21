@@ -538,6 +538,7 @@ Public Function CompressArchive( _
     Dim lIdx            As Long
     Dim uFile           As UcsVfsFileType
     Dim lSize           As Long
+    Dim lHeaderOffset   As Long
     Dim lBeginOffset    As Long
     Dim hCtx            As Long
     Dim uBuf            As UcsZlibBuffersType
@@ -619,6 +620,7 @@ Public Function CompressArchive( _
                     End If
                 End If
             #End If
+            lHeaderOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
             pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
@@ -703,9 +705,10 @@ Public Function CompressArchive( _
                     #If ImplCrypto Then
                         If LenB(.Password) <> 0 Then
                             If .Aes.Strength = 0 Then
-                                If Not pvCryptoTradInit(ToUtf8Array(.Password)) Then
-                                    Err.Raise vbObjectError, , m_sLastError
-                                End If
+                                pvVfsSeek uArchiveFile, lHeaderOffset, FILE_BEGIN
+                                uLocal.Flags = uLocal.Flags And Not ucsZcfEncrypted And Not ucsZcfHasDataDescriptor
+                                pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra
+                                .Password = vbNullString
                             Else
                                 If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, lSaltSize * 2, nPassVer) Then
                                     Err.Raise vbObjectError, , m_sLastError
