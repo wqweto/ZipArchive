@@ -19,7 +19,7 @@ AutoIncrementVer=0
 ServerSupportFiles=0
 VersionCompanyName="Unicontsoft"
 VersionFileDescription="VbZip"
-VersionLegalCopyright="VbZip (c) 2017 by wqweto@gmail.com"
+VersionLegalCopyright="VbZip (c) 2017-2019 by wqweto@gmail.com"
 VersionProductName="VbZip"
 CondComp="ZIP_CRYPTO = 1"
 CompilationType=0

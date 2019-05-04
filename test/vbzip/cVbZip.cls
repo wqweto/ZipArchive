@@ -69,7 +69,7 @@ Public Function Init(vArgs As Variant) As Boolean
             .Item("file" & lIdx) = .Item("arg" & lIdx + 2)
         Next
         If Not .Item("-nologo") Then
-            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2018 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
+            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2019 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
         End If
         If LenB(.Item("zip")) <> 0 Then
             ConsoleError "Archive: " & .Item("zip") & vbCrLf
