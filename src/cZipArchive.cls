@@ -695,8 +695,8 @@ Public Function CompressArchive( _
                         uLocal.VerExt = LNG_VER_DEFAULT
                     End If
                 End If
-                '--- if data is incompressible -> store file
-                If lComprLevel = 0 Or uLocal.CSize > uLocal.USize Then
+                '--- if data is incompressible and not encrypted -> store file
+                If lComprLevel = 0 Or (uLocal.CSize > uLocal.USize And (uLocal.Flags And ucsZcfEncrypted) = 0) Then
                     pvVfsSeek uFile, 0, FILE_BEGIN
                     pvVfsSeek uArchiveFile, lBeginOffset, FILE_BEGIN
                     uLocal.Method = LNG_METHOD_STORE
