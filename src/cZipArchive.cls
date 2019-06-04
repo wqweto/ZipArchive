@@ -133,6 +133,8 @@ Private Declare Function FileTimeToSystemTime Lib "kernel32" (lpFileTime As FILE
 Private Declare Function SystemTimeToFileTime Lib "kernel32" (lpSystemTime As SYSTEMTIME, lpFileTime As FILETIME) As Long
 Private Declare Function FileTimeToLocalFileTime Lib "kernel32" (lpFileTime As Any, lpLocalFileTime As FILETIME) As Long
 Private Declare Function LocalFileTimeToFileTime Lib "kernel32" (lpLocalFileTime As FILETIME, lpFileTime As FILETIME) As Long
+Private Declare Function SystemTimeToVariantTime Lib "oleaut32" (lpSystemTime As SYSTEMTIME, pvTime As Date) As Long
+Private Declare Function VariantTimeToSystemTime Lib "oleaut32" (ByVal vTime As Date, lpSystemTime As SYSTEMTIME) As Long
 Private Declare Function VirtualAlloc Lib "kernel32" (ByVal lpAddress As Long, ByVal dwSize As Long, ByVal flAllocationType As Long, ByVal flProtect As Long) As Long
 Private Declare Function GetModuleHandle Lib "kernel32" Alias "GetModuleHandleA" (ByVal lpModuleName As String) As Long
 Private Declare Function GetProcAddress Lib "kernel32" (ByVal hModule As Long, ByVal lpProcName As String) As Long
@@ -2100,28 +2102,23 @@ End Function
 Private Function pvFromFileTime(uFileTime As FILETIME) As Date
     Dim uLocalTime      As FILETIME
     Dim uSysTime        As SYSTEMTIME
-
-    Call FileTimeToLocalFileTime(uFileTime, uLocalTime)
-    Call FileTimeToSystemTime(uLocalTime, uSysTime)
-    With uSysTime
-        pvFromFileTime = DateSerial(.wYear, .wMonth, .wDay) + TimeSerial(.wHour, .wMinute, .wSecond)
-    End With
+    
+    If FileTimeToLocalFileTime(uFileTime, uLocalTime) <> 0 Then
+        If FileTimeToSystemTime(uLocalTime, uSysTime) <> 0 Then
+            Call SystemTimeToVariantTime(uSysTime, pvFromFileTime)
+        End If
+    End If
 End Function
 
 Private Function pvToFileTime(dDate As Date) As FILETIME
     Dim uSysTime        As SYSTEMTIME
     Dim uLocalTime      As FILETIME
 
-    With uSysTime
-        .wYear = Year(dDate)
-        .wMonth = Month(dDate)
-        .wDay = Day(dDate)
-        .wHour = Hour(dDate)
-        .wMinute = Minute(dDate)
-        .wSecond = Second(dDate)
-    End With
-    Call SystemTimeToFileTime(uSysTime, uLocalTime)
-    Call LocalFileTimeToFileTime(uLocalTime, pvToFileTime)
+    If VariantTimeToSystemTime(dDate, uSysTime) <> 0 Then
+        If SystemTimeToFileTime(uSysTime, uLocalTime) <> 0 Then
+            Call LocalFileTimeToFileTime(uLocalTime, pvToFileTime)
+        End If
+    End If
 End Function
 
 Private Function pvSetError(Optional Source As String, Optional Description As String, Optional ByVal CanContinue As Boolean) As Boolean
