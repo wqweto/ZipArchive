@@ -120,6 +120,8 @@ Public Function Init(vArgs As Variant) As Boolean
             m_sAction = "Compressing "
             If .Item("-so") Then
                 .Item("zip") = "stdout:"
+            ElseIf InStrRev(.Item("zip"), ".") <= InStrRev(.Item("zip"), "\") Then
+                .Item("zip") = .Item("zip") & ".zip"
             End If
             If Not m_oArchive.CompressArchive(.Item("zip"), Level:=.Item("-m")) Then
                 GoTo QH
@@ -129,7 +131,7 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
                 GoTo QH
             End If
-            If Not m_oArchive.OpenArchive(.Item("zip")) Then
+            If Not pvOpenArchive(.Item("zip")) Then
                 GoTo QH
             End If
             sMask = LCase$(IIf(.Item("numfiles") > 0, .Item("file1"), "*"))
@@ -170,7 +172,7 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
                 GoTo QH
             End If
-            If Not m_oArchive.OpenArchive(.Item("zip")) Then
+            If Not pvOpenArchive(.Item("zip")) Then
                 GoTo QH
             End If
             m_sAction = "Testing "
@@ -180,7 +182,7 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
                 GoTo QH
             End If
-            If Not m_oArchive.OpenArchive(.Item("zip")) Then
+            If Not pvOpenArchive(.Item("zip")) Then
                 GoTo QH
             End If
             m_sAction = "Extracting "
@@ -225,6 +227,19 @@ QH:
     Exit Function
 EH:
     ConsoleError "Unhandled error: " & Err.Description & vbCrLf
+End Function
+
+Private Function pvOpenArchive(sZipFile As String) As Boolean
+    If m_oArchive.OpenArchive(sZipFile) Then
+        pvOpenArchive = True
+        Exit Function
+    End If
+    '--- if missing siffux try appending ".zip"
+    If InStrRev(sZipFile, ".") <= InStrRev(sZipFile, "\") Then
+        If m_oArchive.OpenArchive(sZipFile & ".zip") Then
+            pvOpenArchive = True
+        End If
+    End If
 End Function
 
 Private Function pvLimitNumericOption(sOpt As String, dblDefault As Double, dblMin As Double, dblMax As Double) As Boolean
