@@ -145,6 +145,7 @@ Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As L
 Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) As Long
 Private Declare Function GetEnvironmentVariable Lib "kernel32" Alias "GetEnvironmentVariableA" (ByVal lpName As String, ByVal lpBuffer As String, ByVal nSize As Long) As Long
 Private Declare Function SetEnvironmentVariable Lib "kernel32" Alias "SetEnvironmentVariableA" (ByVal lpName As String, ByVal lpValue As String) As Long
+Private Declare Function PathMatchSpecW Lib "shlwapi" (ByVal pszFileParam As Long, ByVal pszSpec As Long) As Long
 #If ImplCompress Then
     Private Declare Function FileTimeToDosDateTime Lib "kernel32" (lpFileTime As FILETIME, ByVal lpFatDate As Long, ByVal lpFatTime As Long) As Long
     Private Declare Function ApiEmptyByteArray Lib "oleaut32" Alias "SafeArrayCreateVector" (Optional ByVal VarType As VbVarType = vbByte, Optional ByVal Low As Long = 0, Optional ByVal Count As Long = 0) As Byte()
@@ -942,7 +943,7 @@ Private Function pvEnumFiles(sFolder As String, sMask As String, ByVal eAttrib A
     
     On Error GoTo EH
     Set pvEnumFiles = New Collection
-    sFile = PathCombine(sFolder, sMask)
+    sFile = PathCombine(sFolder, "*.*")
     hFind = FindFirstFile(StrPtr(sFile), VarPtr(uData))
     If hFind = INVALID_HANDLE_VALUE Then
         If Err.LastDllError <> 2 Then
@@ -955,7 +956,9 @@ Private Function pvEnumFiles(sFolder As String, sMask As String, ByVal eAttrib A
                     Or eAttrib < 0 And (uData.dwFileAttributes And -eAttrib) = 0 Then
                 sFile = Left$(uData.cFileName, InStr(uData.cFileName, Chr$(0)) - 1)
                 If sFile <> "." And sFile <> ".." Then
-                    pvEnumFiles.Add PathCombine(sFolder, sFile)
+                    If PathMatchSpecW(StrPtr(sFile), StrPtr(sMask)) <> 0 Then
+                        pvEnumFiles.Add PathCombine(sFolder, sFile)
+                    End If
                 End If
             End If
         Loop While FindNextFile(hFind, VarPtr(uData)) <> 0
@@ -1221,7 +1224,8 @@ Public Function Extract( _
     Dim lCrc32          As Long
     Dim pCrc32          As Long
     Dim bSkip           As Boolean
-    Dim sFilter         As String
+    Dim sFilterFolder     As String
+    Dim sFilterMask     As String
     #If ImplCrypto Then
         Dim lSaltSize   As Long
         Dim baSalt()    As Byte
@@ -1237,7 +1241,12 @@ Public Function Extract( _
     ReDim baBuffer(0 To LNG_IOBUF_SIZE - 1) As Byte
     uArchiveFile = pvVfsOpen(m_vArchiveFile)
     If VarType(Filter) = vbString Then
-        sFilter = IIf(Filter = "*.*", "*", Replace(Replace(Filter, "/", "\"), "[", "[[]"))
+        sFilterMask = Replace(Filter, "/", "\")
+        lIdx = InStrRev(sFilterMask, "\")
+        If lIdx > 0 Then
+            sFilterFolder = Left$(sFilterMask, lIdx) & "*"
+            sFilterMask = Mid$(sFilterMask, lIdx + 1)
+        End If
     End If
     '--- touch to open for read
     pvVfsRead uArchiveFile, 0, 0
@@ -1252,8 +1261,13 @@ Public Function Extract( _
                     GoTo SkipFile
                 End If
             ElseIf VarType(Filter) = vbString Then
-                If Not .FileName Like sFilter Then
-                    If Not Mid$(.FileName, InStrRev(.FileName, "\") + 1) Like sFilter Then
+                If LenB(sFilterFolder) <> 0 Then
+                    If Not .FileName Like sFilterFolder Then
+                        GoTo SkipFile
+                    End If
+                End If
+                If LenB(sFilterMask) <> 0 Then
+                    If PathMatchSpecW(StrPtr(Mid$(.FileName, InStrRev(.FileName, "\") + 1)), StrPtr(sFilterMask)) = 0 Then
                         GoTo SkipFile
                     End If
                 End If
