@@ -214,9 +214,11 @@ Private Const LNG_SIG_LOCAL         As Long = &H4034B50
 Private Const LNG_SIG_CENTRAL       As Long = &H2014B50
 Private Const LNG_SIG_END           As Long = &H6054B50
 Private Const LNG_SIG_DATADESC      As Long = &H7064B50
+Private Const LNG_SIG_EXTLOCAL      As Long = &H8074B50
 Private Const LNG_LEN_LOCAL         As Long = 30
 Private Const LNG_LEN_CENTRAL       As Long = 46
 Private Const LNG_LEN_END           As Long = 22
+Private Const LNG_LEN_EXTLOCAL      As Long = 16
 Private Const LNG_VER_DEFAULT       As Long = 10
 Private Const LNG_VER_DEFLATE       As Long = 20
 Private Const LNG_VER_ZIP64         As Long = 45
@@ -246,7 +248,6 @@ Private Const ERR_DECOMPRESSING     As String = "Error decompressing"
 Private Const ERR_CRC_CHECK         As String = "CRC check failed"
 Private Const ERR_ENTRY_INVALID_SIG As String = "Entry %1 has invalid signature"
 Private Const ERR_ENTRY_NO_FILENAME As String = "Entry %1 has no filename"
-Private Const ERR_MISSING_ECD_RECORD As String = "Missing end-of-central-directory record"
 Private Const ERR_UNSUPPORTED_ENCRYPTION As String = "Unsupported encryption"
 Private Const ERR_PASSWORD_REQUIRED As String = "Password required"
 Private Const ERR_INVALID_PASSWORD  As String = "Invalid password"
@@ -1083,10 +1084,8 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
     Dim sArchiveComment As String
     Dim uFiles()        As UcsFileInfo
     Dim uCentral        As UcsCentralHeaderType
-    Dim baFName()       As Byte
-    Dim baExtra()       As Byte
     Dim baComment()     As Byte
-    Dim lCodePage       As Long
+    Dim lOffset         As Long
     
     On Error GoTo EH
     pvSetError
@@ -1104,20 +1103,17 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
             End If
         Next
     End If
-    If lIdx >= 0 Then
-        Err.Raise vbObjectError, , ERR_INVALID_ARCHIVE & ". " & ERR_MISSING_ECD_RECORD
-    End If
-    If uEndHdr.LenCom > 0 Then
-        ReDim baComment(0 To uEndHdr.LenCom - 1) As Byte
-        pvVfsRead uArchiveFile, VarPtr(baComment(0)), uEndHdr.LenCom
-        sArchiveComment = pvFromOemString(baComment)
-    End If
-    '--- note: redim one more (last ignored)
-    ReDim uFiles(0 To uEndHdr.Entries) As UcsFileInfo
-    pvVfsSeek uArchiveFile, uEndHdr.CenOff, FILE_BEGIN
-    For lIdx = 0 To uEndHdr.Entries - 1
-        m_lCurrentFile = lIdx
-        With uFiles(lIdx)
+    If lIdx < 0 Then
+        If uEndHdr.LenCom > 0 Then
+            ReDim baComment(0 To uEndHdr.LenCom - 1) As Byte
+            pvVfsRead uArchiveFile, VarPtr(baComment(0)), uEndHdr.LenCom
+            sArchiveComment = pvFromOemString(baComment)
+        End If
+        '--- note: redim one more (last ignored)
+        ReDim uFiles(0 To uEndHdr.Entries) As UcsFileInfo
+        pvVfsSeek uArchiveFile, uEndHdr.CenOff, FILE_BEGIN
+        For lIdx = 0 To uEndHdr.Entries - 1
+            m_lCurrentFile = lIdx
             Debug.Assert VarPtr(uCentral.FDate) + 2 - VarPtr(uCentral.Signature) + VarPtr(uCentral.AttribI) + 2 - VarPtr(uCentral.Crc32) + VarPtr(uCentral.Offset) + 4 - VarPtr(uCentral.AttribX) = LNG_LEN_CENTRAL
             Debug.Assert VarPtr(uCentral.FDate) + 2 - VarPtr(uCentral.Signature) = 16
             pvVfsRead uArchiveFile, VarPtr(uCentral.Signature), 16
@@ -1129,65 +1125,62 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                 pvSetError MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". " & Replace(ERR_ENTRY_INVALID_SIG, "%1", lIdx + 1)
                 GoTo QH
             End If
-            .Method = uCentral.Method
-            .LastModified = pvFromDosDateTime(uCentral.FDate, uCentral.FTime)
-            .Crc32 = uCentral.Crc32
-            .CompressedSize = uCentral.CSize
-            .Size = uCentral.USize
-            .Attributes = uCentral.AttribX
-            .Offset = uCentral.Offset
-            .Flags = uCentral.Flags
-            lCodePage = IIf((.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, CP_OEMCP)
-            Debug.Assert uCentral.LenFname > 0
-            If uCentral.LenFname > 0 Then
-                ReDim baFName(0 To uCentral.LenFname - 1) As Byte
-                pvVfsRead uArchiveFile, VarPtr(baFName(0)), uCentral.LenFname
-                .FileName = pvToWinFileName(baFName, lCodePage)
-            Else
-                If pvSetError(MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". " & Replace(ERR_ENTRY_NO_FILENAME, "%1", lIdx + 1), CanContinue:=True) Then
+            If Not pvLoadFileInfo(uArchiveFile, uCentral, uFiles(lIdx), lIdx + 1) Then
+                GoTo QH
+            End If
+        Next
+    Else
+        '--- fall-back to sequential lookup from start of file
+        pvVfsSeek uArchiveFile, 0, FILE_BEGIN
+        uEndHdr.Entries = 0
+        Do
+            uCentral.Offset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
+            pvVfsRead uArchiveFile, VarPtr(uCentral.Signature), 4
+            Select Case uCentral.Signature
+            Case LNG_SIG_LOCAL
+                pvVfsRead uArchiveFile, VarPtr(uCentral.VerExt), 10
+                pvVfsRead uArchiveFile, VarPtr(uCentral.Crc32), 16
+                uEndHdr.Entries = uEndHdr.Entries + 1
+                If uEndHdr.Entries = 1 Then
+                    ReDim uFiles(0 To 3) As UcsFileInfo
+                ElseIf uEndHdr.Entries > UBound(uFiles) Then
+                    ReDim Preserve uFiles(0 To 2 * uEndHdr.Entries) As UcsFileInfo
+                End If
+                If Not pvLoadFileInfo(uArchiveFile, uCentral, uFiles(uEndHdr.Entries - 1), uEndHdr.Entries) Then
                     GoTo QH
                 End If
-                .FileName = Replace(STR_ENTRY, "%1", lIdx + 1)
-            End If
-            If uCentral.LenExt > 0 Then
-                ReDim baExtra(0 To uCentral.LenExt - 1) As Byte
-                pvVfsRead uArchiveFile, VarPtr(baExtra(0)), uCentral.LenExt
-                .Extra = baExtra
-            End If
-            If uCentral.LenCom > 0 Then
-                ReDim baComment(0 To uCentral.LenCom - 1) As Byte
-                pvVfsRead uArchiveFile, VarPtr(baComment(0)), uCentral.LenCom
-                .Comment = pvFromOemString(baComment, lCodePage)
-            End If
-            #If ImplCrypto Then
-                If (.Flags And ucsZcfEncrypted) <> 0 Then
-                    If .Method = LNG_METHOD_AES Then
-                        Dim lJdx            As Long
-                        lJdx = 0
-                        Do While lJdx + 10 <= UBound(baExtra)
-                            If PeekInt(VarPtr(baExtra(lJdx))) = LNG_EXTRADATA_AES_HEADER Then
-                                If PeekInt(VarPtr(baExtra(lJdx + 2))) >= LNG_EXTRADATA_AES_SIZE - 4 Then
-                                    Debug.Assert VarPtr(.Aes.Strength) + 1 - VarPtr(.Aes) = 9
-                                    Call CopyMemory(.Aes, baExtra(lJdx), 9)
-                                    Call CopyMemory(.Aes.Method, baExtra(lJdx + 9), 2)
-                                    .Method = .Aes.Method
-                                End If
-                                Exit Do
-                            Else
-                                lJdx = lJdx + PeekInt(VarPtr(baExtra(lJdx + 2))) + 4
+                If uCentral.CSize = 0 And uCentral.USize <> 0 Then
+                    lOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
+                    ReDim baBuffer(0 To uCentral.USize - LNG_LEN_EXTLOCAL) As Byte
+                    pvVfsRead uArchiveFile, VarPtr(baBuffer(0)), UBound(baBuffer) + 1
+                    For lIdx = 0 To UBound(baBuffer) - LNG_LEN_EXTLOCAL
+                        If Peek(VarPtr(baBuffer(lIdx))) = LNG_SIG_EXTLOCAL Then
+                            If Peek(VarPtr(baBuffer(lIdx + 4))) = uCentral.Crc32 Or uCentral.Crc32 = 0 Then
+                                uCentral.Crc32 = Peek(VarPtr(baBuffer(lIdx + 4)))
+                                uCentral.CSize = Peek(VarPtr(baBuffer(lIdx + 8)))
+                                uFiles(uEndHdr.Entries - 1).Crc32 = uCentral.Crc32
+                                uFiles(uEndHdr.Entries - 1).CompressedSize = uCentral.CSize
+                                Exit For
                             End If
-                        Loop
+                        End If
+                    Next
+                    If uCentral.CSize = 0 Then
+                        Exit Do
                     End If
-                    '--- store for traditional ZipCrypt password check
-                    If (.Flags And ucsZcfHasDataDescriptor) <> 0 Then
-                        Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.FDate), -1), 1)
-                    Else
-                        Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.CSize), -1), 1)
-                    End If
+                    pvVfsSeek uArchiveFile, lOffset, FILE_BEGIN
                 End If
-            #End If ' ImplCrypto
-        End With
-    Next
+                pvVfsSeek uArchiveFile, uCentral.CSize, FILE_CURRENT
+            Case LNG_SIG_EXTLOCAL
+                If uEndHdr.Entries > 0 Then
+                    pvVfsSeek uArchiveFile, LNG_LEN_EXTLOCAL - 4, FILE_CURRENT
+                End If
+            Case Else
+                Exit Do
+            End Select
+        Loop
+        '--- note: redim one more (last ignored)
+        ReDim Preserve uFiles(0 To uEndHdr.Entries) As UcsFileInfo
+    End If
     '--- commit archive info to member vars
     AssignVariant m_vArchiveFile, ArchiveFile
     m_lFileCount = uEndHdr.Entries
@@ -1201,6 +1194,77 @@ QH:
 EH:
     pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
+End Function
+
+Private Function pvLoadFileInfo(uArchiveFile As UcsVfsFileType, uCentral As UcsCentralHeaderType, uFile As UcsFileInfo, ByVal lEntry As Long) As Boolean
+    Const FUNC_NAME     As String = "pvLoadFileInfo"
+    Dim baFName()       As Byte
+    Dim baExtra()       As Byte
+    Dim baComment()     As Byte
+    Dim lCodePage       As Long
+    
+    With uFile
+        .Method = uCentral.Method
+        .LastModified = pvFromDosDateTime(uCentral.FDate, uCentral.FTime)
+        .Crc32 = uCentral.Crc32
+        .CompressedSize = uCentral.CSize
+        .Size = uCentral.USize
+        .Attributes = uCentral.AttribX
+        .Offset = uCentral.Offset
+        .Flags = uCentral.Flags
+        lCodePage = IIf((.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, CP_OEMCP)
+        Debug.Assert uCentral.LenFname > 0
+        If uCentral.LenFname > 0 Then
+            ReDim baFName(0 To uCentral.LenFname - 1) As Byte
+            pvVfsRead uArchiveFile, VarPtr(baFName(0)), uCentral.LenFname
+            .FileName = pvToWinFileName(baFName, lCodePage)
+        Else
+            If pvSetError(MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". " & Replace(ERR_ENTRY_NO_FILENAME, "%1", lEntry), CanContinue:=True) Then
+                GoTo QH
+            End If
+            .FileName = Replace(STR_ENTRY, "%1", lEntry)
+        End If
+        If uCentral.LenExt > 0 Then
+            ReDim baExtra(0 To uCentral.LenExt - 1) As Byte
+            pvVfsRead uArchiveFile, VarPtr(baExtra(0)), uCentral.LenExt
+            .Extra = baExtra
+        End If
+        If uCentral.LenCom > 0 Then
+            ReDim baComment(0 To uCentral.LenCom - 1) As Byte
+            pvVfsRead uArchiveFile, VarPtr(baComment(0)), uCentral.LenCom
+            .Comment = pvFromOemString(baComment, lCodePage)
+        End If
+        #If ImplCrypto Then
+            If (.Flags And ucsZcfEncrypted) <> 0 Then
+                If .Method = LNG_METHOD_AES Then
+                    Dim lJdx            As Long
+                    lJdx = 0
+                    Do While lJdx + 10 <= UBound(baExtra)
+                        If PeekInt(VarPtr(baExtra(lJdx))) = LNG_EXTRADATA_AES_HEADER Then
+                            If PeekInt(VarPtr(baExtra(lJdx + 2))) >= LNG_EXTRADATA_AES_SIZE - 4 Then
+                                Debug.Assert VarPtr(.Aes.Strength) + 1 - VarPtr(.Aes) = 9
+                                Call CopyMemory(.Aes, baExtra(lJdx), 9)
+                                Call CopyMemory(.Aes.Method, baExtra(lJdx + 9), 2)
+                                .Method = .Aes.Method
+                            End If
+                            Exit Do
+                        Else
+                            lJdx = lJdx + PeekInt(VarPtr(baExtra(lJdx + 2))) + 4
+                        End If
+                    Loop
+                End If
+                '--- store for traditional ZipCrypt password check
+                If (.Flags And ucsZcfHasDataDescriptor) <> 0 Then
+                    Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.FDate), -1), 1)
+                Else
+                    Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.CSize), -1), 1)
+                End If
+            End If
+        #End If ' ImplCrypto
+    End With
+    '--- success
+    pvLoadFileInfo = True
+QH:
 End Function
 
 Public Function Extract( _
@@ -1224,7 +1288,7 @@ Public Function Extract( _
     Dim lCrc32          As Long
     Dim pCrc32          As Long
     Dim bSkip           As Boolean
-    Dim sFilterFolder     As String
+    Dim sFilterFolder   As String
     Dim sFilterMask     As String
     #If ImplCrypto Then
         Dim lSaltSize   As Long
@@ -1461,7 +1525,7 @@ Public Function Extract( _
                     End If
                 End If
             Else
-                If (.Attributes And vbDirectory + vbVolume) = 0 Then
+                If (.Attributes And vbDirectory + vbVolume) = 0 And Right$(.FileName, 1) <> "\" Then
                     pvVfsSetEof uFile, .FileName
                 End If
                 '--- note: Total=1 to prevent division by zero in client code
