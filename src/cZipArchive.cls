@@ -146,6 +146,7 @@ Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) 
 Private Declare Function GetEnvironmentVariable Lib "kernel32" Alias "GetEnvironmentVariableA" (ByVal lpName As String, ByVal lpBuffer As String, ByVal nSize As Long) As Long
 Private Declare Function SetEnvironmentVariable Lib "kernel32" Alias "SetEnvironmentVariableA" (ByVal lpName As String, ByVal lpValue As String) As Long
 Private Declare Function PathMatchSpecW Lib "shlwapi" (ByVal pszFileParam As Long, ByVal pszSpec As Long) As Long
+Private Declare Function GetCurrentProcessId Lib "kernel32" () As Long
 #If ImplCompress Then
     Private Declare Function FileTimeToDosDateTime Lib "kernel32" (lpFileTime As FILETIME, ByVal lpFatDate As Long, ByVal lpFatTime As Long) As Long
     Private Declare Function ApiEmptyByteArray Lib "oleaut32" Alias "SafeArrayCreateVector" (Optional ByVal VarType As VbVarType = vbByte, Optional ByVal Low As Long = 0, Optional ByVal Count As Long = 0) As Byte()
@@ -2257,13 +2258,13 @@ Private Function pvGetThunkAddress() As Long
     
     If lpThunk = 0 Then
         sBuffer = String$(50, 0)
-        Call GetEnvironmentVariable("_ZIP_THUNK_" & App.hInstance & "_" & STR_THUNK_BUILDDATE, sBuffer, Len(sBuffer) - 1)
+        Call GetEnvironmentVariable("_ZIP_THUNK_" & GetCurrentProcessId() & "_" & STR_THUNK_BUILDDATE, sBuffer, Len(sBuffer) - 1)
         lpThunk = Val(sBuffer)
         If lpThunk = 0 Then
             baThunk = FromBase64Array(STR_THUNK1 & STR_THUNK2)
             lpThunk = VirtualAlloc(0, UBound(baThunk) + 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE)
             Call CopyMemory(ByVal lpThunk, baThunk(0), UBound(baThunk) + 1)
-            Call SetEnvironmentVariable("_ZIP_THUNK_" & App.hInstance & "_" & STR_THUNK_BUILDDATE, lpThunk)
+            Call SetEnvironmentVariable("_ZIP_THUNK_" & GetCurrentProcessId() & "_" & STR_THUNK_BUILDDATE, lpThunk)
         End If
     End If
     pvGetThunkAddress = lpThunk
