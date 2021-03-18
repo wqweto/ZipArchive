@@ -1602,6 +1602,8 @@ Private Function pvToWinFileName(baBuffer() As Byte, ByVal lCodePage As Long) As
     pvToWinFileName = Join(vSplit, "\")
 End Function
 
+#End If ' ImplDecompress
+
 #If ImplInflate Then
 
 Public Function InflateBase64(sText As String, baOutput() As Byte) As Boolean
@@ -1645,40 +1647,37 @@ EH:
     Resume QH
 End Function
 
+Public Function DeflateBase64(baInput() As Byte, sText As String, Optional ByVal Level As Long = 6) As Boolean
+    Dim baOutput()      As Byte
+    
+    DeflateBase64 = Deflate(baInput, baOutput, Level)
+    If DeflateBase64 Then
+        sText = ToBase64String(baOutput)
+    End If
+End Function
+
 Public Function Deflate(baBuffer() As Byte, baOutput() As Byte, Optional ByVal Level As Long = 6) As Boolean
     Const FUNC_NAME     As String = "Deflate"
     Dim hCtx            As Long
-    Dim uBuf            As UcsZlibBuffersType
-    Dim lResult         As Long
+    Dim lOutputPtr      As Long
+    Dim lOutputSize     As Long
     
     On Error GoTo EH
-    hCtx = CallWindowProc(m_uRtbl.CompressInit, VarPtr(m_uRtbl))
-    If hCtx = 0 Then
-        Err.Raise vbObjectError, , ERR_INIT_COMPRESSOR
+    hCtx = DeflateInit()
+    If Not DeflateBlob(hCtx, VarPtr(baBuffer(0)), UBound(baBuffer) + 1, lOutputPtr, lOutputSize, Level, 1) Then
+        GoTo QH
     End If
-    uBuf.Greedy = (Level <= 4)
-    uBuf.MaxMatch = At(Array(0, 2, 6, 12, 24, 8, 16, 32, 64, 1000), Level)
-    uBuf.NiceLen = At(Array(0, 8, 10, 14, 24, 30, 65, 130, 200, 32768), Level)
-    uBuf.InBlock = VarPtr(baBuffer(0))
-    uBuf.InLen = UBound(baBuffer) + 1
-    uBuf.Final = 1
-    lResult = CallWindowProc(m_uRtbl.CompressBlock, hCtx, VarPtr(uBuf))
-    If lResult = 0 Or uBuf.OutBlock = 0 Then
-        Err.Raise vbObjectError, , ERR_COMPRESSING
-    End If
-    ReDim baOutput(0 To uBuf.OutLen - 1) As Byte
-    Call CopyMemory(baOutput(0), ByVal uBuf.OutBlock, uBuf.OutLen)
+    ReDim baOutput(0 To lOutputSize - 1) As Byte
+    Call CopyMemory(baOutput(0), ByVal lOutputPtr, lOutputSize)
     '--- success
     Deflate = True
 QH:
     On Error Resume Next
-    If uBuf.OutBlock <> 0 Then
-        Call CoTaskMemFree(uBuf.OutBlock)
-        uBuf.OutBlock = 0
+    If lOutputPtr <> 0 Then
+        Call CoTaskMemFree(lOutputPtr)
     End If
     If hCtx <> 0 Then
-        Call CallWindowProc(m_uRtbl.CompressCleanup, hCtx)
-        hCtx = 0
+        DeflateEnd hCtx
     End If
     Exit Function
 EH:
@@ -1686,15 +1685,54 @@ EH:
     Resume QH
 End Function
 
-Public Function DeflateBase64(baInput() As Byte, sText As String, Optional ByVal Level As Long = 6) As Boolean
-    Dim baOutput() As Byte
-    DeflateBase64 = Deflate(baInput, baOutput, Level)
-    If DeflateBase64 Then sText = ToBase64String(baOutput)
+Public Function DeflateInit() As Long
+    DeflateInit = CallWindowProc(m_uRtbl.CompressInit, VarPtr(m_uRtbl))
+    If DeflateInit = 0 Then
+        Err.Raise vbObjectError, , ERR_INIT_COMPRESSOR
+    End If
 End Function
 
-#End If ' ImplInflate
+Public Function DeflateBlob(ByVal hCtx As Long, ByVal lInputPtr As Long, ByVal lInputSize As Long, lOutputPtr As Long, lOutputSize As Long, Optional ByVal Level As Long = 6, Optional ByVal Final As Boolean) As Boolean
+    Const FUNC_NAME     As String = "DeflateBlob"
+    Dim uBuf            As UcsZlibBuffersType
+    Dim lResult         As Long
+    
+    On Error GoTo EH
+    uBuf.Greedy = (Level <= 4)
+    uBuf.MaxMatch = At(Array(0, 2, 6, 12, 24, 8, 16, 32, 64, 1000), Level)
+    uBuf.NiceLen = At(Array(0, 8, 10, 14, 24, 30, 65, 130, 200, 32768), Level)
+    uBuf.InBlock = lInputPtr
+    uBuf.InLen = lInputSize
+    uBuf.Final = -Final
+    lResult = CallWindowProc(m_uRtbl.CompressBlock, hCtx, VarPtr(uBuf))
+    If lResult = 0 Or uBuf.OutBlock = 0 Then
+        Err.Raise vbObjectError, , ERR_COMPRESSING
+    End If
+    '--- commit
+    lOutputPtr = uBuf.OutBlock
+    lOutputSize = uBuf.OutLen
+    uBuf.OutBlock = 0
+    '--- success
+    DeflateBlob = True
+QH:
+    On Error Resume Next
+    If uBuf.OutBlock <> 0 Then
+        Call CoTaskMemFree(uBuf.OutBlock)
+        uBuf.OutBlock = 0
+    End If
+    Exit Function
+EH:
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
+    Resume QH
+End Function
 
-#End If ' ImplDecompress
+Public Sub DeflateEnd(ByVal hCtx As Long)
+    If hCtx <> 0 Then
+        Call CallWindowProc(m_uRtbl.CompressCleanup, hCtx)
+    End If
+End Sub
+
+#End If ' ImplInflate
 
 '= Crypto ================================================================
 
