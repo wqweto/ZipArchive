@@ -149,14 +149,13 @@ Private Declare Function PathMatchSpecW Lib "shlwapi" (ByVal pszFileParam As Lon
 Private Declare Function GetCurrentProcessId Lib "kernel32" () As Long
 #If ImplCompress Then
     Private Declare Function FileTimeToDosDateTime Lib "kernel32" (lpFileTime As FILETIME, ByVal lpFatDate As Long, ByVal lpFatTime As Long) As Long
-    Private Declare Function ApiEmptyByteArray Lib "oleaut32" Alias "SafeArrayCreateVector" (Optional ByVal VarType As VbVarType = vbByte, Optional ByVal Low As Long = 0, Optional ByVal Count As Long = 0) As Byte()
     Private Declare Function FindNextFile Lib "kernel32" Alias "FindNextFileW" (ByVal hFindFile As Long, ByVal lpFindFileData As Long) As Long
 #End If ' ImplCompress
 #If ImplDecompress Then
     Private Declare Function DosDateTimeToFileTime Lib "kernel32" (ByVal wFatDate As Long, ByVal wFatTime As Long, lpFileTime As FILETIME) As Long
 #End If ' ImplDecompress
 #If ImplCrypto Then
-    Private Declare Function CoCreateGuid Lib "ole32" (pguid As Any) As Long
+    Private Declare Function RtlGenRandom Lib "advapi32" Alias "SystemFunction036" (RandomBuffer As Any, ByVal RandomBufferLength As Long) As Long
     Private Declare Function BCryptOpenAlgorithmProvider Lib "bcrypt" (phAlgorithm As Long, ByVal pszAlgId As Long, ByVal pszImplementation As Long, ByVal dwFlags As Long) As Long
     Private Declare Function BCryptCloseAlgorithmProvider Lib "bcrypt" (ByVal hAlgorithm As Long, ByVal dwFlags As Long) As Long
     Private Declare Function BCryptGetProperty Lib "bcrypt" (ByVal hObject As Long, ByVal pszProperty As Long, pbOutput As Any, ByVal cbOutput As Long, cbResult As Long, ByVal dwFlags As Long) As Long
@@ -441,23 +440,23 @@ End Type
 ' Properties
 '=========================================================================
 
-Property Get SemVersion() As String
+Public Property Get SemVersion() As String
     SemVersion = "0.2.8"
 End Property
 
-Property Get ThunkBuildDate() As String
+Public Property Get ThunkBuildDate() As String
     ThunkBuildDate = STR_THUNK_BUILDDATE
 End Property
 
-Property Get LastError() As String
+Public Property Get LastError() As String
     LastError = m_sLastError
 End Property
 
-Property Get FileCount() As Long
+Public Property Get FileCount() As Long
     FileCount = m_lFileCount
 End Property
 
-Property Get FileInfo(ByVal FileIdx As Long) As Variant
+Public Property Get FileInfo(ByVal FileIdx As Long) As Variant
     If FileIdx >= 0 And FileIdx < m_lFileCount Then
         With m_uFiles(FileIdx)
             FileInfo = Array(.FileName, .Attributes, .Crc32, .Size, .CompressedSize, .Comment, .LastModified, .Method, .Offset, .Flags)
@@ -1065,10 +1064,10 @@ Private Function pvToOemString(sText As String, Optional ByVal lCodePage As Long
             lSize = WideCharToMultiByte(lCodePage, 0, StrPtr(sText), Len(sText), VarPtr(baRetVal(0)), UBound(baRetVal) + 1, 0, 0)
             pvToOemString = baRetVal
         Else
-            pvToOemString = ApiEmptyByteArray()
+            pvToOemString = vbNullString
         End If
     Else
-        pvToOemString = ApiEmptyByteArray()
+        pvToOemString = vbNullString
     End If
 End Function
 
@@ -1087,6 +1086,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
     Dim uCentral        As UcsCentralHeaderType
     Dim baComment()     As Byte
     Dim lOffset         As Long
+    Dim baBuffer()      As Byte
     
     On Error GoTo EH
     pvSetError
@@ -1899,9 +1899,8 @@ End Function
 Private Function pvCryptoAesGetRandomSalt(ByVal lSize As Long) As Byte()
     Dim baResult()      As Byte
     
-    ReDim baResult(0 To 15) As Byte
-    Call CoCreateGuid(baResult(0))
-    ReDim Preserve baResult(0 To lSize - 1) As Byte
+    ReDim baResult(0 To lSize - 1) As Byte
+    Call RtlGenRandom(baResult(0), lSize)
     pvCryptoAesGetRandomSalt = baResult
 End Function
 
@@ -2025,7 +2024,7 @@ Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
     End If
 End Function
 
-Private Function pvVfsClose(uFile As UcsVfsFileType)
+Private Sub pvVfsClose(uFile As UcsVfsFileType)
     Dim vEmpty          As Variant
     
     If Not IsEmpty(uFile.BufferArray) Then
@@ -2040,7 +2039,7 @@ Private Function pvVfsClose(uFile As UcsVfsFileType)
         uFile.Handle = 0
     End If
     Set uFile.Stream = Nothing
-End Function
+End Sub
 
 Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lSize As Long) As Long
     If Not IsEmpty(uFile.BufferArray) Then
