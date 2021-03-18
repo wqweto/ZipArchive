@@ -36,7 +36,7 @@ Private m_lSize                 As Long
 ' Properties
 '=========================================================================
 
-Property Get Contents() As Byte()
+Public Property Get Contents() As Byte()
     If m_lSize > 0 Then
         Contents = m_baBuffer
         ReDim Preserve Contents(0 To m_lSize - 1) As Byte
@@ -45,7 +45,7 @@ Property Get Contents() As Byte()
     End If
 End Property
 
-Property Let Contents(baValue() As Byte)
+Public Property Let Contents(baValue() As Byte)
     m_baBuffer = baValue
     m_lPosition = 0
     m_lSize = UBound(m_baBuffer) + 1

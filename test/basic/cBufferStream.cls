@@ -37,7 +37,7 @@ Private m_lSize                 As Long
 ' Properties
 '=========================================================================
 
-Property Get Size() As Long
+Public Property Get Size() As Long
     Size = m_lSize
 End Property
 

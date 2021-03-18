@@ -162,7 +162,7 @@ Private Sub Command4_Click()
     With m_oZip
         .OpenArchive "D:\temp\aaa2.zip"
         Set m_oExtractInMemory = m_oZip
-        bResult = .Extract("D:\Temp\Unzip")
+        bResult = .Extract("D:\Temp\Unzip", "Kit\Documentation\*.md")
         Set m_oExtractInMemory = Nothing
         sLastError = .LastError
     End With
@@ -183,7 +183,7 @@ Private Sub Command5_Click()
     Set m_oZip = New cZipArchive
     m_bCancel = False
     With m_oZip
-        .AddFromFolder ".\*.sql", Recursive:=True, TargetFolder:="Kit", IncludeEmptyFolders:=True
+        .AddFromFolder ".\*.sql;*.md", Recursive:=True, TargetFolder:="Kit", IncludeEmptyFolders:=True
 '        .AddFromFolder "D:\TEMP\Unzip\Empty\*.*", Recursive:=True, TargetFolder:="Kit", IncludeEmptyFolders:=True
         ReDim baOutput(0 To 10000000) As Byte
         Set oBuffer = New cBufferStream
