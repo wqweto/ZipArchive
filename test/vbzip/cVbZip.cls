@@ -60,7 +60,7 @@ Public Function Init(vArgs As Variant) As Boolean
 
     On Error GoTo EH
     Set m_oArchive = New cZipArchive
-    Set m_oOpt = GetOpt(vArgs, "mem:m:o:p:si")
+    Set m_oOpt = GetOpt(vArgs, "mcp:mem:m:o:p:si")
     With m_oOpt
         .Item("command") = .Item("arg1")
         .Item("zip") = .Item("arg2")
@@ -69,10 +69,13 @@ Public Function Init(vArgs As Variant) As Boolean
             .Item("file" & lIdx) = .Item("arg" & lIdx + 2)
         Next
         If Not .Item("-nologo") Then
-            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2019 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
+            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2022 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
         End If
         If LenB(.Item("zip")) <> 0 Then
             ConsoleError "Archive: " & .Item("zip") & vbCrLf
+        End If
+        If .Exists("-mcp") Then
+            m_oArchive.CodePage = Val(.Item("-mcp"))
         End If
         Select Case LCase$(.Item("command"))
         Case "a"
@@ -213,7 +216,8 @@ Public Function Init(vArgs As Variant) As Boolean
                     "  -p PASSWORD password used to encrypt/decrypt files" & vbCrLf & _
                     "  -mem METHOD encryption method" & vbCrLf & _
                     "  -so         output to stdout" & vbCrLf & _
-                    "  -si NAME    input from stdin zip to NAME in archive" & vbCrLf
+                    "  -si NAME    input from stdin zip to NAME in archive" & vbCrLf & _
+                    "  -mcp CPAGE  codepage for archive filenames [default: 437]" & vbCrLf
             Else
                 ConsoleError "Invalid command: " & .Item("command") & vbCrLf
             End If

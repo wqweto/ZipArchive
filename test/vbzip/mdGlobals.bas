@@ -9,18 +9,20 @@ DefObj A-Z
 Private Const STD_INPUT_HANDLE              As Long = -10&
 Private Const STD_OUTPUT_HANDLE             As Long = -11&
 Private Const STD_ERROR_HANDLE              As Long = -12&
+Private Const CP_UTF8                       As Long = 65001
 
 Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) As Long
 Private Declare Function ReadFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToRead As Long, lpNumberOfBytesRead As Long, ByVal lpOverlapped As Long) As Long
 Private Declare Function WriteFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToWrite As Long, lpNumberOfBytesWritten As Long, lpOverlapped As Any) As Long
-Private Declare Function CharToOemBuff Lib "user32" Alias "CharToOemBuffA" (ByVal lpszSrc As String, lpszDst As Any, ByVal cchDstLength As Long) As Long
-Private Declare Function OemToCharBuff Lib "user32" Alias "OemToCharBuffA" (lpszSrc As Any, ByVal lpszDst As String, ByVal cchDstLength As Long) As Long
+Private Declare Function OemToCharBuff Lib "user32" Alias "OemToCharBuffW" (lpszSrc As Any, ByVal lpszDst As Long, ByVal cchDstLength As Long) As Long
 Private Declare Function CommandLineToArgvW Lib "shell32" (ByVal lpCmdLine As Long, pNumArgs As Long) As Long
 Private Declare Function LocalFree Lib "kernel32" (ByVal hMem As Long) As Long
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 Private Declare Function ApiSysAllocString Lib "oleaut32" Alias "SysAllocString" (ByVal Ptr As Long) As Long
-Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesA" (ByVal lpFileName As String) As Long
+Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesW" (ByVal lpFileName As Long) As Long
 Private Declare Sub ExitProcess Lib "kernel32" (ByVal uExitCode As Long)
+Private Declare Function WriteConsole Lib "kernel32" Alias "WriteConsoleW" (ByVal hConsoleOutput As Long, lpBuffer As Any, ByVal nNumberOfCharsToWrite As Long, lpNumberOfCharsWritten As Long, ByVal lpReserved As Long) As Long
+Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As Long, ByVal cchWideChar As Long, ByVal lpMultiByteStr As Long, ByVal cchMultiByte As Long, ByVal lpDefaultChar As Long, ByVal lpUsedDefaultChar As Long) As Long
 
 Private m_sLastConsoleOutput        As String
 
@@ -103,8 +105,8 @@ Private Function pvConsoleOutput(ByVal hOut As Long, ByVal sText As String, A As
         m_sLastConsoleOutput = pvConsoleOutput
         Debug.Print pvConsoleOutput;
     Else
-        ReDim baBuffer(0 To Len(pvConsoleOutput) - 1) As Byte
-        If CharToOemBuff(pvConsoleOutput, baBuffer(0), UBound(baBuffer) + 1) Then
+        If WriteConsole(hOut, ByVal StrPtr(pvConsoleOutput), Len(pvConsoleOutput), dwDummy, 0) = 0 Then
+            baBuffer = ToUtf8Array(pvConsoleOutput)
             Call WriteFile(hOut, baBuffer(0), UBound(baBuffer) + 1, dwDummy, ByVal 0&)
         End If
     End If
@@ -126,7 +128,7 @@ Public Function ConsoleRead(Optional ByVal lSize As Long = 1) As String
         ReDim baBuffer(0 To lSize - 1) As Byte
         If ReadFile(hIn, baBuffer(0), UBound(baBuffer) + 1, lSize, 0) And lSize > 0 Then
             sText = String$(lSize, 0)
-            Call OemToCharBuff(baBuffer(0), sText, lSize + 1)
+            Call OemToCharBuff(baBuffer(0), StrPtr(sText), lSize + 1)
         End If
     End If
     ConsoleRead = sText
@@ -187,7 +189,7 @@ QH:
 End Function
 
 Public Function FileAttr(sFile As String) As VbFileAttribute
-    FileAttr = GetFileAttributes(sFile)
+    FileAttr = GetFileAttributes(StrPtr(sFile))
     If FileAttr = -1 Then
         FileAttr = &H8000
     End If
@@ -204,5 +206,19 @@ End Property
 Private Function pvSetTrue(bValue As Boolean) As Boolean
     bValue = True
     pvSetTrue = True
+End Function
+
+Private Function ToUtf8Array(sText As String) As Byte()
+    Dim baRetVal()      As Byte
+    Dim lSize           As Long
+    
+    lSize = WideCharToMultiByte(CP_UTF8, 0, StrPtr(sText), Len(sText), 0, 0, 0, 0)
+    If lSize > 0 Then
+        ReDim baRetVal(0 To lSize - 1) As Byte
+        Call WideCharToMultiByte(CP_UTF8, 0, StrPtr(sText), Len(sText), VarPtr(baRetVal(0)), lSize, 0, 0)
+    Else
+        baRetVal = vbNullString
+    End If
+    ToUtf8Array = baRetVal
 End Function
 
