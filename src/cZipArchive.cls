@@ -13,7 +13,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 '=========================================================================
 '
-' cZipArchive (c) 2017-2019 by wqweto@gmail.com
+' cZipArchive (c) 2017-2022 by wqweto@gmail.com
 '
 ' A single-class pure VB6 library for zip archives management
 '
@@ -116,9 +116,9 @@ Private Const BCRYPT_CHAINING_MODE          As String = "ChainingMode"
 Private Const BCRYPT_CHAIN_MODE_ECB         As String = "ChainingModeECB"
 Private Const BCRYPT_ALG_HANDLE_HMAC_FLAG   As Long = 8
 '--- for GetStdHandle
-Private Const STD_INPUT_HANDLE              As Long = -10&
-Private Const STD_OUTPUT_HANDLE             As Long = -11&
-Private Const STD_ERROR_HANDLE              As Long = -12&
+Private Const STD_INPUT_HANDLE              As Long = -10
+Private Const STD_OUTPUT_HANDLE             As Long = -11
+Private Const STD_ERROR_HANDLE              As Long = -12
 
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
 Private Declare Function FindFirstFile Lib "kernel32" Alias "FindFirstFileW" (ByVal lpFileName As Long, ByVal lpFindFileData As Long) As Long
@@ -136,15 +136,15 @@ Private Declare Function LocalFileTimeToFileTime Lib "kernel32" (lpLocalFileTime
 Private Declare Function SystemTimeToVariantTime Lib "oleaut32" (lpSystemTime As SYSTEMTIME, pvTime As Date) As Long
 Private Declare Function VariantTimeToSystemTime Lib "oleaut32" (ByVal vTime As Date, lpSystemTime As SYSTEMTIME) As Long
 Private Declare Function VirtualAlloc Lib "kernel32" (ByVal lpAddress As Long, ByVal dwSize As Long, ByVal flAllocationType As Long, ByVal flProtect As Long) As Long
-Private Declare Function GetModuleHandle Lib "kernel32" Alias "GetModuleHandleA" (ByVal lpModuleName As String) As Long
+Private Declare Function GetModuleHandle Lib "kernel32" Alias "GetModuleHandleW" (ByVal lpModuleName As Long) As Long
 Private Declare Function GetProcAddress Lib "kernel32" (ByVal hModule As Long, ByVal lpProcName As String) As Long
-Private Declare Function CallWindowProc Lib "user32" Alias "CallWindowProcA" (ByVal lpPrevWndFunc As Long, ByVal hWnd As Long, Optional ByVal Msg As Long, Optional ByVal wParam As Long, Optional ByVal lParam As Long) As Long
+Private Declare Function CallWindowProc Lib "user32" Alias "CallWindowProcW" (ByVal lpPrevWndFunc As Long, ByVal hWnd As Long, Optional ByVal Msg As Long, Optional ByVal wParam As Long, Optional ByVal lParam As Long) As Long
 Private Declare Sub CoTaskMemFree Lib "ole32" (ByVal pv As Long)
 Private Declare Function MultiByteToWideChar Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, lpMultiByteStr As Any, ByVal cbMultiByte As Long, lpWideCharStr As Any, ByVal cchWideChar As Long) As Long
 Private Declare Function WideCharToMultiByte Lib "kernel32" (ByVal CodePage As Long, ByVal dwFlags As Long, ByVal lpWideCharStr As Long, ByVal cchWideChar As Long, ByVal lpMultiByteStr As Long, ByVal cchMultiByte As Long, ByVal lpDefaultChar As Long, ByVal lpUsedDefaultChar As Long) As Long
 Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) As Long
-Private Declare Function GetEnvironmentVariable Lib "kernel32" Alias "GetEnvironmentVariableA" (ByVal lpName As String, ByVal lpBuffer As String, ByVal nSize As Long) As Long
-Private Declare Function SetEnvironmentVariable Lib "kernel32" Alias "SetEnvironmentVariableA" (ByVal lpName As String, ByVal lpValue As String) As Long
+Private Declare Function GetEnvironmentVariable Lib "kernel32" Alias "GetEnvironmentVariableW" (ByVal lpName As Long, ByVal lpBuffer As Long, ByVal nSize As Long) As Long
+Private Declare Function SetEnvironmentVariable Lib "kernel32" Alias "SetEnvironmentVariableW" (ByVal lpName As Long, ByVal lpValue As Long) As Long
 Private Declare Function PathMatchSpecW Lib "shlwapi" (ByVal pszFileParam As Long, ByVal pszSpec As Long) As Long
 Private Declare Function GetCurrentProcessId Lib "kernel32" () As Long
 #If ImplCompress Then
@@ -170,7 +170,7 @@ Private Declare Function GetCurrentProcessId Lib "kernel32" () As Long
     Private Declare Function BCryptFinishHash Lib "bcrypt" (ByVal hHash As Long, pbOutput As Any, ByVal cbOutput As Long, ByVal dwFlags As Long) As Long
 #End If ' ImplCrypto
 #If ImplUseShared = 0 Then
-    Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageA" (ByVal dwFlags As Long, lpSource As Long, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As String, ByVal nSize As Long, Args As Any) As Long
+    Private Declare Function FormatMessage Lib "kernel32" Alias "FormatMessageW" (ByVal dwFlags As Long, lpSource As Long, ByVal dwMessageId As Long, ByVal dwLanguageId As Long, ByVal lpBuffer As Long, ByVal nSize As Long, Args As Any) As Long
     Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesW" (ByVal lpFileName As Long) As Long
     Private Declare Function CreateDirectory Lib "kernel32" Alias "CreateDirectoryW" (ByVal lpPathName As Long, ByVal lpSecurityAttributes As Long) As Long
     Private Declare Function CryptBinaryToString Lib "crypt32" Alias "CryptBinaryToStringW" (ByVal pbBinary As Long, ByVal cbBinary As Long, ByVal dwFlags As Long, ByVal pszString As Long, ByRef pcchString As Long) As Long
@@ -263,6 +263,7 @@ Private m_bCancel               As Boolean
 Private m_lFileCount            As Long
 Private m_uFiles()              As UcsFileInfo
 Private m_lCurrentFile          As Long
+Private m_lCodePage             As Long
 #If ImplDecompress Then
     Private m_sComment          As String
     Private m_vArchiveFile      As Variant
@@ -441,7 +442,7 @@ End Type
 '=========================================================================
 
 Public Property Get SemVersion() As String
-    SemVersion = "0.2.8"
+    SemVersion = "0.2.9"
 End Property
 
 Public Property Get ThunkBuildDate() As String
@@ -462,6 +463,14 @@ Public Property Get FileInfo(ByVal FileIdx As Long) As Variant
             FileInfo = Array(.FileName, .Attributes, .Crc32, .Size, .CompressedSize, .Comment, .LastModified, .Method, .Offset, .Flags)
         End With
     End If
+End Property
+
+Public Property Get CodePage() As Long
+    CodePage = m_lCodePage
+End Property
+
+Public Property Let CodePage(ByVal lValue As Long)
+    m_lCodePage = lValue
 End Property
 
 #If ImplDecompress Then
@@ -582,7 +591,7 @@ Public Function CompressArchive( _
             If bSkip Then
                 GoTo SkipFile
             End If
-            lComprLevel = LimitLong(lComprLevel, 0, 9)
+            lComprLevel = Clamp(lComprLevel, 0, 9)
             uBuf.Greedy = (lComprLevel <= 4)
             uBuf.MaxMatch = At(Array(0, 2, 6, 12, 24, 8, 16, 32, 64, 1000), lComprLevel)
             uBuf.NiceLen = At(Array(0, 8, 10, 14, 24, 30, 65, 130, 200, 32768), lComprLevel)
@@ -596,7 +605,7 @@ Public Function CompressArchive( _
             uLocal.USize = 0
             uLocal.CSize = 0
             If UseUtf8 = vbUseDefault Then
-                uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName)) <> .FileName, ucsZcfUseUtf8, 0)
+                uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName, m_lCodePage), m_lCodePage) <> .FileName, ucsZcfUseUtf8, 0)
             Else
                 uLocal.Flags = IIf(UseUtf8 = vbTrue, ucsZcfUseUtf8, 0)
             End If
@@ -978,7 +987,7 @@ End Function
 Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderType, FileName As String, baExtra() As Byte)
     Dim baFName()       As Byte
     
-    baFName = pvToOemString(Replace(FileName, "\", "/"), IIf((uHdr.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, CP_OEMCP))
+    baFName = pvToOemString(Replace(FileName, "\", "/"), IIf((uHdr.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, m_lCodePage))
     uHdr.LenFname = UBound(baFName) + 1
     uHdr.LenExt = UBound(baExtra) + 1
     Debug.Assert VarPtr(uHdr.FDate) + 2 - VarPtr(uHdr.Signature) + VarPtr(uHdr.LenExt) + 2 - VarPtr(uHdr.Crc32) = LNG_LEN_LOCAL
@@ -1000,7 +1009,7 @@ Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHea
     Dim baFName()       As Byte
     Dim baComment()     As Byte
     
-    lCodePage = IIf((uHdr.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, CP_OEMCP)
+    lCodePage = IIf((uHdr.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, m_lCodePage)
     baFName = pvToOemString(Replace(FileName, "\", "/"), lCodePage)
     baComment = pvToOemString(Comment, lCodePage)
     uHdr.LenFname = UBound(baFName) + 1
@@ -1028,7 +1037,7 @@ End Sub
 Private Sub pvOutputEndHeader(uFile As UcsVfsFileType, uHdr As UcsEndHeaderType, Comment As String)
     Dim baComment()     As Byte
     
-    baComment = pvToOemString(Comment)
+    baComment = pvToOemString(Comment, m_lCodePage)
     uHdr.LenCom = UBound(baComment) + 1
     Debug.Assert VarPtr(uHdr.LenCom) + 2 - VarPtr(uHdr.Signature) = LNG_LEN_END
     pvVfsWrite uFile, VarPtr(uHdr.Signature), LNG_LEN_END
@@ -1053,7 +1062,7 @@ Private Sub pvToDosDateTime(dDate As Date, nDate As Integer, nTime As Integer)
     Call FileTimeToDosDateTime(uFileTime, VarPtr(nDate), VarPtr(nTime))
 End Sub
 
-Private Function pvToOemString(sText As String, Optional ByVal lCodePage As Long = CP_OEMCP) As Byte()
+Private Function pvToOemString(sText As String, ByVal lCodePage As Long) As Byte()
     Dim baRetVal()      As Byte
     Dim lSize           As Long
     
@@ -1094,7 +1103,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
     uArchiveFile = pvVfsOpen(ArchiveFile)
     lIdx = pvVfsSeek(uArchiveFile, 0, FILE_END)
     If lIdx >= LNG_LEN_END Then
-        For lIdx = 0 To LimitLong(lIdx - LNG_LEN_END, , MAX_END_SEEK)
+        For lIdx = 0 To Clamp(lIdx - LNG_LEN_END, , MAX_END_SEEK)
             pvVfsSeek uArchiveFile, -LNG_LEN_END - lIdx, FILE_END
             Debug.Assert VarPtr(uEndHdr.LenCom) + 2 - VarPtr(uEndHdr.Signature) = LNG_LEN_END
             pvVfsRead uArchiveFile, VarPtr(uEndHdr), LNG_LEN_END
@@ -1108,7 +1117,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
         If uEndHdr.LenCom > 0 Then
             ReDim baComment(0 To uEndHdr.LenCom - 1) As Byte
             pvVfsRead uArchiveFile, VarPtr(baComment(0)), uEndHdr.LenCom
-            sArchiveComment = pvFromOemString(baComment)
+            sArchiveComment = pvFromOemString(baComment, m_lCodePage)
         End If
         '--- note: redim one more (last ignored)
         ReDim uFiles(0 To uEndHdr.Entries) As UcsFileInfo
@@ -1213,12 +1222,13 @@ Private Function pvLoadFileInfo(uArchiveFile As UcsVfsFileType, uCentral As UcsC
         .Attributes = uCentral.AttribX
         .Offset = uCentral.Offset
         .Flags = uCentral.Flags
-        lCodePage = IIf((.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, CP_OEMCP)
+        lCodePage = IIf((.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, m_lCodePage)
         Debug.Assert uCentral.LenFname > 0
         If uCentral.LenFname > 0 Then
             ReDim baFName(0 To uCentral.LenFname - 1) As Byte
             pvVfsRead uArchiveFile, VarPtr(baFName(0)), uCentral.LenFname
             .FileName = pvToWinFileName(baFName, lCodePage)
+            MsgBox .FileName
         Else
             If pvSetError(MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE & ". " & Replace(ERR_ENTRY_NO_FILENAME, "%1", lEntry), CanContinue:=True) Then
                 GoTo QH
@@ -1988,7 +1998,7 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
         End If
         pvVfsOpen.Data.nFileSizeLow = pvVfsOpen.BufferSize
         pvVfsOpen.Data.dwFileAttributes = vbArchive
-        pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
+        pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(VBA.Now)
     ElseIf IsObject(File) Then
         pvVfsOpen.FileName = STR_STREAM
         Set pvVfsOpen.Stream = File
@@ -1996,12 +2006,12 @@ Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
             pvVfsOpen.Data.nFileSizeLow = pvVfsOpen.Stream.VfsSetFilePointer(0, FILE_END)
         End If
         pvVfsOpen.Data.dwFileAttributes = vbArchive
-        pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
+        pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(VBA.Now)
     Else
         pvVfsOpen.FileName = File
         If Right$(File, 1) = ":" Then
             pvVfsOpen.Data.dwFileAttributes = vbArchive
-            pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(Now)
+            pvVfsOpen.Data.ftLastWriteTime = pvToFileTime(VBA.Now)
         ElseIf Right$(File, 1) <> "\" Then
             hFind = FindFirstFile(StrPtr(File), VarPtr(pvVfsOpen.Data))
         Else
@@ -2081,7 +2091,7 @@ End Sub
 
 Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lSize As Long) As Long
     If Not IsEmpty(uFile.BufferArray) Then
-        pvVfsRead = LimitLong(lSize, 0, uFile.BufferSize - (uFile.BufferPtr - uFile.BufferBase))
+        pvVfsRead = Clamp(lSize, 0, uFile.BufferSize - (uFile.BufferPtr - uFile.BufferBase))
         Call CopyMemory(ByVal lPtr, ByVal uFile.BufferPtr, pvVfsRead)
         uFile.BufferPtr = uFile.BufferPtr + pvVfsRead
     ElseIf Not uFile.Stream Is Nothing Then
@@ -2113,7 +2123,7 @@ Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal l
         lOffset = uFile.BufferPtr - uFile.BufferBase
         If lOffset + lSize > uFile.BufferSize Then
             If lOffset + lSize <= MAX_STEP Then
-                uFile.BufferSize = LimitLong(2 ^ Int(Log(lOffset + lSize) / Log(2) + 1), 8192)
+                uFile.BufferSize = Clamp(2 ^ Int(Log(lOffset + lSize) / Log(2) + 1), 8192)
             Else
                 uFile.BufferSize = (lOffset + lSize + MAX_STEP - 1) And -MAX_STEP
             End If
@@ -2203,7 +2213,7 @@ End Function
 
 '= common ================================================================
 
-Private Function pvFromOemString(baBuffer() As Byte, Optional ByVal lCodePage As Long = CP_OEMCP) As String
+Private Function pvFromOemString(baBuffer() As Byte, ByVal lCodePage As Long) As String
     Dim lSize           As Long
     
     If UBound(baBuffer) >= 0 Then
@@ -2277,9 +2287,9 @@ Private Function pvInitRelocTable(uRtbl As UcsZlibRelocTableType) As Long
         .MemNonce = lpThunk + vSplit(ucsIdx_MemNonce)
         .MemXor = lpThunk + vSplit(ucsIdx_MemXor)
         .ZipCrypt = lpThunk + vSplit(ucsIdx_ZipCrypt)
-        .MallocImpl = GetProcAddress(GetModuleHandle("ole32"), "CoTaskMemAlloc")
-        .ReallocImpl = GetProcAddress(GetModuleHandle("ole32"), "CoTaskMemRealloc")
-        .FreeImpl = GetProcAddress(GetModuleHandle("ole32"), "CoTaskMemFree")
+        .MallocImpl = GetProcAddress(GetModuleHandle(StrPtr("ole32")), "CoTaskMemAlloc")
+        .ReallocImpl = GetProcAddress(GetModuleHandle(StrPtr("ole32")), "CoTaskMemRealloc")
+        .FreeImpl = GetProcAddress(GetModuleHandle(StrPtr("ole32")), "CoTaskMemFree")
         .LenCodes = lpThunk + vSplit(ucsIdx_LenCodes)
         .DistCodes = lpThunk + vSplit(ucsIdx_DistCodes)
         .MirrorBytes = lpThunk + vSplit(ucsIdx_MirrorBytes)
@@ -2295,13 +2305,13 @@ Private Function pvGetThunkAddress() As Long
     
     If lpThunk = 0 Then
         sBuffer = String$(50, 0)
-        Call GetEnvironmentVariable("_ZIP_THUNK_" & GetCurrentProcessId() & "_" & STR_THUNK_BUILDDATE, sBuffer, Len(sBuffer) - 1)
+        Call GetEnvironmentVariable(StrPtr("_ZIP_THUNK_" & GetCurrentProcessId() & "_" & STR_THUNK_BUILDDATE), StrPtr(sBuffer), Len(sBuffer) - 1)
         lpThunk = Val(sBuffer)
         If lpThunk = 0 Then
             baThunk = FromBase64Array(STR_THUNK1 & STR_THUNK2)
             lpThunk = VirtualAlloc(0, UBound(baThunk) + 1, MEM_COMMIT, PAGE_EXECUTE_READWRITE)
             Call CopyMemory(ByVal lpThunk, baThunk(0), UBound(baThunk) + 1)
-            Call SetEnvironmentVariable("_ZIP_THUNK_" & GetCurrentProcessId() & "_" & STR_THUNK_BUILDDATE, lpThunk)
+            Call SetEnvironmentVariable(StrPtr("_ZIP_THUNK_" & GetCurrentProcessId() & "_" & STR_THUNK_BUILDDATE), StrPtr(lpThunk))
         End If
     End If
     pvGetThunkAddress = lpThunk
@@ -2380,8 +2390,8 @@ End Function
 Private Function GetSystemMessage(ByVal lLastDllError As Long) As String
     Dim lSize            As Long
    
-    GetSystemMessage = Space$(2000)
-    lSize = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM Or FORMAT_MESSAGE_IGNORE_INSERTS, 0&, lLastDllError, 0&, GetSystemMessage, Len(GetSystemMessage), 0&)
+    GetSystemMessage = String$(2000, 0)
+    lSize = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM Or FORMAT_MESSAGE_IGNORE_INSERTS, 0, lLastDllError, 0, StrPtr(GetSystemMessage), Len(GetSystemMessage), 0)
     If lSize > 2 Then
         If Mid$(GetSystemMessage, lSize - 1, 2) = vbCrLf Then
             lSize = lSize - 2
@@ -2427,16 +2437,16 @@ Private Function At(vArray As Variant, ByVal lIdx As Long) As Variant
 QH:
 End Function
 
-Private Function LimitLong( _
+Private Function Clamp( _
             ByVal lValue As Long, _
             Optional ByVal Min As Long = -2147483647, _
             Optional ByVal Max As Long = 2147483647) As Long
     If lValue < Min Then
-        LimitLong = Min
+        Clamp = Min
     ElseIf lValue > Max Then
-        LimitLong = Max
+        Clamp = Max
     Else
-        LimitLong = lValue
+        Clamp = lValue
     End If
 End Function
 
@@ -2466,7 +2476,7 @@ Public Function FromUtf8Array(baText() As Byte) As String
     Dim lSize           As Long
     
     If UBound(baText) >= 0 Then
-        FromUtf8Array = String$(2 * UBound(baText), 0)
+        FromUtf8Array = String$(2 * (UBound(baText) + 1), 0)
         lSize = MultiByteToWideChar(CP_UTF8, 0, baText(0), UBound(baText) + 1, ByVal StrPtr(FromUtf8Array), Len(FromUtf8Array))
         FromUtf8Array = Left$(FromUtf8Array, lSize)
     End If
@@ -2515,6 +2525,7 @@ End Function
 Private Sub Class_Initialize()
     pvInitRelocTable m_uRtbl
     m_lCurrentFile = -1
+    m_lCodePage = CP_OEMCP
 End Sub
 
 #If ImplCrypto Then
