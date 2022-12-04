@@ -61,14 +61,14 @@ End Function
 ' VFS interface
 '=========================================================================
 
-Public Function VfsSetFilePointer(lPosition As Long, ByVal lMoveMethod As Long) As Long
+Public Function VfsSetFilePointer(ByVal cPosition As Currency, ByVal lMoveMethod As Long) As Long
     Select Case lMoveMethod
     Case FILE_BEGIN
-        m_lPosition = lPosition
+        m_lPosition = cPosition
     Case FILE_CURRENT
-        m_lPosition = m_lPosition + lPosition
+        m_lPosition = m_lPosition + cPosition
     Case FILE_END
-        m_lPosition = m_lSize + lPosition
+        m_lPosition = m_lSize + cPosition
     End Select
     VfsSetFilePointer = m_lPosition
 End Function
