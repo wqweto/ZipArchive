@@ -475,18 +475,18 @@ Private Type UcsFileInfo
     Extra()             As Byte
     SourceFile          As Variant
     Level               As Long
-    #If ImplCrypto Then
-        Aes             As UcsAesExtraDataType
-        DecDat          As Byte
-        Password        As String
-    #End If ' ImplCrypto
+#If ImplCrypto Then
+    Aes                 As UcsAesExtraDataType
+    DecDat              As Byte
+    Password            As String
+#End If ' ImplCrypto
 End Type
 
 Private Type UcsZipCryptoType
     hPbkdf2Alg          As Long
     hHmacAlg            As Long
     hHmacHash           As Long
-    HmacHashLen         As Long
+    HmacLen             As Long
     hAesAlg             As Long
     hAesKey             As Long
     AesKeyObjData()     As Byte
@@ -614,7 +614,7 @@ Public Function AddFile( _
         #If ImplCrypto Then
             .Password = Password
             .Aes.Strength = EncrStrength
-        #End If
+        #End If ' ImplCrypto
     End With
     m_lFileCount = m_lFileCount + 1
     '--- success
@@ -652,13 +652,13 @@ Public Function CompressArchive( _
     Dim lEntries        As Long
     Dim lComprLevel     As Long
     Dim bSkip           As Boolean
-    #If ImplCrypto Then
-        Dim lSaltSize   As Long
-        Dim baSalt()    As Byte
-        Dim nPassVer    As Integer
-        Dim lJdx        As Long
-        Dim uAes        As UcsAesExtraDataType
-    #End If
+#If ImplCrypto Then
+    Dim lSaltSize       As Long
+    Dim baSalt()        As Byte
+    Dim nPassVer        As Integer
+    Dim lJdx            As Long
+    Dim uAes            As UcsAesExtraDataType
+#End If ' ImplCrypto
     
     On Error GoTo EH
     pvSetError
@@ -706,14 +706,14 @@ Public Function CompressArchive( _
                             Err.Raise vbObjectError, , m_sLastError
                         End If
                         '--- encrypt 12-byte random header w/ last byte used for password check
-                        baSalt = pvCryptoAesGetRandomSalt(LNG_ENC_HEADER_SIZE)
+                        pvCryptoGetRandom LNG_ENC_HEADER_SIZE, baSalt
                         Call CopyMemory(baSalt(LNG_ENC_HEADER_SIZE - 1), ByVal UnsignedAdd(VarPtr(uLocal.FDate), -1), 1)
                         If Not pvCryptoTradCrypt(baSalt) Then
                             Err.Raise vbObjectError, , m_sLastError
                         End If
                     Else
                         lSaltSize = (.Aes.Strength + 1) * 4
-                        baSalt = pvCryptoAesGetRandomSalt(lSaltSize)
+                        pvCryptoGetRandom lSaltSize, baSalt
                         If Not pvCryptoAesInit(ToUtf8Array(.Password), baSalt, lSaltSize * 2, nPassVer) Then
                             Err.Raise vbObjectError, , m_sLastError
                         End If
@@ -722,7 +722,7 @@ Public Function CompressArchive( _
                         ReDim Preserve .Extra(0 To lJdx + LNG_EXTRADATA_AES_SIZE + 3) As Byte
                     End If
                 End If
-            #End If
+            #End If ' ImplCrypto
             cHeaderOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
             pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra, .Size, UseZip64
             #If ImplCrypto Then
@@ -734,7 +734,7 @@ Public Function CompressArchive( _
                         pvVfsWrite uArchiveFile, VarPtr(nPassVer), 2
                     End If
                 End If
-            #End If
+            #End If ' ImplCrypto
             cBeginOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
             If (.Attributes And vbDirectory + vbVolume) = 0 Then
                 If lComprLevel > 0 Then
@@ -772,7 +772,7 @@ Public Function CompressArchive( _
                                 Call CoTaskMemFree(uBuf.OutBlock)
                                 uBuf.OutBlock = 0
                             End If
-                        #End If
+                        #End If ' ImplCrypto
                         If uBuf.OutBlock <> 0 Then
                             pvVfsWrite uArchiveFile, uBuf.OutBlock, uBuf.OutLen
                             Call CoTaskMemFree(uBuf.OutBlock)
@@ -818,7 +818,7 @@ Public Function CompressArchive( _
                                 End If
                             End If
                         End If
-                    #End If
+                    #End If ' ImplCrypto
                     Do
                         RaiseEvent Progress(lIdx, uLocal.Ext.USize, .Size, m_bCancel)
                         If m_bCancel Then
@@ -842,7 +842,7 @@ Public Function CompressArchive( _
                                     End If
                                 End If
                             End If
-                        #End If
+                        #End If ' ImplCrypto
                         pvVfsWrite uArchiveFile, VarPtr(baBuffer(0)), lSize
                         uLocal.Ext.USize = uLocal.Ext.USize + lSize
                         uLocal.Ext.CSize = uLocal.Ext.CSize + lSize
@@ -856,7 +856,7 @@ Public Function CompressArchive( _
                     If .Aes.Strength = 0 Then
                         uLocal.Ext.CSize = uLocal.Ext.CSize + LNG_ENC_HEADER_SIZE
                     Else
-                        '--- append HMAC SHA1 authetication code after file data
+                        '--- append HMAC-SHA1 authentication tag after file data
                         baSalt = pvCryptoAesGetFinalHash(LNG_AES_AUTHCODE_SIZE)
                         pvVfsWrite uArchiveFile, VarPtr(baSalt(0)), LNG_AES_AUTHCODE_SIZE
                         '--- update AE-1/2 in extra data
@@ -878,7 +878,7 @@ Public Function CompressArchive( _
                         End If
                     End If
                 End If
-            #End If
+            #End If ' ImplCrypto
             .Crc32 = uLocal.Crc32
             Debug.Assert .Size = uLocal.Ext.USize
             .Size = uLocal.Ext.USize
@@ -1573,11 +1573,11 @@ Public Function Extract( _
     Dim sFilterMask     As String
     Dim sOutputFolder   As String
     Dim sOutputFile     As String
-    #If ImplCrypto Then
-        Dim lSaltSize   As Long
-        Dim baSalt()    As Byte
-        Dim nPassVer    As Integer
-    #End If ' ImplCrypto
+#If ImplCrypto Then
+    Dim lSaltSize       As Long
+    Dim baSalt()        As Byte
+    Dim nPassVer        As Integer
+#End If ' ImplCrypto
     
     On Error GoTo EH
     pvSetError
@@ -1599,7 +1599,7 @@ Public Function Extract( _
         sOutputFolder = OutputTarget
         If LenB(sOutputFolder) <> 0 Then
             If (FileAttribs(sOutputFolder) And vbDirectory) = 0 Then
-                sOutputFolder = PathGetFolder(sOutputFolder, sOutputFile)
+                sOutputFolder = pvPathGetFolder(sOutputFolder, sOutputFile)
                 If (FileAttribs(sOutputFolder) And vbDirectory) = 0 Then
                     sOutputFolder = OutputTarget
                     sOutputFile = vbNullString
@@ -1671,7 +1671,7 @@ Public Function Extract( _
                 ElseIf InStr(sOutputFile, "*.*") > 0 Then
                     vFileName = Replace(sOutputFile, "*.*", .FileName)
                 Else
-                    vFileName = Replace(sOutputFile, "*", FileGetFName(.FileName))
+                    vFileName = Replace(sOutputFile, "*", pvFileGetFName(.FileName))
                 End If
                 vFileName = PathCombine(sOutputFolder, CStr(vFileName))
                 RaiseEvent BeforeExtract(lIdx, vFileName, bSkip, m_bCancel)
@@ -1728,7 +1728,7 @@ Public Function Extract( _
                             End If
                             cRead = LNG_ENC_HEADER_SIZE
                         Else
-                            '--- init WinZip AES w/ ECB
+                            '--- init WinZip AES
                             lSaltSize = (.Aes.Strength + 1) * 4
                             lResult = pvVfsRead(uArchiveFile, VarPtr(baBuffer(0)), lSaltSize + 2)
                             If lResult < lSaltSize + 2 Then
@@ -1810,7 +1810,7 @@ Public Function Extract( _
                 pvVfsSetEof uFile, .FileName
                 #If ImplCrypto Then
                     If .Aes.Strength <> 0 Then
-                        '--- check HMAC SHA1 auth code
+                        '--- check HMAC-SHA1 auth code
                         ReDim baSalt(0 To LNG_AES_AUTHCODE_SIZE - 1) As Byte
                         lResult = pvVfsRead(uArchiveFile, VarPtr(baSalt(0)), LNG_AES_AUTHCODE_SIZE)
                         If lResult < LNG_AES_AUTHCODE_SIZE Then
@@ -2039,6 +2039,11 @@ End Sub
 
 #If ImplCrypto Then
 
+Private Sub pvCryptoGetRandom(ByVal lSize As Long, baOutput() As Byte)
+    ReDim baOutput(0 To lSize - 1) As Byte
+    Call RtlGenRandom(baOutput(0), lSize)
+End Sub
+
 Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyLen As Long, nPassVer As Integer) As Boolean
     Dim baDerivedKey()  As Byte
     Dim lDummy          As Long '--- discarded
@@ -2072,7 +2077,7 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     On Error GoTo 0
     '--- extract Password Verification Value from last 2 bytes of derived key
     Call CopyMemory(nPassVer, baDerivedKey(2 * lKeyLen), 2)
-    '--- init AES w/ ECB from first half of derived key
+    '--- init AES key from first half of the derived key
     If m_uCrypto.hAesAlg = 0 Then
         hResult = BCryptOpenAlgorithmProvider(m_uCrypto.hAesAlg, StrPtr(BCRYPT_AES_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), 0)
         If hResult < 0 Then
@@ -2100,14 +2105,14 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
         sApiSource = "BCryptGenerateSymmetricKey"
         GoTo QH
     End If
-    '--- init HMAC from second half of derived key
+    '--- init HMAC key from second half of the derived key
     If m_uCrypto.hHmacAlg = 0 Then
         hResult = BCryptOpenAlgorithmProvider(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_SHA1_ALGORITHM), StrPtr(MS_PRIMITIVE_PROVIDER), BCRYPT_ALG_HANDLE_HMAC_FLAG)
         If hResult < 0 Then
             sApiSource = "BCryptOpenAlgorithmProvider(" & BCRYPT_SHA1_ALGORITHM & ")"
             GoTo QH
         End If
-        hResult = BCryptGetProperty(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_HASH_LENGTH), m_uCrypto.HmacHashLen, 4, lDummy, 0)
+        hResult = BCryptGetProperty(m_uCrypto.hHmacAlg, StrPtr(BCRYPT_HASH_LENGTH), m_uCrypto.HmacLen, 4, lDummy, 0)
         If hResult < 0 Then
             sApiSource = "BCryptGetProperty(" & BCRYPT_HASH_LENGTH & ")"
             GoTo QH
@@ -2126,10 +2131,10 @@ Private Function pvCryptoAesInit(baPass() As Byte, baSalt() As Byte, ByVal lKeyL
     pvCryptoAesInit = True
     Exit Function
 QH:
-    If Err.LastDllError <> 0 Then
+    If hResult < 0 Then
+        m_sLastError = GetSystemMessage(hResult) & " [" & sApiSource & "]"
+    ElseIf Err.LastDllError <> 0 Then
         m_sLastError = GetSystemMessage(Err.LastDllError)
-    Else
-        m_sLastError = "[" & Hex$(hResult) & "] Error in " & sApiSource
     End If
     Exit Function
 EH_Unsupported:
@@ -2137,10 +2142,6 @@ EH_Unsupported:
 End Function
 
 Private Sub pvCryptoTerminate()
-    If m_uCrypto.hPbkdf2Alg <> 0 Then
-        Call BCryptCloseAlgorithmProvider(m_uCrypto.hPbkdf2Alg, 0)
-        m_uCrypto.hPbkdf2Alg = 0
-    End If
     If m_uCrypto.hHmacHash <> 0 Then
         Call BCryptDestroyHash(m_uCrypto.hHmacHash)
         m_uCrypto.hHmacHash = 0
@@ -2219,28 +2220,20 @@ Private Function pvCryptoAesCrypt( _
     pvCryptoAesCrypt = True
     Exit Function
 QH:
-    If Err.LastDllError <> 0 Then
+    If hResult < 0 Then
+        m_sLastError = GetSystemMessage(hResult) & " [" & sApiSource & "]"
+    ElseIf Err.LastDllError <> 0 Then
         m_sLastError = GetSystemMessage(Err.LastDllError)
-    Else
-        m_sLastError = "[" & Hex$(hResult) & "] Error in " & sApiSource
     End If
 End Function
 
 Private Function pvCryptoAesGetFinalHash(ByVal lSize As Long) As Byte()
     Dim baResult()      As Byte
     
-    ReDim baResult(0 To m_uCrypto.HmacHashLen - 1) As Byte
-    Call BCryptFinishHash(m_uCrypto.hHmacHash, baResult(0), m_uCrypto.HmacHashLen, 0)
+    ReDim baResult(0 To m_uCrypto.HmacLen - 1) As Byte
+    Call BCryptFinishHash(m_uCrypto.hHmacHash, baResult(0), m_uCrypto.HmacLen, 0)
     ReDim Preserve baResult(0 To lSize - 1) As Byte
     pvCryptoAesGetFinalHash = baResult
-End Function
-
-Private Function pvCryptoAesGetRandomSalt(ByVal lSize As Long) As Byte()
-    Dim baResult()      As Byte
-    
-    ReDim baResult(0 To lSize - 1) As Byte
-    Call RtlGenRandom(baResult(0), lSize)
-    pvCryptoAesGetRandomSalt = baResult
 End Function
 
 Private Function pvCryptoTradInit(baPass() As Byte) As Boolean
@@ -2268,7 +2261,7 @@ Private Function pvCryptoTradCrypt( _
     pvCryptoTradCrypt = True
 End Function
 
-#End If
+#End If ' ImplCrypto
 
 '= VFS ===================================================================
 
@@ -2572,6 +2565,36 @@ Private Function pvSetError(Optional Source As String, Optional Description As S
     End If
 End Function
 
+Private Function pvPathGetFolder(sPath As String, Optional sFile As String) As String
+    Dim lPos            As Long
+    
+    lPos = InStrRev(sPath, "\")
+    If lPos > 0 Then
+        pvPathGetFolder = Left$(sPath, lPos - 1)
+        sFile = Mid$(sPath, lPos + 1)
+    Else
+        pvPathGetFolder = sPath
+        sFile = vbNullString
+    End If
+End Function
+
+Private Function pvFileGetFName(sFile As String) As String
+    Dim lPos            As Long
+    
+    lPos = InStrRev(sFile, ".")
+    If lPos > InStrRev(sFile, "\") Then
+        pvFileGetFName = Left$(sFile, lPos - 1)
+    Else
+        pvFileGetFName = sFile
+    End If
+End Function
+
+Private Function pvArrayEqual(baFirst() As Byte, baSecond() As Byte) As Boolean
+    If UBound(baFirst) = UBound(baSecond) Then
+        pvArrayEqual = (InStrB(baFirst, baSecond) = 1)
+    End If
+End Function
+
 '= zlib thunks ===========================================================
 
 Private Function pvInitRelocTable(uRtbl As UcsZlibRelocTableType) As Long
@@ -2665,36 +2688,6 @@ Public Sub CalcCrc32Ptr(ByVal lPtr As Long, ByVal lSize As Long, lCrc32 As Long)
     Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), lPtr, lSize, VarPtr(lCrc32))
 End Sub
 
-Private Function PathGetFolder(sPath As String, Optional sFile As String) As String
-    Dim lPos            As Long
-    
-    lPos = InStrRev(sPath, "\")
-    If lPos > 0 Then
-        PathGetFolder = Left$(sPath, lPos - 1)
-        sFile = Mid$(sPath, lPos + 1)
-    Else
-        PathGetFolder = sPath
-        sFile = vbNullString
-    End If
-End Function
-
-Private Function FileGetFName(sFile As String) As String
-    Dim lPos            As Long
-    
-    lPos = InStrRev(sFile, ".")
-    If lPos > InStrRev(sFile, "\") Then
-        FileGetFName = Left$(sFile, lPos - 1)
-    Else
-        FileGetFName = sFile
-    End If
-End Function
-
-Private Function pvArrayEqual(baFirst() As Byte, baSecond() As Byte) As Boolean
-    If UBound(baFirst) = UBound(baSecond) Then
-        pvArrayEqual = (InStrB(baFirst, baSecond) = 1)
-    End If
-End Function
-
 '= shared ================================================================
 
 #If ImplUseShared = 0 Then
@@ -2738,7 +2731,7 @@ Private Function GetSystemMessage(ByVal lLastDllError As Long) As String
             lSize = lSize - 2
         End If
     End If
-    GetSystemMessage = "[" & lLastDllError & "] " & Left$(GetSystemMessage, lSize)
+    GetSystemMessage = Left$(GetSystemMessage, lSize) & " &H" & Hex$(lLastDllError)
 End Function
 
 Private Sub AssignVariant(vDest As Variant, vSrc As Variant)
@@ -2873,4 +2866,4 @@ End Sub
     Private Sub Class_Terminate()
         pvCryptoTerminate
     End Sub
-#End If
+#End If ' ImplCrypto
