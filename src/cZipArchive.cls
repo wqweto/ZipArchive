@@ -1521,6 +1521,8 @@ Public Function Extract( _
     Dim bSkip           As Boolean
     Dim sFilterFolder   As String
     Dim sFilterMask     As String
+    Dim sOutputFolder   As String
+    Dim sOutputFile     As String
     #If ImplCrypto Then
         Dim lSaltSize   As Long
         Dim baSalt()    As Byte
@@ -1541,6 +1543,18 @@ Public Function Extract( _
         If lIdx > 0 Then
             sFilterFolder = Left$(sFilterMask, lIdx) & "*"
             sFilterMask = Mid$(sFilterMask, lIdx + 1)
+        End If
+    End If
+    If VarType(OutputTarget) = vbString Then
+        sOutputFolder = OutputTarget
+        If LenB(sOutputFolder) <> 0 Then
+            If (FileAttribs(sOutputFolder) And vbDirectory) = 0 Then
+                sOutputFolder = PathGetFolder(sOutputFolder, sOutputFile)
+                If (FileAttribs(sOutputFolder) And vbDirectory) = 0 Then
+                    sOutputFolder = OutputTarget
+                    sOutputFile = vbNullString
+                End If
+            End If
         End If
     End If
     '--- touch to open for read
@@ -1602,7 +1616,14 @@ Public Function Extract( _
             End If
             bSkip = False
             If VarType(OutputTarget) = vbString Then
-                vFileName = PathCombine(CStr(OutputTarget), .FileName)
+                If LenB(sOutputFile) = 0 Then
+                    vFileName = .FileName
+                ElseIf InStr(sOutputFile, "*.*") > 0 Then
+                    vFileName = Replace(sOutputFile, "*.*", .FileName)
+                Else
+                    vFileName = Replace(sOutputFile, "*", FileGetFName(.FileName))
+                End If
+                vFileName = PathCombine(sOutputFolder, CStr(vFileName))
                 RaiseEvent BeforeExtract(lIdx, vFileName, bSkip, m_bCancel)
             Else
                 RaiseEvent BeforeExtract(lIdx, OutputTarget, bSkip, m_bCancel)
@@ -2594,9 +2615,40 @@ Public Sub CalcCrc32Ptr(ByVal lPtr As Long, ByVal lSize As Long, lCrc32 As Long)
     Call CallWindowProc(m_uRtbl.CalcCrc32, VarPtr(m_uRtbl), lPtr, lSize, VarPtr(lCrc32))
 End Sub
 
+Private Function PathGetFolder(sPath As String, Optional sFile As String) As String
+    Dim lPos            As Long
+    
+    lPos = InStrRev(sPath, "\")
+    If lPos > 0 Then
+        PathGetFolder = Left$(sPath, lPos - 1)
+        sFile = Mid$(sPath, lPos + 1)
+    Else
+        PathGetFolder = sPath
+        sFile = vbNullString
+    End If
+End Function
+
+Private Function FileGetFName(sFile As String) As String
+    Dim lPos            As Long
+    
+    lPos = InStrRev(sFile, ".")
+    If lPos > InStrRev(sFile, "\") Then
+        FileGetFName = Left$(sFile, lPos - 1)
+    Else
+        FileGetFName = sFile
+    End If
+End Function
+
 '= shared ================================================================
 
 #If ImplUseShared = 0 Then
+
+Private Function FileAttribs(sFile As String) As VbFileAttribute
+    FileAttribs = GetFileAttributes(StrPtr(sFile))
+    If FileAttribs = -1 Then
+        FileAttribs = &H8000&
+    End If
+End Function
 
 Private Function MkPath(sPath As String, sError As String) As Boolean
     Dim lAttrib         As Long
