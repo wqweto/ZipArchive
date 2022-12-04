@@ -31,19 +31,6 @@ Private m_sAction               As String
 Private m_sLastRow              As String
 Private m_oOpt                  As Object
 
-Private Enum UcsInfoIndexesEnum
-    ucsIdxFileName
-    ucsIdxAttributes
-    ucsIdxCrc32
-    ucsIdxSize
-    ucsIdxCompressedSize
-    ucsIdxComment
-    ucsIdxLastModified
-    ucsIdxMethod
-    ucsIdxOffset
-    ucsIdxFlags
-End Enum
-
 '=========================================================================
 ' Methods
 '=========================================================================
@@ -57,10 +44,12 @@ Public Function Init(vArgs As Variant) As Boolean
     Dim lTotalSize      As Long
     Dim lTotalCompressed As Long
     Dim lCount          As Long
-
+    Dim eUseUtf8        As VbTriState: eUseUtf8 = vbUseDefault
+    Dim eUseZip64       As VbTriState: eUseZip64 = vbUseDefault
+    
     On Error GoTo EH
     Set m_oArchive = New cZipArchive
-    Set m_oOpt = GetOpt(vArgs, "mcp:mem:m:o:p:si")
+    Set m_oOpt = GetOpt(vArgs, "mcp:mem:m:o:p:si", "mzip64:mcu:mcl")
     With m_oOpt
         .Item("command") = .Item("arg1")
         .Item("zip") = .Item("arg2")
@@ -74,8 +63,16 @@ Public Function Init(vArgs As Variant) As Boolean
         If LenB(.Item("zip")) <> 0 Then
             ConsoleError "Archive: " & .Item("zip") & vbCrLf
         End If
+        If .Exists("-mcu") Then
+            eUseUtf8 = vbTrue
+        ElseIf .Exists("-mcl") Then
+            eUseUtf8 = vbFalse
+        End If
         If .Exists("-mcp") Then
             m_oArchive.CodePage = Val(.Item("-mcp"))
+        End If
+        If .Exists("-mzip64") Then
+            eUseZip64 = vbTrue
         End If
         Select Case LCase$(.Item("command"))
         Case "a"
@@ -126,7 +123,7 @@ Public Function Init(vArgs As Variant) As Boolean
             ElseIf InStrRev(.Item("zip"), ".") <= InStrRev(.Item("zip"), "\") Then
                 .Item("zip") = .Item("zip") & ".zip"
             End If
-            If Not m_oArchive.CompressArchive(.Item("zip"), Level:=.Item("-m")) Then
+            If Not m_oArchive.CompressArchive(.Item("zip"), Level:=.Item("-m"), UseUtf8:=eUseUtf8, UseZip64:=eUseZip64) Then
                 GoTo QH
             End If
         Case "l"
@@ -179,7 +176,7 @@ Public Function Init(vArgs As Variant) As Boolean
                 GoTo QH
             End If
             m_sAction = "Testing "
-            m_oArchive.Extract New cDummyStream
+            m_oArchive.Extract New cDummyStream, Password:=.Item("-p")
         Case "x"
             If LenB(.Item("zip")) = 0 Then
                 ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
@@ -210,14 +207,18 @@ Public Function Init(vArgs As Variant) As Boolean
                     "  -r          recurse subfolders" & vbCrLf & _
                     "  -e          include empty folders" & vbCrLf & _
                     "  -m LEVEL    compression level [default: 6]" & vbCrLf & _
-                    "  -o OUTPUT   output folder to extract to" & vbCrLf & _
+                    "  -o OUTPUT   output folder/file to extract to" & vbCrLf & _
                     "  -i          no percentage indicator" & vbCrLf & _
                     "  -y          assume yes to all questions" & vbCrLf & _
                     "  -p PASSWORD password used to encrypt/decrypt files" & vbCrLf & _
-                    "  -mem METHOD encryption method" & vbCrLf & _
+                    "  -mem METHOD encryption method [default: 0]" & vbCrLf & _
+                    "              0=ZipCrypto, 1=AES-128, 2=AES-192, 3=AES-256" & vbCrLf & _
                     "  -so         output to stdout" & vbCrLf & _
                     "  -si NAME    input from stdin zip to NAME in archive" & vbCrLf & _
-                    "  -mcp CPAGE  codepage for archive filenames [default: 437]" & vbCrLf
+                    "  -mcu        use UTF-8 for archive filenames" & vbCrLf & _
+                    "  -mcl        use local codepage for archive filenames" & vbCrLf & _
+                    "  -mcp CPAGE  codepage for archive filenames [default: 437]" & vbCrLf & _
+                    "  -mzip64     always use Zip64 extension" & vbCrLf
             Else
                 ConsoleError "Invalid command: " & .Item("command") & vbCrLf
             End If
@@ -313,7 +314,7 @@ Private Sub m_oArchive_Error(ByVal FileIdx As Long, Source As String, Descriptio
 QH:
 End Sub
 
-Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Long, ByVal Total As Long, Cancel As Boolean)
+Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Currency, ByVal Total As Currency, Cancel As Boolean)
     Dim sPercent        As String
     Dim vInfo           As Variant
 

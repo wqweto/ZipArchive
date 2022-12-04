@@ -27,41 +27,41 @@ Private Const FILE_END                  As Long = 2
 ' Constants and member variables
 '=========================================================================
 
-Private m_lPosition             As Long
-Private m_lSize                 As Long
+Private m_cPosition             As Currency
+Private m_cSize                 As Currency
 
 '=========================================================================
 ' VFS interface
 '=========================================================================
 
-Public Function VfsSetFilePointer(lPosition As Long, ByVal lMoveMethod As Long) As Long
+Public Function VfsSetFilePointer(ByVal cPosition As Long, ByVal lMoveMethod As Long) As Long
     Select Case lMoveMethod
     Case FILE_BEGIN
-        m_lPosition = lPosition
+        m_cPosition = cPosition
     Case FILE_CURRENT
-        m_lPosition = m_lPosition + lPosition
+        m_cPosition = m_cPosition + cPosition
     Case FILE_END
-        m_lPosition = m_lSize + lPosition
+        m_cPosition = m_cSize + cPosition
     End Select
-    VfsSetFilePointer = m_lPosition
+    VfsSetFilePointer = m_cPosition
 End Function
 
 Public Function VfsReadFile(ByVal lPtr As Long, ByVal lSize As Long) As Long
     #If lPtr Then '--- touch args
     #End If
-    If m_lPosition + lSize > m_lSize Then
-        lSize = m_lSize - m_lPosition
+    If m_cPosition + lSize > m_cSize Then
+        lSize = m_cSize - m_cPosition
     End If
-    m_lPosition = m_lPosition + lSize
+    m_cPosition = m_cPosition + lSize
     VfsReadFile = lSize
 End Function
 
 Public Function VfsWriteFile(ByVal lPtr As Long, ByVal lSize As Long) As Long
     #If lPtr Then '--- touch args
     #End If
-    m_lPosition = m_lPosition + lSize
-    If m_lPosition > m_lSize Then
-        m_lSize = m_lPosition
+    m_cPosition = m_cPosition + lSize
+    If m_cPosition > m_cSize Then
+        m_cSize = m_cPosition
     End If
     VfsWriteFile = lSize
 End Function
@@ -69,6 +69,6 @@ End Function
 Public Sub VfsSetEndOfFile(sMetaData As String)
     #If sMetaData Then '--- touch args
     #End If
-    m_lSize = m_lPosition
+    m_cSize = m_cPosition
 End Sub
 

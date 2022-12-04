@@ -18,7 +18,7 @@ RevisionVer=0
 AutoIncrementVer=0
 ServerSupportFiles=0
 VersionCompanyName="Unicontsoft"
-CondComp="ZIP_INFLATE = 1 : ZIP_COMPRESS = 1 : ZIP_EXTRACT = 1"
+CondComp="ZIP_CRYPTO = 1 : ZIP_INFLATE = 1 : ZIP_COMPRESS = 1 : ZIP_EXTRACT = 1"
 CompilationType=0
 OptimizationType=0
 FavorPentiumPro(tm)=0

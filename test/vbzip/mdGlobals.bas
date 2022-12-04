@@ -14,7 +14,7 @@ Private Const CP_UTF8                       As Long = 65001
 Private Declare Function GetStdHandle Lib "kernel32" (ByVal nStdHandle As Long) As Long
 Private Declare Function ReadFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToRead As Long, lpNumberOfBytesRead As Long, ByVal lpOverlapped As Long) As Long
 Private Declare Function WriteFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToWrite As Long, lpNumberOfBytesWritten As Long, lpOverlapped As Any) As Long
-Private Declare Function OemToCharBuff Lib "user32" Alias "OemToCharBuffW" (lpszSrc As Any, ByVal lpszDst As Long, ByVal cchDstLength As Long) As Long
+Private Declare Function OemToCharBuffA Lib "user32" (lpszSrc As Any, ByVal lpszDst As String, ByVal cchDstLength As Long) As Long
 Private Declare Function CommandLineToArgvW Lib "shell32" (ByVal lpCmdLine As Long, pNumArgs As Long) As Long
 Private Declare Function LocalFree Lib "kernel32" (ByVal hMem As Long) As Long
 Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As Long)
@@ -40,20 +40,27 @@ Public Sub Main()
     End With
 End Sub
 
-Public Function GetOpt(vArgs As Variant, Optional OptionsWithArg As String) As Object
+Public Function GetOpt(vArgs As Variant, Optional OptionsWithArg As String, Optional OptionsNoArg As String) As Object
     Dim oRetVal         As Object
     Dim lIdx            As Long
     Dim bNoMoreOpt      As Boolean
     Dim vOptArg         As Variant
+    Dim vOptNone        As Variant
     Dim vElem           As Variant
 
     vOptArg = Split(OptionsWithArg, ":")
+    vOptNone = Split(OptionsNoArg, ":")
     Set oRetVal = CreateObject("Scripting.Dictionary")
     With oRetVal
         .CompareMode = vbTextCompare
         For lIdx = 0 To UBound(vArgs)
             Select Case Left$(At(vArgs, lIdx), 1 + bNoMoreOpt)
             Case "-", "/"
+                For Each vElem In vOptNone
+                    If Mid$(At(vArgs, lIdx), 2, Len(vElem)) = vElem Then
+                        GoTo SkipArg
+                    End If
+                Next
                 For Each vElem In vOptArg
                     If Mid$(At(vArgs, lIdx), 2, Len(vElem)) = vElem Then
                         If Mid(At(vArgs, lIdx), Len(vElem) + 2, 1) = ":" Then
@@ -69,6 +76,7 @@ Public Function GetOpt(vArgs As Variant, Optional OptionsWithArg As String) As O
                         GoTo Conitnue
                     End If
                 Next
+SkipArg:
                 .Item("-" & Mid$(At(vArgs, lIdx), 2)) = True
             Case Else
                 .Item("numarg") = .Item("numarg") + 1
@@ -128,7 +136,7 @@ Public Function ConsoleRead(Optional ByVal lSize As Long = 1) As String
         ReDim baBuffer(0 To lSize - 1) As Byte
         If ReadFile(hIn, baBuffer(0), UBound(baBuffer) + 1, lSize, 0) And lSize > 0 Then
             sText = String$(lSize, 0)
-            Call OemToCharBuff(baBuffer(0), StrPtr(sText), lSize + 1)
+            Call OemToCharBuffA(baBuffer(0), sText, lSize + 1)
         End If
     End If
     ConsoleRead = sText
@@ -222,3 +230,38 @@ Private Function ToUtf8Array(sText As String) As Byte()
     ToUtf8Array = baRetVal
 End Function
 
+Public Function ToHex(baText() As Byte, Optional Delimiter As String) As String
+    Dim aText()         As String
+    Dim lIdx            As Long
+    
+    If LenB(CStr(baText)) <> 0 Then
+        ReDim aText(0 To UBound(baText)) As String
+        For lIdx = 0 To UBound(baText)
+            aText(lIdx) = Right$("0" & Hex$(baText(lIdx)), 2)
+        Next
+        ToHex = LCase$(Join(aText, Delimiter))
+    End If
+End Function
+
+Public Function FromHex(sText As String) As Byte()
+    Dim baRetVal()      As Byte
+    Dim lIdx            As Long
+    
+    On Error GoTo QH
+    '--- check for hexdump delimiter
+    If sText Like "*[!0-9A-Fa-f]*" Then
+        ReDim baRetVal(0 To Len(sText) \ 3) As Byte
+        For lIdx = 1 To Len(sText) Step 3
+            baRetVal(lIdx \ 3) = "&H" & Mid$(sText, lIdx, 2)
+        Next
+    ElseIf LenB(sText) <> 0 Then
+        ReDim baRetVal(0 To Len(sText) \ 2 - 1) As Byte
+        For lIdx = 1 To Len(sText) Step 2
+            baRetVal(lIdx \ 2) = "&H" & Mid$(sText, lIdx, 2)
+        Next
+    Else
+        baRetVal = vbNullString
+    End If
+    FromHex = baRetVal
+QH:
+End Function

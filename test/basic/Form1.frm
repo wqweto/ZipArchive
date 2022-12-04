@@ -245,13 +245,13 @@ Private Sub m_oZip_Error(ByVal FileIdx As Long, Source As String, Description As
     Cancel = m_bCancel
 End Sub
 
-Private Sub m_oZip_Progress(ByVal FileIdx As Long, ByVal Current As Long, ByVal Total As Long, Cancel As Boolean)
+Private Sub m_oZip_Progress(ByVal FileIdx As Long, ByVal Current As Currency, ByVal Total As Currency, Cancel As Boolean)
     Dim sPercent        As String
     
     If Total <> 0 Then
         sPercent = Format$(Current * 100# / Total, "0.0") & "%"
     End If
-    labProgress.Tag = "Processing " & m_oZip.FileInfo(FileIdx)(0) & " - " & sPercent
+    labProgress.Tag = "Processing " & m_oZip.FileInfo(FileIdx, ucsIdxFileName) & " - " & sPercent
     If m_dblLastUpdate + 0.05 < Timer Then
         labProgress.Caption = labProgress.Tag
         DoEvents
