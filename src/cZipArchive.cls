@@ -281,6 +281,7 @@ Private Const ERR_INVALID_PASSWORD  As String = "Invalid password"
 Private Const ERR_INVALID_AUTHCODE  As String = "Invalid authentication code"
 Private Const ERR_INVALID_BYTEARRAY As String = "Invalid byte array"
 Private Const ERR_MISSING_ZIP64     As String = "Missing Zip64 extension above 4GB limit"
+Private Const ERR_NO_CRYPTO_COMPILED As String = "Crypto not compiled (ZIP_CRYPTO = 1)"
 Private Const STR_BUFFER            As String = "[buffer]"
 Private Const STR_STREAM            As String = "[stream]"
 Private Const STR_ENTRY             As String = "[entry %1]"
@@ -614,6 +615,11 @@ Public Function AddFile( _
         #If ImplCrypto Then
             .Password = Password
             .Aes.Strength = EncrStrength
+        #Else
+            If LenB(Password) <> 0 Then
+                On Error GoTo 0
+                Err.Raise vbObjectError, , ERR_NO_CRYPTO_COMPILED
+            End If
         #End If ' ImplCrypto
     End With
     m_lFileCount = m_lFileCount + 1
@@ -1750,7 +1756,7 @@ Public Function Extract( _
                             cRead = lSaltSize + 2 + LNG_AES_AUTHCODE_SIZE
                         End If
                     #Else
-                        Err.Raise vbObjectError, , ERR_UNSUPPORTED_ENCRYPTION
+                        Err.Raise vbObjectError, , ERR_NO_CRYPTO_COMPILED
                     #End If ' ImplCrypto
                 End If
                 If .Method = LNG_METHOD_DEFLATE Then

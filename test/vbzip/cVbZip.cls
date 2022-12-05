@@ -51,15 +51,18 @@ Public Function Init(vArgs As Variant) As Boolean
     Set m_oArchive = New cZipArchive
     Set m_oOpt = GetOpt(vArgs, "mcp:mem:m:o:p:si", "mzip64:mcu:mcl")
     With m_oOpt
+        If Not .Item("-nologo") Then
+            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2022 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
+        End If
+        If .Exists("-?") Or .Exists("-h") Or .Exists("--help") Then
+            GoTo ShowHelp
+        End If
         .Item("command") = .Item("arg1")
         .Item("zip") = .Item("arg2")
         .Item("numfiles") = .Item("numarg") - 2
         For lIdx = 1 To .Item("numfiles")
             .Item("file" & lIdx) = .Item("arg" & lIdx + 2)
         Next
-        If Not .Item("-nologo") Then
-            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2022 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
-        End If
         If LenB(.Item("zip")) <> 0 Then
             ConsoleError "Archive: " & .Item("zip") & vbCrLf
         End If
@@ -196,6 +199,7 @@ Public Function Init(vArgs As Variant) As Boolean
             End If
         Case Else
             If LenB(.Item("command")) = 0 Or .Item("command") = "?" Then
+ShowHelp:
                 ConsoleError "Usage: vbzip.exe <command> [-options...] <archive_file> [files]..." & vbCrLf & _
                     "e.g. vbzip.exe a backup.zip doc1.txt reports*.xls" & vbCrLf & vbCrLf & _
                     "Commands:" & vbCrLf & _
