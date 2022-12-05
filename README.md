@@ -36,6 +36,30 @@ Method `Extract` can optionally filter on file mask (e.g. `Filter:="*.doc"`), fi
         .OpenArchive App.Path & "\test.zip"
         .Extract "C:\Path\To\extract_folder\new_filename", Filter:="your_file"
     End With
+    
+#### Get archive entry uncompressed size
+
+By using `FileInfo` property keyed on entry filename in first parameter and `ucsIdxSize`
+
+    With New cZipArchive
+        .OpenArchive App.Path & "\test.zip"
+        Debug.Print .FileInfo("report.pdf", ucsIdxSize)
+    End With
+    
+Here are the available values for the second parameter:
+
+<span> | Name
+---    | ---
+`0`    | ucsIdxFileName
+`1`    | ucsIdxAttributes
+`2`    | ucsIdxCrc32
+`3`    | ucsIdxSize
+`4`    | ucsIdxCompressedSize
+`5`    | ucsIdxComment
+`6`    | ucsIdxLastModified
+`7`    | ucsIdxMethod
+`8`    | ucsIdxOffset
+`9`    | ucsIdxFlags
 
 ### Encryption support
 
@@ -49,7 +73,7 @@ Make sure to set Conditional Compilation in Make tab in project's properties dia
 Use `Password` parameter on `AddFile` method together with `EncrStrength` parameter to set crypto used when creating archive.
 
 EncrStrength | Mode
------------- | ----
+---          | ---
 `0`          | ZipCrypto (default)
 `1`          | AES-128
 `2`          | AES-192
