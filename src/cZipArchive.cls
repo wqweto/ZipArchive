@@ -518,10 +518,23 @@ Public Property Get FileCount() As Long
     FileCount = m_lFileCount
 End Property
 
-Public Property Get FileInfo(ByVal FileIdx As Long, Optional ByVal Index As UcsFileInfoIndexEnum = -1) As Variant
-    If FileIdx >= 0 And FileIdx < m_lFileCount Then
-        With m_uFiles(FileIdx)
-            Select Case Index
+Public Property Get FileInfo(FileIdx As Variant, Optional ByVal InfoIdx As UcsFileInfoIndexEnum = -1) As Variant
+    Dim sFileName       As String
+    Dim lIdx            As Long
+    
+    If VarType(FileIdx) = vbString Then
+        sFileName = LCase$(FileIdx)
+        For lIdx = 0 To m_lFileCount - 1
+            If LCase$(m_uFiles(lIdx).FileName) = sFileName Then
+                Exit For
+            End If
+        Next
+    Else
+        lIdx = InfoIdx
+    End If
+    If lIdx >= 0 And lIdx < m_lFileCount Then
+        With m_uFiles(lIdx)
+            Select Case InfoIdx
             Case Is < 0
                 FileInfo = Array(.FileName, .Attributes, .Crc32, .Size, .CompressedSize, .Comment, .LastModified, .Method, .Offset, .Flags)
             Case ucsIdxFileName
