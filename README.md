@@ -39,27 +39,27 @@ Method `Extract` can optionally filter on file mask (e.g. `Filter:="*.doc"`), fi
     
 #### Get archive entry uncompressed size
 
-By using `FileInfo` property keyed on entry filename in first parameter and `ucsIdxSize`
+By using `FileInfo` property keyed on entry filename in first parameter and `zipIdxSize`
 
     With New cZipArchive
         .OpenArchive App.Path & "\test.zip"
-        Debug.Print .FileInfo("report.pdf", ucsIdxSize)
+        Debug.Print .FileInfo("report.pdf", zipIdxSize)
     End With
     
 Here are the available values for the second parameter:
 
 <span> | Name
 ---    | ---
-`0`    | ucsIdxFileName
-`1`    | ucsIdxAttributes
-`2`    | ucsIdxCrc32
-`3`    | ucsIdxSize
-`4`    | ucsIdxCompressedSize
-`5`    | ucsIdxComment
-`6`    | ucsIdxLastModified
-`7`    | ucsIdxMethod
-`8`    | ucsIdxOffset
-`9`    | ucsIdxFlags
+`0`    | `zipIdxFileName`
+`1`    | `zipIdxAttributes`
+`2`    | `zipIdxCrc32`
+`3`    | `zipIdxSize`
+`4`    | `zipIdxCompressedSize`
+`5`    | `zipIdxComment`
+`6`    | `zipIdxLastModified`
+`7`    | `zipIdxMethod`
+`8`    | `zipIdxOffset`
+`9`    | `zipIdxFlags`
 
 ### Encryption support
 

@@ -251,7 +251,7 @@ Private Sub m_oZip_Progress(ByVal FileIdx As Long, ByVal Current As Currency, By
     If Total <> 0 Then
         sPercent = Format$(Current * 100# / Total, "0.0") & "%"
     End If
-    labProgress.Tag = "Processing " & m_oZip.FileInfo(FileIdx, ucsIdxFileName) & " - " & sPercent
+    labProgress.Tag = "Processing " & m_oZip.FileInfo(FileIdx, zipIdxFileName) & " - " & sPercent
     If m_dblLastUpdate + 0.05 < Timer Then
         labProgress.Caption = labProgress.Tag
         DoEvents

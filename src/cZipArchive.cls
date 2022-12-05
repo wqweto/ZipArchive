@@ -33,17 +33,17 @@ Private Const MODULE_NAME As String = "cZipArchive"
 ' Public enums
 '=========================================================================
 
-Public Enum UcsFileInfoIndexEnum
-    ucsIdxFileName = 0
-    ucsIdxAttributes
-    ucsIdxCrc32
-    ucsIdxSize
-    ucsIdxCompressedSize
-    ucsIdxComment
-    ucsIdxLastModified
-    ucsIdxMethod
-    ucsIdxOffset
-    ucsIdxFlags
+Public Enum ZipFileInfoIndexEnum
+    zipIdxFileName = 0
+    zipIdxAttributes
+    zipIdxCrc32
+    zipIdxSize
+    zipIdxCompressedSize
+    zipIdxComment
+    zipIdxLastModified
+    zipIdxMethod
+    zipIdxOffset
+    zipIdxFlags
 End Enum
 
 '=========================================================================
@@ -286,11 +286,11 @@ Private Const STR_BUFFER            As String = "[buffer]"
 Private Const STR_STREAM            As String = "[stream]"
 Private Const STR_ENTRY             As String = "[entry %1]"
 
-Private m_uRtbl                 As UcsZlibRelocTableType
+Private m_uRtbl                 As ZipRelocTableType
 Private m_sLastError            As String
 Private m_bCancel               As Boolean
 Private m_lFileCount            As Long
-Private m_uFiles()              As UcsFileInfo
+Private m_uFiles()              As ZipFileInfo
 Private m_lCurrentFile          As Long
 Private m_lCodePage             As Long
 #If ImplDecompress Then
@@ -298,10 +298,10 @@ Private m_lCodePage             As Long
     Private m_vArchiveFile      As Variant
 #End If ' ImplDecompress
 #If ImplCrypto Then
-    Private m_uCrypto           As UcsZipCryptoType
+    Private m_uCrypto           As ZipCryptoType
 #End If ' ImplCrypto
 
-Private Type UcsVfsFileType
+Private Type ZipVfsType
     Handle              As Long
     Stream              As Object
     BufferArray         As Variant
@@ -312,7 +312,7 @@ Private Type UcsVfsFileType
     FileName            As String
 End Type
 
-Private Type UcsZlibRelocTableType
+Private Type ZipRelocTableType
     CompressInit        As Long
     CompressCleanup     As Long
     CompressBlock       As Long
@@ -333,7 +333,7 @@ Private Type UcsZlibRelocTableType
     Crc32Table          As Long
 End Type
 
-Private Type UcsZlibBuffersType
+Private Type ZipBuffersType
     InBlock             As Long
     InLen               As Long
     OutBlock            As Long
@@ -344,35 +344,35 @@ Private Type UcsZlibBuffersType
     NiceLen             As Long
 End Type
 
-Private Enum UcsRelocIndexesEnum
-    ucsIdx_CompressInit = 0
-    ucsIdx_CompressCleanup
-    ucsIdx_CompressBlock
-    ucsIdx_DecompressInit
-    ucsIdx_DecompressCleanup
-    ucsIdx_DecompressBlock
-    ucsIdx_CalcCrc32
-    ucsIdx_MemNonce
-    ucsIdx_MemXor
-    ucsIdx_ZipCrypt
-    ucsIdx_MallocImpl
-    ucsIdx_ReallocImpl
-    ucsIdx_FreeImpl
-    ucsIdx_LenCodes
-    ucsIdx_DistCodes
-    ucsIdx_MirrorBytes
-    ucsIdx_LenLenMap
+Private Enum ZipRelocationIndexesEnum
+    zipRelCompressInit = 0
+    zipRelCompressCleanup
+    zipRelCompressBlock
+    zipRelDecompressInit
+    zipRelDecompressCleanup
+    zipRelDecompressBlock
+    zipRelCalcCrc32
+    zipRelMemNonce
+    zipRelMemXor
+    zipRelZipCrypt
+    zipRelMallocImpl
+    zipRelReallocImpl
+    zipRelFreeImpl
+    zipRelLenCodes
+    zipRelDistCodes
+    zipRelMirrorBytes
+    zipRelLenLenMap
 End Enum
 
-Private Enum UcsHeaderFlagsEnum
-    ucsZcfEncrypted = 2 ^ 0                         ' If set, indicates that the file is encrypted
-    ucsZcfCompressOptionMask = 2 ^ 1 Or 2 ^ 2       ' 0 - normal, 1 - maximum, 2 - fast, 3 - super fast
-    ucsZcfHasDataDescriptor = 2 ^ 3                 ' Values are put in the data descriptor immediately following the compressed data
-    ucsZcfStrongEncrypted = 2 ^ 6                   ' Strong encryption
-    ucsZcfUseUtf8 = 2 ^ 11                          ' Language encoding flag (EFS)
+Private Enum ZipHeaderFlagsEnum
+    zipFlagEncrypted = 2 ^ 0                         ' If set, indicates that the file is encrypted
+    zipFlagCompressOptionMask = 2 ^ 1 Or 2 ^ 2       ' 0 - normal, 1 - maximum, 2 - fast, 3 - super fast
+    zipFlagHasDataDescriptor = 2 ^ 3                 ' Values are put in the data descriptor immediately following the compressed data
+    zipFlagStrongEncrypted = 2 ^ 6                   ' Strong encryption
+    zipFlagUseUtf8 = 2 ^ 11                          ' Language encoding flag (EFS)
 End Enum
 
-Private Type UcsZip64ExtraDataType
+Private Type Zip64ExtraDataType
     HeaderId            As Integer
     DataSize            As Integer
     USize               As Currency
@@ -381,7 +381,7 @@ Private Type UcsZip64ExtraDataType
     DiskNum             As Long
 End Type
 
-Private Type UcsZip64EndHeaderType
+Private Type Zip64EndHeaderType
     Signature           As Long
     Size                As Currency
     VerMade             As Integer
@@ -394,14 +394,14 @@ Private Type UcsZip64EndHeaderType
     CenOff              As Currency
 End Type
 
-Private Type UcsZip64EndLocatorType
+Private Type Zip64EndLocatorType
     Signature           As Long
     DiskEocdr           As Long
     Offset              As Currency
     DiskNum             As Long
 End Type
 
-Private Type UcsLocalHeaderType
+Private Type ZipLocalHeaderType
     Signature           As Long                     ' Signature
     VerExt              As Integer                  ' version needed to extract
     Flags               As Integer                  ' encrypt and compression flags
@@ -414,10 +414,10 @@ Private Type UcsLocalHeaderType
     USize               As Long                     ' uncompressed size
     LenFname            As Integer                  ' Length filename
     LenExt              As Integer                  ' Length for extra field
-    Ext                 As UcsZip64ExtraDataType
+    Ext                 As Zip64ExtraDataType
 End Type
 
-Private Type UcsCentralHeaderType
+Private Type ZipCentralHeaderType
     Signature           As Long                     ' Signature
     VerMade             As Integer                  ' version made by
     VerExt              As Integer                  ' version needed to extract
@@ -437,10 +437,10 @@ Private Type UcsCentralHeaderType
     '--- padding
     AttribX             As Long                     ' external file attributes
     Offset              As Long                     ' relative offset of local header
-    Ext                 As UcsZip64ExtraDataType
+    Ext                 As Zip64ExtraDataType
 End Type
 
-Private Type UcsEndHeaderType
+Private Type ZipEndHeaderType
     Signature           As Long                     ' Signature
     DiskNum             As Integer                  ' This disk number
     DiskStart           As Integer                  ' Start disk number
@@ -449,10 +449,10 @@ Private Type UcsEndHeaderType
     CenSize             As Long                     ' Size of entire cetral directory
     CenOff              As Long                     ' Offset of central on starting disk
     LenCom              As Integer                  ' Length of comment field
-    Ext                 As UcsZip64EndHeaderType
+    Ext                 As Zip64EndHeaderType
 End Type
 
-Private Type UcsAesExtraDataType
+Private Type ZipAesExtraDataType
     HeaderId            As Integer                  ' Extra field header ID (0x9901)
     DataSize            As Integer                  ' Data size (currently 7, but subject to possible increase in the future)
     Version             As Integer                  ' Integer version number specific to the zip vendor
@@ -462,7 +462,7 @@ Private Type UcsAesExtraDataType
     Method              As Integer                  ' The actual compression method used to compress the file
 End Type
 
-Private Type UcsFileInfo
+Private Type ZipFileInfo
     FileName            As String
     Attributes          As Long
     Crc32               As Long
@@ -477,13 +477,13 @@ Private Type UcsFileInfo
     SourceFile          As Variant
     Level               As Long
 #If ImplCrypto Then
-    Aes                 As UcsAesExtraDataType
+    Aes                 As ZipAesExtraDataType
     DecDat              As Byte
     Password            As String
 #End If ' ImplCrypto
 End Type
 
-Private Type UcsZipCryptoType
+Private Type ZipCryptoType
     hPbkdf2Alg          As Long
     hHmacAlg            As Long
     hHmacHash           As Long
@@ -518,7 +518,7 @@ Public Property Get FileCount() As Long
     FileCount = m_lFileCount
 End Property
 
-Public Property Get FileInfo(FileIdx As Variant, Optional ByVal InfoIdx As UcsFileInfoIndexEnum = -1) As Variant
+Public Property Get FileInfo(FileIdx As Variant, Optional ByVal InfoIdx As ZipFileInfoIndexEnum = -1) As Variant
     Dim sFileName       As String
     Dim lIdx            As Long
     
@@ -537,25 +537,25 @@ Public Property Get FileInfo(FileIdx As Variant, Optional ByVal InfoIdx As UcsFi
             Select Case InfoIdx
             Case Is < 0
                 FileInfo = Array(.FileName, .Attributes, .Crc32, .Size, .CompressedSize, .Comment, .LastModified, .Method, .Offset, .Flags)
-            Case ucsIdxFileName
+            Case zipIdxFileName
                 FileInfo = .FileName
-            Case ucsIdxAttributes
+            Case zipIdxAttributes
                 FileInfo = .Attributes
-            Case ucsIdxCrc32
+            Case zipIdxCrc32
                 FileInfo = .Crc32
-            Case ucsIdxSize
+            Case zipIdxSize
                 FileInfo = .Size
-            Case ucsIdxCompressedSize
+            Case zipIdxCompressedSize
                 FileInfo = .CompressedSize
-            Case ucsIdxComment
+            Case zipIdxComment
                 FileInfo = .Comment
-            Case ucsIdxLastModified
+            Case zipIdxLastModified
                 FileInfo = .LastModified
-            Case ucsIdxMethod
+            Case zipIdxMethod
                 FileInfo = .Method
-            Case ucsIdxOffset
+            Case zipIdxOffset
                 FileInfo = .Offset
-            Case ucsIdxFlags
+            Case zipIdxFlags
                 FileInfo = .Flags
             End Select
         End With
@@ -592,14 +592,14 @@ Public Function AddFile( _
             Optional EncrStrength As Long, _
             Optional Level As Long = -1) As Boolean
     Const FUNC_NAME     As String = "AddFile"
-    Dim uFile           As UcsVfsFileType
+    Dim uFile           As ZipVfsType
     
     On Error GoTo EH
     pvSetError
     If m_lFileCount = 0 Then
-        ReDim m_uFiles(0 To 2) As UcsFileInfo
+        ReDim m_uFiles(0 To 2) As ZipFileInfo
     ElseIf m_lFileCount > UBound(m_uFiles) Then
-        ReDim Preserve m_uFiles(0 To 2 * UBound(m_uFiles)) As UcsFileInfo
+        ReDim Preserve m_uFiles(0 To 2 * UBound(m_uFiles)) As ZipFileInfo
     End If
     uFile = pvVfsOpen(File)
     With m_uFiles(m_lFileCount)
@@ -656,18 +656,18 @@ Public Function CompressArchive( _
     Const FUNC_NAME     As String = "CompressArchive"
     Dim baBuffer()      As Byte
     Dim baNext()        As Byte
-    Dim uArchiveFile    As UcsVfsFileType
-    Dim uLocal          As UcsLocalHeaderType
+    Dim uArchiveFile    As ZipVfsType
+    Dim uLocal          As ZipLocalHeaderType
     Dim lIdx            As Long
-    Dim uFile           As UcsVfsFileType
+    Dim uFile           As ZipVfsType
     Dim lSize           As Long
     Dim cHeaderOffset   As Currency
     Dim cBeginOffset    As Currency
     Dim hCtx            As Long
-    Dim uBuf            As UcsZlibBuffersType
+    Dim uBuf            As ZipBuffersType
     Dim lResult         As Long
-    Dim uCentral        As UcsCentralHeaderType
-    Dim uEndHdr         As UcsEndHeaderType
+    Dim uCentral        As ZipCentralHeaderType
+    Dim uEndHdr         As ZipEndHeaderType
     Dim lEntries        As Long
     Dim lComprLevel     As Long
     Dim bSkip           As Boolean
@@ -676,7 +676,7 @@ Public Function CompressArchive( _
     Dim baSalt()        As Byte
     Dim nPassVer        As Integer
     Dim lJdx            As Long
-    Dim uAes            As UcsAesExtraDataType
+    Dim uAes            As ZipAesExtraDataType
 #End If ' ImplCrypto
     
     On Error GoTo EH
@@ -712,15 +712,15 @@ Public Function CompressArchive( _
             uLocal.Ext.USize = 0
             uLocal.Ext.CSize = 0
             If UseUtf8 = vbUseDefault Then
-                uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName, m_lCodePage), m_lCodePage) <> .FileName, ucsZcfUseUtf8, 0)
+                uLocal.Flags = IIf(pvFromOemString(pvToOemString(.FileName, m_lCodePage), m_lCodePage) <> .FileName, zipFlagUseUtf8, 0)
             Else
-                uLocal.Flags = IIf(UseUtf8 = vbTrue, ucsZcfUseUtf8, 0)
+                uLocal.Flags = IIf(UseUtf8 = vbTrue, zipFlagUseUtf8, 0)
             End If
             #If ImplCrypto Then
                 If LenB(.Password) <> 0 Then
-                    uLocal.Flags = uLocal.Flags Or ucsZcfEncrypted
+                    uLocal.Flags = uLocal.Flags Or zipFlagEncrypted
                     If .Aes.Strength = 0 Then
-                        uLocal.Flags = uLocal.Flags Or ucsZcfHasDataDescriptor
+                        uLocal.Flags = uLocal.Flags Or zipFlagHasDataDescriptor
                         If Not pvCryptoTradInit(ToUtf8Array(.Password)) Then
                             Err.Raise vbObjectError, , m_sLastError
                         End If
@@ -816,7 +816,7 @@ Public Function CompressArchive( _
                     End If
                 End If
                 '--- if data is incompressible and not encrypted -> store file
-                If lComprLevel = 0 Or (uLocal.Ext.CSize > uLocal.Ext.USize And (uLocal.Flags And ucsZcfEncrypted) = 0) Then
+                If lComprLevel = 0 Or (uLocal.Ext.CSize > uLocal.Ext.USize And (uLocal.Flags And zipFlagEncrypted) = 0) Then
                     pvVfsSeek uFile, 0, FILE_BEGIN
                     pvVfsSeek uArchiveFile, cBeginOffset, FILE_BEGIN
                     uLocal.Method = LNG_METHOD_STORE
@@ -828,7 +828,7 @@ Public Function CompressArchive( _
                         If LenB(.Password) <> 0 Then
                             If .Aes.Strength = 0 Then
                                 pvVfsSeek uArchiveFile, cHeaderOffset, FILE_BEGIN
-                                uLocal.Flags = uLocal.Flags And Not ucsZcfEncrypted And Not ucsZcfHasDataDescriptor
+                                uLocal.Flags = uLocal.Flags And Not zipFlagEncrypted And Not zipFlagHasDataDescriptor
                                 pvOutputLocalHeader uArchiveFile, uLocal, .FileName, .Extra, .Size, UseZip64
                                 .Password = vbNullString
                             Else
@@ -904,7 +904,7 @@ Public Function CompressArchive( _
             .CompressedSize = uLocal.Ext.CSize
             .Method = uLocal.Method
             .Flags = uLocal.Flags
-            If (uLocal.Flags And ucsZcfHasDataDescriptor) <> 0 Then
+            If (uLocal.Flags And zipFlagHasDataDescriptor) <> 0 Then
                 pvOutputDataDecriptor uArchiveFile, uLocal, UseZip64
                 uLocal.Crc32 = 0
             End If
@@ -1085,7 +1085,7 @@ EH:
     Err.Raise Err.Number, Err.Source, Err.Description
 End Function
 
-Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderType, FileName As String, baExtra() As Byte, ByVal CSize As Currency, ByVal UseZip64 As VbTriState)
+Private Sub pvOutputLocalHeader(uFile As ZipVfsType, uHdr As ZipLocalHeaderType, FileName As String, baExtra() As Byte, ByVal CSize As Currency, ByVal UseZip64 As VbTriState)
     Dim baFName()       As Byte
     
     If UseZip64 = vbTrue Or uHdr.Ext.CSize > LNG_SIZE_LIMIT Or uHdr.Ext.USize > LNG_SIZE_LIMIT Or CSize > LNG_SIZE_LIMIT Then
@@ -1100,7 +1100,7 @@ Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderT
         uHdr.CSize = pvToInt32(uHdr.Ext.CSize)
         uHdr.USize = pvToInt32(uHdr.Ext.USize)
     End If
-    baFName = pvToOemString(Replace(FileName, "\", "/"), IIf((uHdr.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, m_lCodePage))
+    baFName = pvToOemString(Replace(FileName, "\", "/"), IIf((uHdr.Flags And zipFlagUseUtf8) <> 0, CP_UTF8, m_lCodePage))
     uHdr.Signature = LNG_SIG_LOCAL
     uHdr.LenFname = UBound(baFName) + 1
     uHdr.LenExt = IIf(UseZip64 = vbTrue, 4 + LNG_EXTRADATA_ZIP64_LOCAL_SIZE, 0) + UBound(baExtra) + 1
@@ -1128,7 +1128,7 @@ Private Sub pvOutputLocalHeader(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderT
     End If
 End Sub
 
-Private Sub pvOutputDataDecriptor(uFile As UcsVfsFileType, uHdr As UcsLocalHeaderType, ByVal UseZip64 As VbTriState)
+Private Sub pvOutputDataDecriptor(uFile As ZipVfsType, uHdr As ZipLocalHeaderType, ByVal UseZip64 As VbTriState)
     pvVfsWrite uFile, VarPtr(LNG_SIG_DATADESC), 4
     pvVfsWrite uFile, VarPtr(uHdr.Crc32), 4
     If UseZip64 = vbTrue Or uHdr.Ext.USize > LNG_SIZE_LIMIT Or uHdr.Ext.CSize > LNG_SIZE_LIMIT Then
@@ -1152,7 +1152,7 @@ Private Sub pvOutputDataDecriptor(uFile As UcsVfsFileType, uHdr As UcsLocalHeade
     End If
 End Sub
 
-Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHeaderType, FileName As String, baExtra() As Byte, Comment As String, ByVal UseZip64 As VbTriState)
+Private Sub pvOutputCentralHeader(uFile As ZipVfsType, uHdr As ZipCentralHeaderType, FileName As String, baExtra() As Byte, Comment As String, ByVal UseZip64 As VbTriState)
     Dim lCodePage       As Long
     Dim baFName()       As Byte
     Dim baComment()     As Byte
@@ -1183,7 +1183,7 @@ Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHea
     Else
         uHdr.Offset = pvToInt32(uHdr.Ext.Offset)
     End If
-    lCodePage = IIf((uHdr.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, m_lCodePage)
+    lCodePage = IIf((uHdr.Flags And zipFlagUseUtf8) <> 0, CP_UTF8, m_lCodePage)
     baFName = pvToOemString(Replace(FileName, "\", "/"), lCodePage)
     baComment = pvToOemString(Comment, lCodePage)
     uHdr.Signature = LNG_SIG_CENTRAL
@@ -1229,9 +1229,9 @@ Private Sub pvOutputCentralHeader(uFile As UcsVfsFileType, uHdr As UcsCentralHea
     End If
 End Sub
 
-Private Sub pvOutputEndHeader(uFile As UcsVfsFileType, uHdr As UcsEndHeaderType, Comment As String, ByVal UseZip64 As VbTriState)
+Private Sub pvOutputEndHeader(uFile As ZipVfsType, uHdr As ZipEndHeaderType, Comment As String, ByVal UseZip64 As VbTriState)
     Dim baComment()     As Byte
-    Dim uLocator        As UcsZip64EndLocatorType
+    Dim uLocator        As Zip64EndLocatorType
     
     
     If UseZip64 = vbTrue Or uHdr.Ext.Entries > LNG_ENTRIES_LIMIT Or uHdr.Ext.TotEntr > LNG_ENTRIES_LIMIT Or uHdr.Ext.CenSize > LNG_SIZE_LIMIT Or uHdr.Ext.CenOff > LNG_SIZE_LIMIT Then
@@ -1328,16 +1328,16 @@ End Function
 Public Function OpenArchive(ArchiveFile As Variant) As Boolean
     Const FUNC_NAME     As String = "OpenArchive"
     Const MAX_END_SEEK  As Long = 10000
-    Dim uArchiveFile    As UcsVfsFileType
-    Dim uEndHdr         As UcsEndHeaderType
+    Dim uArchiveFile    As ZipVfsType
+    Dim uEndHdr         As ZipEndHeaderType
     Dim lIdx            As Long
     Dim sArchiveComment As String
-    Dim uFiles()        As UcsFileInfo
-    Dim uCentral        As UcsCentralHeaderType
+    Dim uFiles()        As ZipFileInfo
+    Dim uCentral        As ZipCentralHeaderType
     Dim baComment()     As Byte
     Dim cOffset         As Currency
     Dim baBuffer()      As Byte
-    Dim uLocator        As UcsZip64EndLocatorType
+    Dim uLocator        As Zip64EndLocatorType
     
     On Error GoTo EH
     pvSetError
@@ -1382,7 +1382,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
     End If
     If lIdx < 0 Then
         '--- note: redim one more (last ignored)
-        ReDim uFiles(0 To uEndHdr.Ext.Entries) As UcsFileInfo
+        ReDim uFiles(0 To uEndHdr.Ext.Entries) As ZipFileInfo
         pvVfsSeek uArchiveFile, uEndHdr.Ext.CenOff, FILE_BEGIN
         For lIdx = 0 To uEndHdr.Ext.Entries - 1
             m_lCurrentFile = lIdx
@@ -1414,9 +1414,9 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                 pvVfsRead uArchiveFile, VarPtr(uCentral.Crc32), 16
                 uEndHdr.Ext.Entries = uEndHdr.Ext.Entries + 1
                 If uEndHdr.Ext.Entries = 1 Then
-                    ReDim uFiles(0 To 3) As UcsFileInfo
+                    ReDim uFiles(0 To 3) As ZipFileInfo
                 ElseIf uEndHdr.Ext.Entries > UBound(uFiles) Then
-                    ReDim Preserve uFiles(0 To 2 * uEndHdr.Ext.Entries) As UcsFileInfo
+                    ReDim Preserve uFiles(0 To 2 * uEndHdr.Ext.Entries) As ZipFileInfo
                 End If
                 If Not pvLoadFileInfo(uArchiveFile, uCentral, uFiles(uEndHdr.Ext.Entries - 1), uEndHdr.Ext.Entries) Then
                     GoTo QH
@@ -1451,7 +1451,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
             End Select
         Loop
         '--- note: redim one more (last ignored)
-        ReDim Preserve uFiles(0 To uEndHdr.Ext.Entries) As UcsFileInfo
+        ReDim Preserve uFiles(0 To uEndHdr.Ext.Entries) As ZipFileInfo
     End If
     '--- commit archive info to member vars
     AssignVariant m_vArchiveFile, ArchiveFile
@@ -1468,7 +1468,7 @@ EH:
     Resume QH
 End Function
 
-Private Function pvLoadFileInfo(uArchiveFile As UcsVfsFileType, uCentral As UcsCentralHeaderType, uFile As UcsFileInfo, ByVal lEntry As Long) As Boolean
+Private Function pvLoadFileInfo(uArchiveFile As ZipVfsType, uCentral As ZipCentralHeaderType, uFile As ZipFileInfo, ByVal lEntry As Long) As Boolean
     Const FUNC_NAME     As String = "pvLoadFileInfo"
     Dim baFName()       As Byte
     Dim baExtra()       As Byte
@@ -1484,7 +1484,7 @@ Private Function pvLoadFileInfo(uArchiveFile As UcsVfsFileType, uCentral As UcsC
         .Crc32 = uCentral.Crc32
         .Attributes = uCentral.AttribX
         .Flags = uCentral.Flags
-        lCodePage = IIf((.Flags And ucsZcfUseUtf8) <> 0, CP_UTF8, m_lCodePage)
+        lCodePage = IIf((.Flags And zipFlagUseUtf8) <> 0, CP_UTF8, m_lCodePage)
         Debug.Assert uCentral.LenFname > 0
         If uCentral.LenFname > 0 Then
             ReDim baFName(0 To uCentral.LenFname - 1) As Byte
@@ -1536,7 +1536,7 @@ Private Function pvLoadFileInfo(uArchiveFile As UcsVfsFileType, uCentral As UcsC
             .Comment = pvFromOemString(baComment, lCodePage)
         End If
         #If ImplCrypto Then
-            If (.Flags And ucsZcfEncrypted) <> 0 Then
+            If (.Flags And zipFlagEncrypted) <> 0 Then
                 If .Method = LNG_METHOD_AES Then
                     lPos = 0
                     Do While lPos + 3 < UBound(baExtra) + 1
@@ -1554,7 +1554,7 @@ Private Function pvLoadFileInfo(uArchiveFile As UcsVfsFileType, uCentral As UcsC
                     Loop
                 End If
                 '--- store for traditional ZipCrypt password check
-                If (.Flags And ucsZcfHasDataDescriptor) <> 0 Then
+                If (.Flags And zipFlagHasDataDescriptor) <> 0 Then
                     Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.FDate), -1), 1)
                 Else
                     Call CopyMemory(.DecDat, ByVal UnsignedAdd(VarPtr(uCentral.CSize), -1), 1)
@@ -1573,18 +1573,18 @@ Public Function Extract( _
             Optional Password As String) As Boolean
     Const FUNC_NAME     As String = "Extract"
     Dim baBuffer()      As Byte
-    Dim uArchiveFile    As UcsVfsFileType
+    Dim uArchiveFile    As ZipVfsType
     Dim lIdx            As Long
-    Dim uLocal          As UcsLocalHeaderType
+    Dim uLocal          As ZipLocalHeaderType
     Dim baFName()       As Byte
     Dim baExt()         As Byte
     Dim cRead           As Currency
     Dim lSize           As Long
     Dim lResult         As Long
     Dim hCtx            As Long
-    Dim uBuf            As UcsZlibBuffersType
+    Dim uBuf            As ZipBuffersType
     Dim vFileName       As Variant
-    Dim uFile           As UcsVfsFileType
+    Dim uFile           As ZipVfsType
     Dim lCrc32          As Long
     Dim pCrc32          As Long
     Dim bSkip           As Boolean
@@ -1717,14 +1717,14 @@ Public Function Extract( _
                 lCrc32 = -1
                 pCrc32 = VarPtr(lCrc32)
                 cRead = 0
-                If (.Flags And ucsZcfEncrypted) <> 0 Then
+                If (.Flags And zipFlagEncrypted) <> 0 Then
                     RaiseEvent Progress(lIdx, cRead, .CompressedSize, m_bCancel)
                     If m_bCancel Then
                         m_sLastError = ERR_USER_CANCEL
                         GoTo QH
                     End If
                     #If ImplCrypto Then
-                        If (.Flags And ucsZcfStrongEncrypted) <> 0 Then
+                        If (.Flags And zipFlagStrongEncrypted) <> 0 Then
                             Err.Raise vbObjectError, , ERR_UNSUPPORTED_ENCRYPTION
                         End If
                         If LenB(Password) = 0 Then
@@ -1796,7 +1796,7 @@ Public Function Extract( _
                         Err.Raise vbObjectError, , ERR_READING_ARCHIVE
                     End If
                     #If ImplCrypto Then
-                        If (.Flags And ucsZcfEncrypted) <> 0 Then
+                        If (.Flags And zipFlagEncrypted) <> 0 Then
                             If .Aes.Strength = 0 Then
                                 If Not pvCryptoTradCrypt(baBuffer, 0, lResult, UseAfter:=True) Then
                                     Err.Raise vbObjectError, , m_sLastError
@@ -1933,7 +1933,7 @@ End Function
 Public Function Inflate(baBuffer() As Byte, baOutput() As Byte) As Boolean
     Const FUNC_NAME     As String = "Inflate"
     Dim hCtx            As Long
-    Dim uBuf            As UcsZlibBuffersType
+    Dim uBuf            As ZipBuffersType
     Dim lResult         As Long
     
     On Error GoTo EH
@@ -2014,7 +2014,7 @@ End Function
 
 Public Function DeflateBlob(ByVal hCtx As Long, ByVal lInputPtr As Long, ByVal lInputSize As Long, lOutputPtr As Long, lOutputSize As Long, Optional ByVal Level As Long = 6, Optional ByVal Final As Boolean) As Boolean
     Const FUNC_NAME     As String = "DeflateBlob"
-    Dim uBuf            As UcsZlibBuffersType
+    Dim uBuf            As ZipBuffersType
     Dim lResult         As Long
     
     On Error GoTo EH
@@ -2284,7 +2284,7 @@ End Function
 
 '= VFS ===================================================================
 
-Private Function pvVfsOpen(File As Variant) As UcsVfsFileType
+Private Function pvVfsOpen(File As Variant) As ZipVfsType
     Dim hFind           As Long
     
     If IsArray(File) Then
@@ -2341,7 +2341,7 @@ Private Function pvCreateFile(ByVal lpFileName As String, ByVal dwDesiredAccess 
     End Select
 End Function
 
-Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
+Private Function pvVfsCreate(File As Variant) As ZipVfsType
     Dim sError          As String
     
     If IsArray(File) Then
@@ -2375,7 +2375,7 @@ Private Function pvVfsCreate(File As Variant) As UcsVfsFileType
     End If
 End Function
 
-Private Sub pvVfsClose(uFile As UcsVfsFileType)
+Private Sub pvVfsClose(uFile As ZipVfsType)
     Dim vEmpty          As Variant
     
     If Not IsEmpty(uFile.BufferArray) Then
@@ -2392,7 +2392,7 @@ Private Sub pvVfsClose(uFile As UcsVfsFileType)
     Set uFile.Stream = Nothing
 End Sub
 
-Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lSize As Long) As Long
+Private Function pvVfsRead(uFile As ZipVfsType, ByVal lPtr As Long, ByVal lSize As Long) As Long
     If Not IsEmpty(uFile.BufferArray) Then
         pvVfsRead = Clamp(lSize, 0, uFile.BufferSize - (uFile.BufferPtr - uFile.BufferBase))
         Call CopyMemory(ByVal lPtr, ByVal uFile.BufferPtr, pvVfsRead)
@@ -2418,7 +2418,7 @@ Private Function pvVfsRead(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lS
     End If
 End Function
 
-Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal lSize As Long) As Long
+Private Function pvVfsWrite(uFile As ZipVfsType, ByVal lPtr As Long, ByVal lSize As Long) As Long
     Const MAX_STEP      As Long = 2 ^ 24 '--- 16MB
     Dim lOffset         As Long
     
@@ -2456,7 +2456,7 @@ Private Function pvVfsWrite(uFile As UcsVfsFileType, ByVal lPtr As Long, ByVal l
     End If
 End Function
 
-Private Function pvVfsSeek(uFile As UcsVfsFileType, ByVal cPosition As Currency, ByVal lMoveMethod As Long) As Currency
+Private Function pvVfsSeek(uFile As ZipVfsType, ByVal cPosition As Currency, ByVal lMoveMethod As Long) As Currency
     If Not IsEmpty(uFile.BufferArray) Then
         Select Case lMoveMethod
         Case FILE_BEGIN
@@ -2481,7 +2481,7 @@ Private Function pvVfsSeek(uFile As UcsVfsFileType, ByVal cPosition As Currency,
     End If
 End Function
 
-Private Sub pvVfsSetEof(uFile As UcsVfsFileType, sMetaData As String)
+Private Sub pvVfsSetEof(uFile As ZipVfsType, sMetaData As String)
     If Not IsEmpty(uFile.BufferArray) Then
         If uFile.BufferSize <> uFile.BufferPtr - uFile.BufferBase Then
             uFile.BufferSize = uFile.BufferPtr - uFile.BufferBase
@@ -2616,30 +2616,30 @@ End Function
 
 '= zlib thunks ===========================================================
 
-Private Function pvInitRelocTable(uRtbl As UcsZlibRelocTableType) As Long
+Private Function pvInitRelocTable(uRtbl As ZipRelocTableType) As Long
     Dim lpThunk         As Long
     Dim vSplit          As Variant
     
     lpThunk = pvGetThunkAddress()
     vSplit = Split(STR_THUNK_OFFSETS, "|")
     With uRtbl
-        .CompressInit = lpThunk + vSplit(ucsIdx_CompressInit)
-        .CompressCleanup = lpThunk + vSplit(ucsIdx_CompressCleanup)
-        .CompressBlock = lpThunk + vSplit(ucsIdx_CompressBlock)
-        .DecompressInit = lpThunk + vSplit(ucsIdx_DecompressInit)
-        .DecompressCleanup = lpThunk + vSplit(ucsIdx_DecompressCleanup)
-        .DecompressBlock = lpThunk + vSplit(ucsIdx_DecompressBlock)
-        .CalcCrc32 = lpThunk + vSplit(ucsIdx_CalcCrc32)
-        .MemNonce = lpThunk + vSplit(ucsIdx_MemNonce)
-        .MemXor = lpThunk + vSplit(ucsIdx_MemXor)
-        .ZipCrypt = lpThunk + vSplit(ucsIdx_ZipCrypt)
+        .CompressInit = lpThunk + vSplit(zipRelCompressInit)
+        .CompressCleanup = lpThunk + vSplit(zipRelCompressCleanup)
+        .CompressBlock = lpThunk + vSplit(zipRelCompressBlock)
+        .DecompressInit = lpThunk + vSplit(zipRelDecompressInit)
+        .DecompressCleanup = lpThunk + vSplit(zipRelDecompressCleanup)
+        .DecompressBlock = lpThunk + vSplit(zipRelDecompressBlock)
+        .CalcCrc32 = lpThunk + vSplit(zipRelCalcCrc32)
+        .MemNonce = lpThunk + vSplit(zipRelMemNonce)
+        .MemXor = lpThunk + vSplit(zipRelMemXor)
+        .ZipCrypt = lpThunk + vSplit(zipRelZipCrypt)
         .MallocImpl = GetProcAddress(GetModuleHandle(StrPtr("ole32")), "CoTaskMemAlloc")
         .ReallocImpl = GetProcAddress(GetModuleHandle(StrPtr("ole32")), "CoTaskMemRealloc")
         .FreeImpl = GetProcAddress(GetModuleHandle(StrPtr("ole32")), "CoTaskMemFree")
-        .LenCodes = lpThunk + vSplit(ucsIdx_LenCodes)
-        .DistCodes = lpThunk + vSplit(ucsIdx_DistCodes)
-        .MirrorBytes = lpThunk + vSplit(ucsIdx_MirrorBytes)
-        .LenLenMap = lpThunk + vSplit(ucsIdx_LenLenMap)
+        .LenCodes = lpThunk + vSplit(zipRelLenCodes)
+        .DistCodes = lpThunk + vSplit(zipRelDistCodes)
+        .MirrorBytes = lpThunk + vSplit(zipRelMirrorBytes)
+        .LenLenMap = lpThunk + vSplit(zipRelLenLenMap)
         .Crc32Table = pvGetCrc32Table()
     End With
 End Function

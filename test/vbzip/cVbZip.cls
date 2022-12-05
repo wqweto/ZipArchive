@@ -140,21 +140,21 @@ Public Function Init(vArgs As Variant) As Boolean
             sMask = LCase$(IIf(.Item("numfiles") > 0, .Item("file1"), "*"))
             For lIdx = 0 To m_oArchive.FileCount - 1
                 vInfo = m_oArchive.FileInfo(lIdx)
-                sFile = LCase$(At(vInfo, ucsIdxFileName))
+                sFile = LCase$(At(vInfo, zipIdxFileName))
                 If sFile Like sMask And InStr(sMask, "\") > 0 _
                         Or Mid$(sFile, InStrRev(sFile, "\") + 1) Like sMask And InStr(sMask, "\") = 0 Then
                     If lCount = 0 Then
                         ConsoleError STR_LIST_HDR & vbCrLf
                         ConsoleError STR_LIST_SEP & vbCrLf
                     End If
-                    sText = Format$(At(vInfo, ucsIdxLastModified), "yyyy\-MM\-dd hh\:mm\:ss")
-                    sText = sText & " " & pvFormatAttr(At(vInfo, ucsIdxAttributes), At(vInfo, ucsIdxFlags))
-                    sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, ucsIdxSize), "0"), 10)
-                    sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, ucsIdxCompressedSize), "0"), 10)
-                    sText = sText & " " & At(vInfo, ucsIdxFileName)
+                    sText = Format$(At(vInfo, zipIdxLastModified), "yyyy\-MM\-dd hh\:mm\:ss")
+                    sText = sText & " " & pvFormatAttr(At(vInfo, zipIdxAttributes), At(vInfo, zipIdxFlags))
+                    sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, zipIdxSize), "0"), 10)
+                    sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, zipIdxCompressedSize), "0"), 10)
+                    sText = sText & " " & At(vInfo, zipIdxFileName)
                     ConsoleError sText & vbCrLf
-                    lTotalSize = lTotalSize + At(vInfo, ucsIdxSize)
-                    lTotalCompressed = lTotalCompressed + At(vInfo, ucsIdxCompressedSize)
+                    lTotalSize = lTotalSize + At(vInfo, zipIdxSize)
+                    lTotalCompressed = lTotalCompressed + At(vInfo, zipIdxCompressedSize)
                     lCount = lCount + 1
                 End If
             Next
@@ -325,7 +325,7 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Currency
     vInfo = m_oArchive.FileInfo(FileIdx)
     If Total = 0 Then
         If Not m_oOpt.Item("-i") Then
-            sPercent = " [" & Format$(At(vInfo, ucsIdxCompressedSize) * 100 / IIf(Current > 0, Current, 1), "0.0") & "%] "
+            sPercent = " [" & Format$(At(vInfo, zipIdxCompressedSize) * 100 / IIf(Current > 0, Current, 1), "0.0") & "%] "
             ConsoleError vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent
         End If
     ElseIf Current < Total Then
@@ -334,8 +334,8 @@ Private Sub m_oArchive_Progress(ByVal FileIdx As Long, ByVal Current As Currency
             m_sLastRow = ConsoleError(vbCr & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent)
         End If
     Else
-        If At(vInfo, ucsIdxSize) <> 0 Then
-            sPercent = " [" & Format$(At(vInfo, ucsIdxCompressedSize) * 100# / At(vInfo, ucsIdxSize), "0.0") & "%] "
+        If At(vInfo, zipIdxSize) <> 0 Then
+            sPercent = " [" & Format$(At(vInfo, zipIdxCompressedSize) * 100# / At(vInfo, zipIdxSize), "0.0") & "%] "
         End If
         ConsoleError IIf(LenB(m_sLastRow) <> 0, vbCr, vbNullString) & m_sAction & At(m_oArchive.FileInfo(FileIdx), 0) & sPercent & vbCrLf
     End If
