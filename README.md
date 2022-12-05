@@ -59,5 +59,4 @@ Method `Extract` accepts byte array target too.
 ### ToDo (not supported yet)
 
     - Deflate64 (de)compressor
-    - Zip64 format extension (file sizes above 2GB+)
     - VBA7 (x64) support
