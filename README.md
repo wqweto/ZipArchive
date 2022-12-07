@@ -39,14 +39,26 @@ Method `Extract` can optionally filter on file mask (e.g. `Filter:="*.doc"`), fi
     
 #### Get archive entry uncompressed size
 
-By using `FileInfo` property keyed on entry filename in first parameter and `zipIdxSize`
+By using `FileInfo` property keyed on entry filename in first parameter and `zipIdxSize` like this
 
     With New cZipArchive
         .OpenArchive App.Path & "\test.zip"
         Debug.Print .FileInfo("report.pdf", zipIdxSize)
     End With
     
-Here are the available values for the second parameter:
+#### List files in zip archive
+
+By using `FileInfo` propery keyed on entry numeric index in first parameter like this
+
+    Dim lIdx            As Long
+    With New cZipArchive
+        .OpenArchive App.Path & "\test.zip"
+        For lIdx = 0 To .FileCount - 1
+            Debug.Print "FileName=" & .FileInfo(lIdx, zipIdxFileName) & ", Size=" & .FileInfo(lIdx, zipIdxSize)
+        Next
+    End With
+
+Here is a list of available values for the second parameter of `FileInfo`:
 
 <span> | Name
 ---    | ---
@@ -61,7 +73,7 @@ Here are the available values for the second parameter:
 `8`    | `zipIdxOffset`
 `9`    | `zipIdxFlags`
 
-### Encryption support
+#### Encryption support
 
 Make sure to set Conditional Compilation in Make tab in project's properties dialog to include `ZIP_CRYPTO = 1` setting for crypto support to get compiled from sources. By default crypto support is not compiled to reduce footprint on the final executable size.
 
@@ -81,7 +93,7 @@ EncrStrength | Mode
 
 Note that default ZipCrypto encryption is weak but this is the only option which is compatible with Windows Explorer built-in zipfolders support.
 
-### In-memory operations
+#### In-memory operations
 
 Sample utility function `ReadBinaryFile` in `/test/basic/Form1.frm` returns byte array with file's content. 
 
