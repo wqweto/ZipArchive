@@ -530,7 +530,7 @@ Public Property Get FileInfo(FileIdx As Variant, Optional ByVal InfoIdx As ZipFi
             End If
         Next
     Else
-        lIdx = InfoIdx
+        lIdx = FileIdx
     End If
     If lIdx >= 0 And lIdx < m_lFileCount Then
         With m_uFiles(lIdx)
