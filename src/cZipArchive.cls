@@ -514,8 +514,16 @@ Public Property Get LastError() As String
     LastError = m_sLastError
 End Property
 
+Public Property Let LastError(sValue As String)
+    m_sLastError = sValue
+End Property
+
 Public Property Get FileCount() As Long
     FileCount = m_lFileCount
+End Property
+
+Public Property Let FileCount(ByVal lValue As Long)
+    m_lFileCount = lValue
 End Property
 
 Public Property Get FileInfo(FileIdx As Variant, Optional ByVal InfoIdx As ZipFileInfoIndexEnum = -1) As Variant
