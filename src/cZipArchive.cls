@@ -13,7 +13,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 '=========================================================================
 '
-' cZipArchive (c) 2017-2022 by wqweto@gmail.com
+' cZipArchive (c) 2017-2023 by wqweto@gmail.com
 '
 ' A single-class pure VB6 library for zip archives management
 '
@@ -1624,7 +1624,7 @@ Public Function Extract( _
     End If
     If VarType(OutputTarget) = vbString Then
         sOutputFolder = OutputTarget
-        If LenB(sOutputFolder) <> 0 Then
+        If LenB(sOutputFolder) <> 0 And IsMissing(Filter) Then
             If (FileAttribs(sOutputFolder) And vbDirectory) = 0 Then
                 sOutputFolder = pvPathGetFolder(sOutputFolder, sOutputFile)
                 If (FileAttribs(sOutputFolder) And vbDirectory) = 0 Then
@@ -1941,39 +1941,74 @@ End Function
 Public Function Inflate(baBuffer() As Byte, baOutput() As Byte) As Boolean
     Const FUNC_NAME     As String = "Inflate"
     Dim hCtx            As Long
-    Dim uBuf            As ZipBuffersType
-    Dim lResult         As Long
+    Dim lOutputPtr      As Long
+    Dim lOutputSize     As Long
     
     On Error GoTo EH
-    hCtx = CallWindowProc(m_uRtbl.DecompressInit, VarPtr(m_uRtbl))
-    If hCtx = 0 Then
-        Err.Raise vbObjectError, , ERR_INIT_DECOMPRESSOR
+    hCtx = InflateInit()
+    If Not InflateBlob(hCtx, VarPtr(baBuffer(0)), UBound(baBuffer) + 1, lOutputPtr, lOutputSize) Then
+        GoTo QH
     End If
-    uBuf.InBlock = VarPtr(baBuffer(0))
-    uBuf.InLen = UBound(baBuffer) + 1
-    lResult = CallWindowProc(m_uRtbl.DecompressBlock, hCtx, VarPtr(uBuf))
-    If lResult = 0 Or uBuf.OutBlock = 0 Then
-        Err.Raise vbObjectError, , ERR_DECOMPRESSING
-    End If
-    ReDim baOutput(0 To uBuf.OutLen - 1) As Byte
-    Call CopyMemory(baOutput(0), ByVal uBuf.OutBlock, uBuf.OutLen)
+    ReDim baOutput(0 To lOutputSize - 1) As Byte
+    Call CopyMemory(baOutput(0), ByVal lOutputPtr, lOutputSize)
     '--- success
     Inflate = True
 QH:
     On Error Resume Next
-    If uBuf.OutBlock <> 0 Then
-        Call CoTaskMemFree(uBuf.OutBlock)
-        uBuf.OutBlock = 0
+    If lOutputPtr <> 0 Then
+        Call CoTaskMemFree(lOutputPtr)
     End If
     If hCtx <> 0 Then
-        Call CallWindowProc(m_uRtbl.DecompressCleanup, hCtx)
-        hCtx = 0
+        InflateEnd hCtx
     End If
     Exit Function
 EH:
     pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
     Resume QH
 End Function
+
+Public Function InflateInit() As Long
+    InflateInit = CallWindowProc(m_uRtbl.DecompressInit, VarPtr(m_uRtbl))
+    If InflateInit = 0 Then
+        Err.Raise vbObjectError, , ERR_INIT_DECOMPRESSOR
+    End If
+End Function
+
+Public Function InflateBlob(ByVal hCtx As Long, ByVal lInputPtr As Long, ByVal lInputSize As Long, lOutputPtr As Long, lOutputSize As Long) As Boolean
+    Const FUNC_NAME     As String = "InflateBlob"
+    Dim uBuf            As ZipBuffersType
+    Dim lResult         As Long
+    
+    On Error GoTo EH
+    uBuf.InBlock = lInputPtr
+    uBuf.InLen = lInputSize
+    lResult = CallWindowProc(m_uRtbl.DecompressBlock, hCtx, VarPtr(uBuf))
+    If lResult = 0 Or uBuf.OutBlock = 0 Then
+        Err.Raise vbObjectError, , ERR_DECOMPRESSING
+    End If
+    '--- commit
+    lOutputPtr = uBuf.OutBlock
+    lOutputSize = uBuf.OutLen
+    uBuf.OutBlock = 0
+    '--- success
+    InflateBlob = True
+QH:
+    On Error Resume Next
+    If uBuf.OutBlock <> 0 Then
+        Call CoTaskMemFree(uBuf.OutBlock)
+        uBuf.OutBlock = 0
+    End If
+    Exit Function
+EH:
+    pvSetError MODULE_NAME & "." & FUNC_NAME & vbCrLf & Err.Source, Err.Description
+    Resume QH
+End Function
+
+Public Sub InflateEnd(ByVal hCtx As Long)
+    If hCtx <> 0 Then
+        Call CallWindowProc(m_uRtbl.DecompressCleanup, hCtx)
+    End If
+End Sub
 
 Public Function DeflateBase64(baInput() As Byte, sText As String, Optional ByVal Level As Long = 6) As Boolean
     Dim baOutput()      As Byte
@@ -1992,7 +2027,7 @@ Public Function Deflate(baBuffer() As Byte, baOutput() As Byte, Optional ByVal L
     
     On Error GoTo EH
     hCtx = DeflateInit()
-    If Not DeflateBlob(hCtx, VarPtr(baBuffer(0)), UBound(baBuffer) + 1, lOutputPtr, lOutputSize, Level, 1) Then
+    If Not DeflateBlob(hCtx, VarPtr(baBuffer(0)), UBound(baBuffer) + 1, lOutputPtr, lOutputSize, Level, True) Then
         GoTo QH
     End If
     ReDim baOutput(0 To lOutputSize - 1) As Byte
