@@ -16,7 +16,7 @@ Just include `cZipArchive.cls` to your project and start using instances of the 
 
     With New cZipArchive
         .AddFromFolder "C:\Path\To\*.*", Recursive:=True
-        .CompressArchive App.Path & "archive.zip"
+        .CompressArchive App.Path & "\archive.zip"
     End With
 
 #### Decompress all files from archive
