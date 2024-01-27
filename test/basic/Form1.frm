@@ -9,6 +9,22 @@ Begin VB.Form Form1
    ScaleHeight     =   3804
    ScaleWidth      =   9936
    StartUpPosition =   3  'Windows Default
+   Begin VB.CommandButton Command9 
+      Caption         =   "Command9"
+      Height          =   432
+      Left            =   8400
+      TabIndex        =   9
+      Top             =   1176
+      Width           =   1356
+   End
+   Begin VB.CommandButton Command8 
+      Caption         =   "Command8"
+      Height          =   432
+      Left            =   6804
+      TabIndex        =   8
+      Top             =   1176
+      Width           =   1440
+   End
    Begin VB.CommandButton Command7 
       Caption         =   "Command7"
       Height          =   432
@@ -107,9 +123,11 @@ Private Sub Command1_Click()
     With m_oZip
 '        .AddFile "D:\TEMP\Unzip\Unzip.zip"
         .AddFile "D:\TEMP\thunk.bin"
+        bResult = .CompressArchive("D:\TEMP\aaa.zip", UseUtf8:=vbTrue)
+        .FileCount = 0
         .AddFile "D:\TEMP\aaa.pdf", "report.pdf", Level:=0
         .AddFile "D:\TEMP\enwik8.txt"
-        bResult = .CompressArchive("D:\TEMP\aaa.zip", UseUtf8:=vbTrue)
+        bResult = .CompressArchive("D:\TEMP\aaa2.zip", UseUtf8:=vbTrue)
         sLastError = .LastError
     End With
     Set m_oZip = Nothing
@@ -234,6 +252,29 @@ Private Sub Command7_Click()
         End If
     End With
     WriteBinaryFile "d:\temp\aaa.pdf", baOutput
+End Sub
+
+Private Sub Command8_Click()
+    Dim lIdx            As Long
+    
+    With New cZipArchive
+        .OpenArchive "D:\Temp\aaa8.zip"
+        For lIdx = 0 To .FileCount - 1
+            Debug.Print "name=" & .FileInfo(lIdx, zipIdxFileName) & ", size=" & .FileInfo(lIdx, zipIdxSize)
+        Next
+    End With
+End Sub
+
+Private Sub Command9_Click()
+    Dim oSrcArchive     As cZipArchive
+    
+    Set oSrcArchive = New cZipArchive
+    oSrcArchive.OpenArchive "D:\Temp\aaa8.zip"
+    With New cZipArchive
+        .AddFile Array(oSrcArchive, 1)
+        .AddFile "D:\Temp\aaa.png"
+        .CompressArchive "D:\Temp\aaa.zip"
+    End With
 End Sub
 
 Private Sub m_oExtractInMemory_BeforeExtract(ByVal FileIdx As Long, File As Variant, SkipFile As Boolean, Cancel As Boolean)

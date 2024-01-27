@@ -14,6 +14,9 @@ Attribute VB_Exposed = False
 Option Explicit
 DefObj A-Z
 
+Private Declare Function GetFileAttributes Lib "kernel32" Alias "GetFileAttributesW" (ByVal lpFileName As Long) As Long
+Private Declare Function DeleteFile Lib "kernel32" Alias "DeleteFileW" (ByVal lpFileName As Long) As Long
+
 '=========================================================================
 ' Constants and member variables
 '=========================================================================
@@ -22,6 +25,7 @@ Private Const ERR_MISSING_ARCHIVE   As String = "Missing archive"
 Private Const ERR_NO_FILES          As String = "No files specified"
 Private Const ERR_INVALID_LEVEL     As String = "Invalid compression level. Use 0 to 9"
 Private Const ERR_INVALID_STRENGTH  As String = "Invalid encryption method/strength. Use 0 to 3"
+Private Const ERR_CANNOT_RENAME     As String = "Error renaming archive: %1"
 Private Const STR_LIST_HDR          As String = "Date       Time      Attr       Size Compressed Name"
 Private Const STR_LIST_SEP          As String = "------------------- ----- ---------- ---------- -------------------"
 
@@ -30,6 +34,7 @@ Attribute m_oArchive.VB_VarHelpID = -1
 Private m_sAction               As String
 Private m_sLastRow              As String
 Private m_oOpt                  As Object
+Private m_sLastError            As String
 
 '=========================================================================
 ' Methods
@@ -46,13 +51,15 @@ Public Function Init(vArgs As Variant) As Boolean
     Dim lCount          As Long
     Dim eUseUtf8        As VbTriState: eUseUtf8 = vbUseDefault
     Dim eUseZip64       As VbTriState: eUseZip64 = vbUseDefault
+    Dim oSrcArchive     As cZipArchive
+    Dim sOutputFile     As String
     
     On Error GoTo EH
     Set m_oArchive = New cZipArchive
     Set m_oOpt = GetOpt(vArgs, "mcp:mem:m:o:p:si", "mzip64:mcu:mcl")
     With m_oOpt
         If Not .Item("-nologo") Then
-            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2022 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
+            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2024 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
         End If
         If .Exists("-?") Or .Exists("-h") Or .Exists("--help") Then
             GoTo ShowHelp
@@ -91,6 +98,27 @@ Public Function Init(vArgs As Variant) As Boolean
                 ConsoleError ERR_INVALID_STRENGTH & vbCrLf
                 GoTo QH
             End If
+            If .Item("-so") Then
+                .Item("zip") = "stdout:"
+            ElseIf InStrRev(.Item("zip"), ".") <= InStrRev(.Item("zip"), "\") Then
+                .Item("zip") = .Item("zip") & ".zip"
+            End If
+            sOutputFile = .Item("zip")
+            If pvFileExists(sOutputFile) Then
+                If Not pvOpenArchive(sOutputFile) Then
+                    GoTo QH
+                End If
+                Set oSrcArchive = m_oArchive
+                Set m_oArchive = New cZipArchive
+                For lIdx = 0 To oSrcArchive.FileCount - 1
+                    If Not pvIsTargetName(oSrcArchive.FileInfo(lIdx, zipIdxFileName)) Then
+                        m_oArchive.AddFile Array(oSrcArchive, lIdx)
+                    Else
+                        ConsolePrint "Deleting " & oSrcArchive.FileInfo(lIdx, zipIdxFileName) & vbCrLf
+                    End If
+                Next
+                sOutputFile = sOutputFile & ".~tmp" & Hex$(Timer * 100)
+            End If
             If .Exists("-si") Then
                 m_oArchive.AddFile "stdin:", CStr(.Item("-si")), Password:=.Item("-p"), EncrStrength:=.Item("-mem")
             Else
@@ -121,13 +149,48 @@ Public Function Init(vArgs As Variant) As Boolean
                 Next
             End If
             m_sAction = "Compressing "
+            If Not m_oArchive.CompressArchive(sOutputFile, Level:=.Item("-m"), UseUtf8:=eUseUtf8, UseZip64:=eUseZip64) Then
+                GoTo QH
+            End If
+            Set m_oArchive = Nothing
+            Set oSrcArchive = Nothing
+            If Not pvRenameFile(sOutputFile, .Item("zip")) Then
+                ConsoleError Replace(ERR_CANNOT_RENAME, "%1", m_sLastError) & vbCrLf
+                Call DeleteFile(StrPtr(sOutputFile))
+            End If
+        Case "d"
+            If LenB(.Item("zip")) = 0 Then
+                ConsoleError ERR_MISSING_ARCHIVE & vbCrLf
+                GoTo QH
+            End If
             If .Item("-so") Then
                 .Item("zip") = "stdout:"
             ElseIf InStrRev(.Item("zip"), ".") <= InStrRev(.Item("zip"), "\") Then
                 .Item("zip") = .Item("zip") & ".zip"
             End If
-            If Not m_oArchive.CompressArchive(.Item("zip"), Level:=.Item("-m"), UseUtf8:=eUseUtf8, UseZip64:=eUseZip64) Then
+            sOutputFile = .Item("zip")
+            If Not pvOpenArchive(sOutputFile) Then
                 GoTo QH
+            End If
+            Set oSrcArchive = m_oArchive
+            Set m_oArchive = New cZipArchive
+            For lIdx = 0 To oSrcArchive.FileCount - 1
+                If Not pvIsTargetName(oSrcArchive.FileInfo(lIdx, zipIdxFileName)) Then
+                    m_oArchive.AddFile Array(oSrcArchive, lIdx)
+                Else
+                    ConsolePrint "Deleting " & oSrcArchive.FileInfo(lIdx, zipIdxFileName) & vbCrLf
+                End If
+            Next
+            sOutputFile = sOutputFile & ".~tmp" & Hex$(Timer * 100)
+            m_sAction = "Copying "
+            If Not m_oArchive.CompressArchive(sOutputFile, Level:=.Item("-m"), UseUtf8:=eUseUtf8, UseZip64:=eUseZip64) Then
+                GoTo QH
+            End If
+            Set m_oArchive = Nothing
+            Set oSrcArchive = Nothing
+            If Not pvRenameFile(sOutputFile, .Item("zip")) Then
+                ConsoleError Replace(ERR_CANNOT_RENAME, "%1", m_sLastError) & vbCrLf
+                Call DeleteFile(StrPtr(sOutputFile))
             End If
         Case "l"
             If LenB(.Item("zip")) = 0 Then
@@ -204,6 +267,7 @@ ShowHelp:
                     "e.g. vbzip.exe a backup.zip doc1.txt reports*.xls" & vbCrLf & vbCrLf & _
                     "Commands:" & vbCrLf & _
                     "  a           add files to archive" & vbCrLf & _
+                    "  d           delete files from archive" & vbCrLf & _
                     "  l           list archive contents" & vbCrLf & _
                     "  t           test archive integrity" & vbCrLf & _
                     "  x           extract files from archive" & vbCrLf & vbCrLf & _
@@ -240,7 +304,7 @@ End Function
 
 Private Function pvOpenArchive(sZipFile As String) As Boolean
     If m_oArchive.OpenArchive(sZipFile) Then
-        pvOpenArchive = True
+        pvOpenArchive = (LenB(m_oArchive.LastError) = 0)
         Exit Function
     End If
     '--- if missing siffux try appending ".zip"
@@ -249,6 +313,17 @@ Private Function pvOpenArchive(sZipFile As String) As Boolean
             pvOpenArchive = True
         End If
     End If
+End Function
+
+Private Function pvIsTargetName(sFile As String) As Boolean
+    Dim lIdx            As Long
+    
+    For lIdx = 1 To m_oOpt.Item("numfiles")
+        If sFile Like Replace(m_oOpt.Item("file" & lIdx), "*.*", "*") Then
+            pvIsTargetName = True
+            Exit Function
+        End If
+    Next
 End Function
 
 Private Function pvLimitNumericOption(sOpt As String, dblDefault As Double, dblMin As Double, dblMax As Double) As Boolean
@@ -282,6 +357,25 @@ Private Function pvFormatAttr(ByVal eAttr As VbFileAttribute, ByVal lFlags As Lo
             IIf(eAttr And vbSystem, "S", vbNullString) & _
             IIf(lFlags And 1, "E", vbNullString), 5)
     End If
+End Function
+
+Private Function pvFileExists(sFile As String) As Boolean
+    If GetFileAttributes(StrPtr(sFile)) = -1 Then ' INVALID_FILE_ATTRIBUTES
+        pvFileExists = (Err.LastDllError = 32) ' ERROR_SHARING_VIOLATION
+    Else
+        pvFileExists = True
+    End If
+End Function
+
+Private Function pvRenameFile(sFileName As String, sDestFile As String) As Boolean
+    On Error GoTo EH
+    Call DeleteFile(StrPtr(sDestFile))
+    Name sFileName As sDestFile
+    '--- success
+    pvRenameFile = True
+    Exit Function
+EH:
+    m_sLastError = Err.Description
 End Function
 
 '=========================================================================
