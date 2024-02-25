@@ -46,8 +46,8 @@ Public Function Init(vArgs As Variant) As Boolean
     Dim sFile           As String
     Dim sMask           As String
     Dim sText           As String
-    Dim lTotalSize      As Long
-    Dim lTotalCompressed As Long
+    Dim cTotalSize      As Currency
+    Dim cTotalCompressed As Currency
     Dim lCount          As Long
     Dim eUseUtf8        As VbTriState: eUseUtf8 = vbUseDefault
     Dim eUseZip64       As VbTriState: eUseZip64 = vbUseDefault
@@ -216,16 +216,16 @@ Public Function Init(vArgs As Variant) As Boolean
                     sText = sText & " " & Right$(Space$(10) & Format$(At(vInfo, zipIdxCompressedSize), "0"), 10)
                     sText = sText & " " & At(vInfo, zipIdxFileName)
                     ConsoleError sText & vbCrLf
-                    lTotalSize = lTotalSize + At(vInfo, zipIdxSize)
-                    lTotalCompressed = lTotalCompressed + At(vInfo, zipIdxCompressedSize)
+                    cTotalSize = cTotalSize + At(vInfo, zipIdxSize)
+                    cTotalCompressed = cTotalCompressed + At(vInfo, zipIdxCompressedSize)
                     lCount = lCount + 1
                 End If
             Next
             If lCount > 0 Then
                 ConsoleError STR_LIST_SEP & vbCrLf
                 sText = Space$(25)
-                sText = sText & " " & Right$(Space$(10) & Format$(lTotalSize, "0"), 10)
-                sText = sText & " " & Right$(Space$(10) & Format$(lTotalCompressed, "0"), 10)
+                sText = sText & " " & Right$(Space$(10) & Format$(cTotalSize, "0"), 10)
+                sText = sText & " " & Right$(Space$(10) & Format$(cTotalCompressed, "0"), 10)
                 sText = sText & " " & Format$(lCount, "0") & " file(s)"
                 ConsoleError sText & vbCrLf
             ElseIf m_oArchive.FileCount > 0 Then
@@ -369,8 +369,10 @@ End Function
 
 Private Function pvRenameFile(sFileName As String, sDestFile As String) As Boolean
     On Error GoTo EH
-    Call DeleteFile(StrPtr(sDestFile))
-    Name sFileName As sDestFile
+    If sFileName <> sDestFile Then
+        Call DeleteFile(StrPtr(sDestFile))
+        Name sFileName As sDestFile
+    End If
     '--- success
     pvRenameFile = True
     Exit Function

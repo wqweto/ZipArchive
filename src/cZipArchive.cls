@@ -1437,7 +1437,9 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
         uEndHdr.Ext.Entries = 0
         Do
             uCentral.Offset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
-            pvVfsRead uArchiveFile, VarPtr(uCentral.Signature), 4
+            If pvVfsRead(uArchiveFile, VarPtr(uCentral.Signature), 4) < 4 Then
+                Exit Do
+            End If
             Select Case uCentral.Signature
             Case LNG_SIG_LOCAL
                 pvVfsRead uArchiveFile, VarPtr(uCentral.VerExt), 10
@@ -1477,10 +1479,12 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                     pvVfsSeek uArchiveFile, LNG_LEN_EXTLOCAL - 4, FILE_CURRENT
                 End If
             Case Else
-                pvSetError MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE
-                Exit Do
+                pvVfsSeek uArchiveFile, uCentral.Offset + 1, FILE_BEGIN
             End Select
         Loop
+        If uEndHdr.Ext.Entries = 0 Then
+            pvSetError MODULE_NAME & "." & FUNC_NAME, ERR_INVALID_ARCHIVE
+        End If
         '--- note: redim one more (last ignored)
         ReDim Preserve uFiles(0 To uEndHdr.Ext.Entries) As ZipFileInfo
     End If
@@ -1527,9 +1531,9 @@ Private Function pvLoadFileInfo(uArchiveFile As ZipVfsType, uCentral As ZipCentr
             End If
             .FileName = Replace(STR_ENTRY, "%1", lEntry)
         End If
-        uCentral.Ext.USize = uCentral.USize
-        uCentral.Ext.CSize = uCentral.CSize
-        uCentral.Ext.Offset = uCentral.Offset
+        uCentral.Ext.USize = pvToInt64(uCentral.USize)
+        uCentral.Ext.CSize = pvToInt64(uCentral.CSize)
+        uCentral.Ext.Offset = pvToInt64(uCentral.Offset)
         If uCentral.LenExt > 0 Then
             ReDim baExtra(0 To uCentral.LenExt - 1) As Byte
             pvVfsRead uArchiveFile, VarPtr(baExtra(0)), uCentral.LenExt
