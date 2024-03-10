@@ -1627,6 +1627,9 @@ Public Function Extract( _
     Dim sFilterMask     As String
     Dim sOutputFolder   As String
     Dim sOutputFile     As String
+    Dim cMatched        As Collection
+    Dim sFileName       As String
+    Dim vElem           As Variant
 #If ImplCrypto Then
     Dim lSaltSize       As Long
     Dim baSalt()        As Byte
@@ -1649,44 +1652,50 @@ Public Function Extract( _
             sFilterMask = Mid$(sFilterMask, lIdx + 1)
         End If
     End If
+    Set cMatched = New Collection
+    For lIdx = 0 To m_lFileCount - 1
+        If IsMissing(Filter) Then
+            '--- do nothing
+        ElseIf IsArray(Filter) Then
+            If Not At(Filter, lIdx) Then
+                GoTo SkipMatch
+            End If
+        ElseIf VarType(Filter) = vbString Then
+            sFileName = m_uFiles(lIdx).FileName
+            If LenB(sFilterFolder) <> 0 Then
+                If Not sFileName Like sFilterFolder Then
+                    GoTo SkipMatch
+                End If
+                If LenB(sFilterMask) <> 0 Then
+                    If sFileName Like sFilterFolder & "\*" Then
+                        GoTo SkipMatch
+                    End If
+                End If
+            End If
+            If LenB(sFilterMask) <> 0 Then
+                If PathMatchSpecW(StrPtr(Mid$(sFileName, InStrRev(sFileName, "\") + 1)), StrPtr(sFilterMask)) = 0 Then
+                    GoTo SkipMatch
+                End If
+            End If
+        ElseIf Not lIdx = Filter Then
+            GoTo SkipMatch
+        End If
+        cMatched.Add lIdx
+SkipMatch:
+    Next
     If VarType(OutputTarget) = vbString Then
         sOutputFolder = OutputTarget
-        If LenB(sOutputFolder) <> 0 And IsMissing(Filter) Then
+        If LenB(sOutputFolder) <> 0 And cMatched.Count = 1 Then
             If (FileAttribs(sOutputFolder) And vbDirectory) = 0 Then
                 sOutputFolder = pvPathGetFolder(sOutputFolder, sOutputFile)
-                If (FileAttribs(sOutputFolder) And vbDirectory) = 0 Then
-                    sOutputFolder = OutputTarget
-                    sOutputFile = vbNullString
-                End If
             End If
         End If
     End If
     '--- touch to open for read
     pvVfsRead uArchiveFile, 0, 0
-    For lIdx = 0 To m_lFileCount - 1
-        m_lCurrentFile = lIdx
-        With m_uFiles(lIdx)
-            '--- check if current entry is filtered
-            If IsMissing(Filter) Then
-                '--- do nothing
-            ElseIf IsArray(Filter) Then
-                If Not At(Filter, lIdx) Then
-                    GoTo SkipFile
-                End If
-            ElseIf VarType(Filter) = vbString Then
-                If LenB(sFilterFolder) <> 0 Then
-                    If Not .FileName Like sFilterFolder Then
-                        GoTo SkipFile
-                    End If
-                End If
-                If LenB(sFilterMask) <> 0 Then
-                    If PathMatchSpecW(StrPtr(Mid$(.FileName, InStrRev(.FileName, "\") + 1)), StrPtr(sFilterMask)) = 0 Then
-                        GoTo SkipFile
-                    End If
-                End If
-            ElseIf Not lIdx = Filter Then
-                GoTo SkipFile
-            End If
+    For Each vElem In cMatched
+        m_lCurrentFile = vElem
+        With m_uFiles(m_lCurrentFile)
             On Error GoTo EH_Continue
             '--- read local header
             pvVfsSeek uArchiveFile, .Offset, FILE_BEGIN
@@ -1706,7 +1715,7 @@ Public Function Extract( _
             End If
             '--- sanity checks
             If uLocal.Signature <> LNG_SIG_LOCAL Then
-                Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & ". " & Replace(ERR_ENTRY_INVALID_SIG, "%1", lIdx + 1)
+                Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & ". " & Replace(ERR_ENTRY_INVALID_SIG, "%1", m_lCurrentFile + 1)
             End If
 '            If pvToWinFileName(baFName, .Flags) <> .FileName Then
 '                Err.Raise vbObjectError, , ERR_INVALID_LOCALHDR & " (Filename)"
@@ -1728,9 +1737,9 @@ Public Function Extract( _
                     vFileName = Replace(sOutputFile, "*", pvFileGetFName(.FileName))
                 End If
                 vFileName = PathCombine(sOutputFolder, CStr(vFileName))
-                RaiseEvent BeforeExtract(lIdx, vFileName, bSkip, m_bCancel)
+                RaiseEvent BeforeExtract(m_lCurrentFile, vFileName, bSkip, m_bCancel)
             Else
-                RaiseEvent BeforeExtract(lIdx, OutputTarget, bSkip, m_bCancel)
+                RaiseEvent BeforeExtract(m_lCurrentFile, OutputTarget, bSkip, m_bCancel)
             End If
             If m_bCancel Then
                 m_sLastError = ERR_USER_CANCEL
@@ -1753,7 +1762,7 @@ Public Function Extract( _
                 pCrc32 = VarPtr(lCrc32)
                 cRead = 0
                 If (.Flags And zipFlagEncrypted) <> 0 Then
-                    RaiseEvent Progress(lIdx, cRead, .CompressedSize, m_bCancel)
+                    RaiseEvent Progress(m_lCurrentFile, cRead, .CompressedSize, m_bCancel)
                     If m_bCancel Then
                         m_sLastError = ERR_USER_CANCEL
                         GoTo QH
@@ -1814,7 +1823,7 @@ Public Function Extract( _
                     End If
                 End If
                 Do ' While cRead < .CompressedSize
-                    RaiseEvent Progress(lIdx, cRead, .CompressedSize, m_bCancel)
+                    RaiseEvent Progress(m_lCurrentFile, cRead, .CompressedSize, m_bCancel)
                     If m_bCancel Then
                         m_sLastError = ERR_USER_CANCEL
                         GoTo QH
@@ -1885,16 +1894,16 @@ Public Function Extract( _
                     pvVfsSetEof uFile, .FileName
                 End If
                 '--- note: Total=1 to prevent division by zero in client code
-                RaiseEvent Progress(lIdx, 1, 1, m_bCancel)
+                RaiseEvent Progress(m_lCurrentFile, 1, 1, m_bCancel)
                 If m_bCancel Then
                     m_sLastError = ERR_USER_CANCEL
                     GoTo QH
                 End If
             End If
             If VarType(OutputTarget) = vbString Then
-                RaiseEvent ExtractComplete(lIdx, vFileName)
+                RaiseEvent ExtractComplete(m_lCurrentFile, vFileName)
             Else
-                RaiseEvent ExtractComplete(lIdx, OutputTarget)
+                RaiseEvent ExtractComplete(m_lCurrentFile, OutputTarget)
             End If
             '--- success (entries extracted)
             Extract = True
