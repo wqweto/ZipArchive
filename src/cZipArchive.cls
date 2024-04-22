@@ -254,6 +254,7 @@ Private Const LNG_EXTRADATA_AES_SIZE As Long = 7
 Private Const LNG_EXTRADATA_AE_2_MAXSIZE As Long = 20
 Private Const LNG_EXTRADATA_ZIP64_HEADER As Long = 1
 Private Const LNG_EXTRADATA_ZIP64_LOCAL_SIZE As Long = 16
+Private Const LNG_EXTRADATA_INFOZIP_UNICODE_PATH As Long = &H7075
 Private Const LNG_ENC_HEADER_SIZE   As Long = 12
 Private Const LNG_AES_AUTHCODE_SIZE As Long = 10
 Private Const LNG_AES_BLOCK_SIZE    As Long = 16
@@ -1436,12 +1437,13 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
         pvVfsSeek uArchiveFile, 0, FILE_BEGIN
         uEndHdr.Ext.Entries = 0
         Do
-            uCentral.Offset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
+            cOffset = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT)
             If pvVfsRead(uArchiveFile, VarPtr(uCentral.Signature), 4) < 4 Then
                 Exit Do
             End If
             Select Case uCentral.Signature
             Case LNG_SIG_LOCAL
+                uCentral.Offset = pvFromInt64(cOffset)
                 pvVfsRead uArchiveFile, VarPtr(uCentral.VerExt), 10
                 pvVfsRead uArchiveFile, VarPtr(uCentral.Crc32), 16
                 uEndHdr.Ext.Entries = uEndHdr.Ext.Entries + 1
@@ -1479,7 +1481,7 @@ Public Function OpenArchive(ArchiveFile As Variant) As Boolean
                     pvVfsSeek uArchiveFile, LNG_LEN_EXTLOCAL - 4, FILE_CURRENT
                 End If
             Case Else
-                pvVfsSeek uArchiveFile, uCentral.Offset + 1, FILE_BEGIN
+                pvVfsSeek uArchiveFile, cOffset + 1, FILE_BEGIN
             End Select
         Loop
         If uEndHdr.Ext.Entries = 0 Then
@@ -1541,8 +1543,9 @@ Private Function pvLoadFileInfo(uArchiveFile As ZipVfsType, uCentral As ZipCentr
             lPos = 0
             Do While lPos + 3 < uCentral.LenExt
                 Call CopyMemory(uCentral.Ext.HeaderId, baExtra(lPos + 0), 4)
-                If uCentral.Ext.HeaderId = LNG_EXTRADATA_ZIP64_HEADER Then
-                    If uCentral.Ext.DataSize >= 8 Then
+                Select Case uCentral.Ext.HeaderId
+                Case LNG_EXTRADATA_ZIP64_HEADER
+                    If uCentral.Ext.DataSize >= 8 And lPos + uCentral.Ext.DataSize + 3 <= UBound(baExtra) Then
                         Call CopyMemory(aSizes(0), baExtra(lPos + 4), Clamp(uCentral.Ext.DataSize, 0, 24))
                         If uCentral.USize = -1 Then
                             uCentral.Ext.USize = aSizes(lIdx) * 10000@
@@ -1558,7 +1561,15 @@ Private Function pvLoadFileInfo(uArchiveFile As ZipVfsType, uCentral As ZipCentr
                         End If
                     End If
                     Exit Do
-                End If
+                Case LNG_EXTRADATA_INFOZIP_UNICODE_PATH
+                    If uCentral.Ext.DataSize > 5 And lPos + uCentral.Ext.DataSize + 3 <= UBound(baExtra) Then
+                        If baExtra(lPos + 4) = 1 Then
+                            ReDim baFName(0 To uCentral.Ext.DataSize - 6) As Byte
+                            Call CopyMemory(baFName(0), baExtra(lPos + 9), uCentral.Ext.DataSize - 5)
+                            .FileName = pvToWinFileName(baFName, lCodePage)
+                        End If
+                    End If
+                End Select
                 lPos = lPos + uCentral.Ext.DataSize + 4
             Loop
         End If
@@ -2014,13 +2025,14 @@ Private Function pvToWinFileName(baBuffer() As Byte, ByVal lCodePage As Long) As
     Dim vSplit          As Variant
     Dim lIdx            As Long
     
-    '--- replaces non-ANSI symbols with '?' too
-    vSplit = Split(Replace(StrConv(StrConv(pvFromOemString(baBuffer, lCodePage), _
-        vbFromUnicode), vbUnicode), "/", "\"), "\")
+    vSplit = Split(Replace(pvFromOemString(baBuffer, lCodePage), "/", "\"), "\")
     For lIdx = 0 To UBound(vSplit)
         vSplit(lIdx) = SanitizeFileName(CStr(vSplit(lIdx)), "_")
     Next
     pvToWinFileName = Join(vSplit, "\")
+    If Left$(pvToWinFileName, 1) = "\" Then
+        Mid$(pvToWinFileName, 1, 1) = "_"
+    End If
 End Function
 
 #End If ' ImplDecompress
