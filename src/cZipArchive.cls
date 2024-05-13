@@ -147,6 +147,7 @@ Private Declare Function ReadFile Lib "kernel32" (ByVal hFile As Long, lpBuffer 
 Private Declare Function WriteFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToWrite As Long, lpNumberOfBytesWritten As Long, ByVal lpOverlapped As Long) As Long
 Private Declare Function SetFilePointerEx Lib "kernel32" (ByVal hFile As Long, ByVal liDistanceToMove As Currency, lpNewFilePointer As Any, ByVal dwMoveMethod As Long) As Long
 Private Declare Function SetEndOfFile Lib "kernel32" (ByVal hFile As Long) As Long
+Private Declare Function SetFileTime Lib "kernel32" (ByVal hFile As Long, lpCreationTime As Any, lpLastAccessTime As Any, lpLastWriteTime As Any) As Long
 Private Declare Function FileTimeToSystemTime Lib "kernel32" (lpFileTime As FILETIME, lpSystemTime As SYSTEMTIME) As Long
 Private Declare Function SystemTimeToFileTime Lib "kernel32" (lpSystemTime As SYSTEMTIME, lpFileTime As FILETIME) As Long
 Private Declare Function FileTimeToLocalFileTime Lib "kernel32" (lpFileTime As Any, lpLocalFileTime As FILETIME) As Long
@@ -988,7 +989,7 @@ SkipFile:
     uEndHdr.Ext.CenSize = pvVfsSeek(uArchiveFile, 0, FILE_CURRENT) - cBeginOffset
     uEndHdr.Ext.CenOff = cBeginOffset
     pvOutputEndHeader uArchiveFile, uEndHdr, Comment, UseZip64
-    pvVfsSetEof uArchiveFile, "[output_archive]"
+    pvVfsSetEof uArchiveFile, "[output_archive]", Now
     '--- success
     CompressArchive = True
 QH:
@@ -1881,7 +1882,7 @@ SkipMatch:
                         pvVfsWrite uFile, VarPtr(baBuffer(0)), lResult
                     End If
                 Loop
-                pvVfsSetEof uFile, .FileName
+                pvVfsSetEof uFile, .FileName, .LastModified
                 #If ImplCrypto Then
                     If .Aes.Strength <> 0 Then
                         '--- check HMAC-SHA1 auth code
@@ -1902,7 +1903,7 @@ SkipMatch:
                 End If
             Else
                 If (.Attributes And vbDirectory + vbVolume) = 0 And Right$(.FileName, 1) <> "\" Then
-                    pvVfsSetEof uFile, .FileName
+                    pvVfsSetEof uFile, .FileName, .LastModified
                 End If
                 '--- note: Total=1 to prevent division by zero in client code
                 RaiseEvent Progress(m_lCurrentFile, 1, 1, m_bCancel)
@@ -2641,7 +2642,7 @@ Private Function pvVfsSeek(uFile As ZipVfsType, ByVal cPosition As Currency, ByV
     End If
 End Function
 
-Private Sub pvVfsSetEof(uFile As ZipVfsType, sMetaData As String)
+Private Sub pvVfsSetEof(uFile As ZipVfsType, sMetaData As String, ByVal dLastWriteTime As Date)
     If Not IsEmpty(uFile.BufferArray) Then
         If uFile.BufferSize <> uFile.BufferPtr - uFile.BufferBase Then
             uFile.BufferSize = uFile.BufferPtr - uFile.BufferBase
@@ -2654,10 +2655,15 @@ Private Sub pvVfsSetEof(uFile As ZipVfsType, sMetaData As String)
             uFile.BufferPtr = uFile.BufferBase + uFile.BufferSize
         End If
     ElseIf Not uFile.Stream Is Nothing Then
-        uFile.Stream.VfsSetEndOfFile sMetaData
+        uFile.Stream.VfsSetEndOfFile sMetaData ' , dLastWriteTime
     ElseIf Right$(uFile.FileName, 1) <> ":" Then
         If SetEndOfFile(uFile.Handle) = 0 Then
             Err.Raise vbObjectError, "pvVfsSetEof", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+        End If
+        If dLastWriteTime <> 0 Then
+            If SetFileTime(uFile.Handle, ByVal 0, ByVal 0, pvToFileTime(dLastWriteTime)) = 0 Then
+                Err.Raise vbObjectError, "pvVfsSetLastModified", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            End If
         End If
     End If
 End Sub
