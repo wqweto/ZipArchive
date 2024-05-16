@@ -1091,7 +1091,7 @@ Private Function pvEnumFiles(sFolder As String, sMask As String, ByVal eAttrib A
     If hFind = INVALID_HANDLE_VALUE Then
         If Err.LastDllError <> 2 Then
             On Error GoTo 0
-            Err.Raise vbObjectError, "pvEnumFiles", GetSystemMessage(Err.LastDllError) & " (" & sFile & ")"
+            Err.Raise vbObjectError, "FindFirstFile", GetSystemMessage(Err.LastDllError) & " (" & sFile & ")"
         End If
     Else
         Do
@@ -2480,11 +2480,10 @@ Private Function pvVfsOpen(File As Variant) As ZipVfsType
         Else
             hFind = FindFirstFile(StrPtr(Left$(File, Len(File) - 1)), VarPtr(pvVfsOpen.Data))
         End If
-        If hFind <> INVALID_HANDLE_VALUE Then
-            Call FindClose(hFind)
-        Else
-            Err.Raise vbObjectError, "pvVfsOpen", GetSystemMessage(Err.LastDllError) & " (" & File & ")"
+        If hFind = INVALID_HANDLE_VALUE Then
+            Err.Raise vbObjectError, "FindFirstFile", GetSystemMessage(Err.LastDllError) & " (" & File & ")"
         End If
+        Call FindClose(hFind)
     End If
 End Function
 
@@ -2509,7 +2508,7 @@ Private Function pvVfsCreate(File As Variant) As ZipVfsType
         If (Peek(VarPtr(File)) And VT_BYREF) <> 0 Then
             Call CopyMemory(pvVfsCreate.BufferArray, File, 16)
         Else
-            Err.Raise vbObjectError, "pvVfsCreate", ERR_INVALID_BYTEARRAY
+            Err.Raise vbObjectError, , ERR_INVALID_BYTEARRAY
         End If
         pvVfsCreate.BufferBase = pvArrPtr(pvVfsCreate.BufferArray)
         pvVfsCreate.BufferPtr = pvVfsCreate.BufferBase
@@ -2529,7 +2528,7 @@ Private Function pvVfsCreate(File As Variant) As ZipVfsType
         If Right$(File, 1) <> "\" Then
             pvVfsCreate.Handle = pvCreateFile(File, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
             If pvVfsCreate.Handle = INVALID_HANDLE_VALUE Then
-                Err.Raise vbObjectError, "pvVfsCreate", GetSystemMessage(Err.LastDllError) & " (" & File & ")"
+                Err.Raise vbObjectError, "CreateFile", GetSystemMessage(Err.LastDllError) & " (" & File & ")"
             End If
         End If
     End If
@@ -2568,12 +2567,12 @@ Private Function pvVfsRead(uFile As ZipVfsType, ByVal lPtr As Long, ByVal lSize 
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
             uFile.Handle = pvCreateFile(uFile.FileName, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)
             If uFile.Handle = INVALID_HANDLE_VALUE Then
-                Err.Raise vbObjectError, "pvVfsRead", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+                Err.Raise vbObjectError, "CreateFile", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
         End If
         If ReadFile(uFile.Handle, ByVal lPtr, lSize, pvVfsRead, 0) = 0 Then
             If Err.LastDllError <> LNG_PIPE_ENDED_ERROR Then
-                Err.Raise vbObjectError, "pvVfsRead", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+                Err.Raise vbObjectError, "ReadFile", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
         End If
     End If
@@ -2608,11 +2607,11 @@ Private Function pvVfsWrite(uFile As ZipVfsType, ByVal lPtr As Long, ByVal lSize
         If uFile.Handle = 0 Or uFile.Handle = INVALID_HANDLE_VALUE Then
             uFile.Handle = pvCreateFile(uFile.FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
             If uFile.Handle = INVALID_HANDLE_VALUE Then
-                Err.Raise vbObjectError, "pvVfsWrite", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+                Err.Raise vbObjectError, "CreateFile", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
         End If
         If WriteFile(uFile.Handle, ByVal lPtr, lSize, pvVfsWrite, 0) = 0 Then
-            Err.Raise vbObjectError, "pvVfsWrite", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            Err.Raise vbObjectError, "WriteFile", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
     End If
 End Function
@@ -2636,7 +2635,7 @@ Private Function pvVfsSeek(uFile As ZipVfsType, ByVal cPosition As Currency, ByV
             pvVfsRead uFile, 0, 0
         End If
         If SetFilePointerEx(uFile.Handle, cPosition / 10000@, pvVfsSeek, lMoveMethod) = 0 Then
-            Err.Raise vbObjectError, "pvVfsSeek", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            Err.Raise vbObjectError, "SetFilePointerEx", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
         pvVfsSeek = pvVfsSeek * 10000@
     End If
@@ -2658,11 +2657,11 @@ Private Sub pvVfsSetEof(uFile As ZipVfsType, sMetaData As String, ByVal dLastWri
         uFile.Stream.VfsSetEndOfFile sMetaData ' , dLastWriteTime
     ElseIf Right$(uFile.FileName, 1) <> ":" Then
         If SetEndOfFile(uFile.Handle) = 0 Then
-            Err.Raise vbObjectError, "pvVfsSetEof", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+            Err.Raise vbObjectError, "SetEndOfFile", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
         End If
         If dLastWriteTime <> 0 Then
             If SetFileTime(uFile.Handle, ByVal 0, ByVal 0, pvToFileTime(dLastWriteTime)) = 0 Then
-                Err.Raise vbObjectError, "pvVfsSetLastModified", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
+                Err.Raise vbObjectError, "SetFileTime", GetSystemMessage(Err.LastDllError) & " (" & uFile.FileName & ")"
             End If
         End If
     End If
