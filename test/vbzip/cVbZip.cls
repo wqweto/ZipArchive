@@ -59,7 +59,7 @@ Public Function Init(vArgs As Variant) As Boolean
     Set m_oOpt = GetOpt(vArgs, "mcp:mem:m:o:p:si", "mzip64:mcu:mcl")
     With m_oOpt
         If Not .Item("-nologo") Then
-            ConsoleError "VbZip " & m_oArchive.SemVersion & " (c) 2017-2024 by wqweto@gmail.com (" & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
+            ConsoleError "VbZip " & m_oArchive.SemVersion & " " & App.LegalCopyright & " (thunk " & m_oArchive.ThunkBuildDate & ")" & vbCrLf & vbCrLf
         End If
         If .Exists("-?") Or .Exists("-h") Or .Exists("--help") Then
             GoTo ShowHelp

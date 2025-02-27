@@ -13,7 +13,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 '=========================================================================
 '
-' cZipArchive (c) 2017-2023 by wqweto@gmail.com
+' cZipArchive (c) 2017-2025 by wqweto@gmail.com
 '
 ' A single-class pure VB6 library for zip archives management
 '
