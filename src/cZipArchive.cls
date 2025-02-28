@@ -117,6 +117,7 @@ Private Declare Function WriteFile Lib "kernel32" (ByVal hFile As Long, lpBuffer
 Private Declare Function SetFilePointerEx Lib "kernel32" (ByVal hFile As Long, ByVal liDistanceToMove As Currency, lpNewFilePointer As Any, ByVal dwMoveMethod As Long) As Long
 Private Declare Function SetEndOfFile Lib "kernel32" (ByVal hFile As Long) As Long
 Private Declare Function SetFileTime Lib "kernel32" (ByVal hFile As Long, lpCreationTime As Any, lpLastAccessTime As Any, lpLastWriteTime As Any) As Long
+Private Declare Function SetFileAttributes Lib "kernel32" Alias "SetFileAttributesW" (ByVal lpFileName As Long, ByVal dwFileAttributes As Long) As Long
 Private Declare Function FileTimeToSystemTime Lib "kernel32" (lpFileTime As FILETIME, lpSystemTime As SYSTEMTIME) As Long
 Private Declare Function SystemTimeToFileTime Lib "kernel32" (lpSystemTime As SYSTEMTIME, lpFileTime As FILETIME) As Long
 Private Declare Function FileTimeToLocalFileTime Lib "kernel32" (lpFileTime As Any, lpLocalFileTime As FILETIME) As Long
@@ -602,7 +603,7 @@ Public Function AddFile( _
         End If
         If Right$(.FileName, 1) = "\" Then
             .Size = 0
-            .Attributes = vbDirectory
+            .Attributes = uFile.Data.dwFileAttributes Or vbDirectory
         Else
             .Size = pvToInt64(uFile.Data.nFileSizeLow, uFile.Data.nFileSizeHigh)
             .Attributes = uFile.Data.dwFileAttributes
@@ -1736,7 +1737,7 @@ SkipMatch:
             End If
             '--- allow output to buffer, stream object or (customized) filename
             If VarType(OutputTarget) = vbString Then
-                uFile = pvVfsCreate(vFileName)
+                uFile = pvVfsCreate(vFileName, .Attributes)
             Else
                 If IsArray(OutputTarget) And .Size > 0 Then
                     ReDim OutputTarget(0 To .Size - 1) As Byte
@@ -2493,7 +2494,7 @@ Private Function pvCreateFile(ByVal lpFileName As String, ByVal dwDesiredAccess 
     End Select
 End Function
 
-Private Function pvVfsCreate(File As Variant) As ZipVfsType
+Private Function pvVfsCreate(File As Variant, Optional ByVal eAttrib As VbFileAttribute = vbArchive) As ZipVfsType
     Dim sError          As String
     
     If IsArray(File) Then
@@ -2519,10 +2520,12 @@ Private Function pvVfsCreate(File As Variant) As ZipVfsType
             End If
         End If
         If Right$(File, 1) <> "\" Then
-            pvVfsCreate.Handle = pvCreateFile(File, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, vbArchive, 0)
+            pvVfsCreate.Handle = pvCreateFile(File, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, eAttrib, 0)
             If pvVfsCreate.Handle = INVALID_HANDLE_VALUE Then
                 Err.Raise vbObjectError, "CreateFile", GetSystemMessage(Err.LastDllError) & " (" & File & ")"
             End If
+        Else
+            Call SetFileAttributes(StrPtr(Left$(File, Len(File) - 1)), eAttrib)
         End If
     End If
 End Function
